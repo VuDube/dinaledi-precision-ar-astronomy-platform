@@ -3,7 +3,7 @@ import { StarRecord } from '@/data/star-catalog';
 import { DSORecord } from '@/data/dso-catalog';
 export type AppMode = 'intro' | 'skyview' | 'log' | 'settings' | 'highlights' | 'search';
 export type PermissionStatus = 'prompt' | 'granted' | 'denied' | 'unavailable';
-export type GPSStatus = 'idle' | 'tracking' | 'error';
+export type GPSStatus = 'idle' | 'tracking' | 'error' | 'denied';
 interface Orientation {
   alpha: number;
   beta: number;
@@ -27,6 +27,7 @@ interface AppState {
   isSensorActive: boolean;
   permissionStatus: PermissionStatus;
   gpsStatus: GPSStatus;
+  gpsEnabled: boolean;
   isInstallable: boolean;
   calibrationOffset: number;
   simulationTime: Date;
@@ -50,6 +51,7 @@ interface AppState {
   setSensorActive: (active: boolean) => void;
   setPermissionStatus: (status: PermissionStatus) => void;
   setGPSStatus: (status: GPSStatus) => void;
+  setGPSEnabled: (enabled: boolean) => void;
   setInstallable: (status: boolean) => void;
   setCalibrationOffset: (offset: number) => void;
   setSimulationTime: (time: Date) => void;
@@ -75,6 +77,7 @@ export const useAppStore = create<AppState>((set) => ({
   isSensorActive: false,
   permissionStatus: 'prompt',
   gpsStatus: 'idle',
+  gpsEnabled: true,
   isInstallable: false,
   calibrationOffset: 0,
   simulationTime: new Date(),
@@ -101,6 +104,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSensorActive: (active) => set({ isSensorActive: active }),
   setPermissionStatus: (status) => set({ permissionStatus: status }),
   setGPSStatus: (gpsStatus) => set({ gpsStatus }),
+  setGPSEnabled: (gpsEnabled) => set({ gpsEnabled }),
   setInstallable: (isInstallable) => set({ isInstallable }),
   setCalibrationOffset: (offset) => set({ calibrationOffset: offset }),
   setSimulationTime: (simulationTime) => set({ simulationTime }),

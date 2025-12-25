@@ -65,7 +65,7 @@ export function HUDOverlay() {
             </div>
             <div className="flex gap-2 pointer-events-auto">
               <div className="glass px-3 py-1.5 rounded-lg flex items-center gap-2">
-                <Wifi className={cn("w-3 h-3", gpsStatus === 'tracking' ? "text-green-500" : "text-starlight/20")} />
+                <Wifi className={cn("w-3 h-3", gpsStatus === 'tracking' ? "text-green-500 shadow-glow" : gpsStatus === 'denied' ? "text-yellow-400 animate-pulse" : "text-starlight/20")} />
                 <span className="text-[9px] font-mono text-starlight/60 uppercase">GPS</span>
               </div>
               {isInstallable && (

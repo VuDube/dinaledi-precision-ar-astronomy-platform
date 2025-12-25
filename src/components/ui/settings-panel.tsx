@@ -21,6 +21,8 @@ export function SettingsPanel() {
   const lat = useAppStore(s => s.latitude);
   const lon = useAppStore(s => s.longitude);
   const setCalibrated = useAppStore(s => s.setCalibrated);
+  const gpsEnabled = useAppStore(s => s.gpsEnabled);
+  const setGPSEnabled = useAppStore(s => s.setGPSEnabled);
   useGPS(); // Activate GPS tracking if needed
   const isOpen = mode === 'settings';
   return (
@@ -40,6 +42,10 @@ export function SettingsPanel() {
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-nebula text-[10px] font-bold uppercase tracking-widest"><MapPin className="w-3 h-3" /> Location & Environment</div>
               <div className="glass-dark p-4 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-starlight/80">GPS Tracking</Label>
+                  <Switch checked={gpsEnabled} onCheckedChange={setGPSEnabled} />
+                </div>
                 <div className="flex items-center justify-between">
                   <Label className="text-starlight/80">Auto-Bortle Detection</Label>
                   <Switch checked={autoBortle} onCheckedChange={setAutoBortle} />
