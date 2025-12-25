@@ -1,10 +1,6 @@
 import * as THREE from 'three';
 export const degToRad = (degrees: number): number => degrees * (Math.PI / 180);
 export const radToDeg = (radians: number): number => radians * (180 / Math.PI);
-/**
- * Converts Right Ascension (hours 0-24) and Declination (degrees -90 to +90)
- * to a normalized Vector3 on a celestial sphere.
- */
 export const radecToVector3 = (raHours: number, decDegrees: number, radius: number = 100): THREE.Vector3 => {
   const raRad = degToRad(raHours * 15);
   const decRad = degToRad(decDegrees);
@@ -22,15 +18,9 @@ export const bvToColor = (bv: number): string => {
   if (bv < 1.1) return "#ffcc6f";
   return "#ff6060";
 };
-/**
- * Calculates Julian Date for a given JS Date.
- */
 export const getJulianDate = (date: Date): number => {
   return (date.getTime() / 86400000) - (date.getTimezoneOffset() / 1440) + 2440587.5;
 };
-/**
- * Calculates Local Sidereal Time (LST) in hours.
- */
 export const getLocalSiderealTime = (date: Date, longitude: number): number => {
   const jd = getJulianDate(date);
   const d = jd - 2451545.0;
@@ -38,10 +28,30 @@ export const getLocalSiderealTime = (date: Date, longitude: number): number => {
   lst = (lst + longitude / 15.0) % 24;
   return lst < 0 ? lst + 24 : lst;
 };
-/**
- * Predicts Lunar Phase (0-1).
- * 0 = New Moon, 0.5 = Full Moon, 1.0 = New Moon again.
- */
+export const getSunPosition = (date: Date, lat: number, lon: number) => {
+  const jd = getJulianDate(date);
+  const d = jd - 2451545.0;
+  const L = (280.460 + 0.9856474 * d) % 360;
+  const g = degToRad((357.528 + 0.9856003 * d) % 360);
+  const lambda = degToRad(L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g));
+  const epsilon = degToRad(23.439 - 0.0000004 * d);
+  const ra = radToDeg(Math.atan2(Math.cos(epsilon) * Math.sin(lambda), Math.cos(lambda))) / 15;
+  const dec = radToDeg(Math.asin(Math.sin(epsilon) * Math.sin(lambda)));
+  const lst = getLocalSiderealTime(date, lon);
+  const ha = degToRad((lst - ra) * 15);
+  const phi = degToRad(lat);
+  const delta = degToRad(dec);
+  const alt = radToDeg(Math.asin(Math.sin(phi) * Math.sin(delta) + Math.cos(phi) * Math.cos(delta) * Math.cos(ha)));
+  const az = radToDeg(Math.atan2(-Math.sin(ha), Math.cos(phi) * Math.tan(delta) - Math.sin(phi) * Math.cos(ha)));
+  return { altitude: alt, azimuth: az };
+};
+export const getSkyColor = (sunAltitude: number): string => {
+  if (sunAltitude > 0) return "#87ceeb"; // Day
+  if (sunAltitude > -6) return "#1e3a8a"; // Civil Twilight
+  if (sunAltitude > -12) return "#1e1b4b"; // Nautical Twilight
+  if (sunAltitude > -18) return "#020617"; // Astronomical Twilight
+  return "#020617"; // Night
+};
 export const getLunarPhase = (date: Date): { phase: number; name: string } => {
   const jd = getJulianDate(date);
   const cycle = 29.530588853;
@@ -59,9 +69,6 @@ export const getLunarPhase = (date: Date): { phase: number; name: string } => {
   else name = "Waning Crescent";
   return { phase: p, name };
 };
-/**
- * Simple precession adjustment (approx 50 arcseconds per year).
- */
 export const applyPrecession = (ra: number, dec: number, years: number): { ra: number; dec: number } => {
   const raChange = (3.075 + 1.336 * Math.sin(degToRad(ra * 15)) * Math.tan(degToRad(dec))) * (years / 3600);
   const decChange = (20.04 * Math.cos(degToRad(ra * 15))) * (years / 3600);

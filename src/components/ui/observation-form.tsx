@@ -9,35 +9,43 @@ import { cn } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 export function ObservationForm() {
   const selectedStar = useAppStore(s => s.selectedStar);
+  const selectedDSO = useAppStore(s => s.selectedDSO);
   const setSelectedStar = useAppStore(s => s.setSelectedStar);
+  const setSelectedDSO = useAppStore(s => s.setSelectedDSO);
   const addObservation = useObservationStore(s => s.addObservation);
   const [notes, setNotes] = useState('');
   const [seeing, setSeeing] = useState(3);
   const [isSaving, setIsSaving] = useState(false);
-  if (!selectedStar) return null;
+  const activeTarget = selectedStar || selectedDSO;
+  const isOpen = !!activeTarget;
+  const handleClose = () => {
+    setSelectedStar(null);
+    setSelectedDSO(null);
+    setNotes('');
+  };
   const handleSave = async () => {
+    if (!activeTarget) return;
     setIsSaving(true);
     try {
-      // Mocking location for Phase 4
-      const location = { lat: -26.20, lng: 28.04 }; 
+      const location = { lat: -26.20, lng: 28.04 };
       await addObservation({
         id: uuidv4(),
-        starId: selectedStar.id,
-        starName: selectedStar.name || 'Unknown Star',
+        starId: activeTarget.id,
+        starName: activeTarget.name || 'Unknown Object',
         timestamp: new Date().toISOString(),
         notes,
         seeing,
         location,
         syncStatus: 'local',
       });
-      setNotes('');
-      setSelectedStar(null);
+      handleClose();
     } finally {
       setIsSaving(false);
     }
   };
+  if (!isOpen) return null;
   return (
-    <Dialog open={!!selectedStar} onOpenChange={(open) => !open && setSelectedStar(null)}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-[425px] bg-space-black/95 border-nebula/20 text-starlight">
         <DialogHeader>
           <div className="flex items-center gap-2 text-nebula text-[10px] font-bold uppercase tracking-widest mb-1">
@@ -45,7 +53,7 @@ export function ObservationForm() {
             New Observation
           </div>
           <DialogTitle className="text-2xl font-bold tracking-tight text-starlight">
-            {selectedStar.name || 'Alpha Star'}
+            {activeTarget?.name || 'Celestial Object'}
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-6 py-4">
@@ -58,8 +66,8 @@ export function ObservationForm() {
                   onClick={() => setSeeing(i)}
                   className={cn(
                     "w-10 h-10 rounded-xl flex items-center justify-center transition-all border",
-                    seeing >= i 
-                      ? "bg-nebula text-space-black border-nebula shadow-[0_0_15px_rgba(234,179,8,0.3)]" 
+                    seeing >= i
+                      ? "bg-nebula text-space-black border-nebula shadow-[0_0_15px_rgba(234,179,8,0.3)]"
                       : "bg-white/5 text-starlight/20 border-white/10"
                   )}
                 >
@@ -80,11 +88,11 @@ export function ObservationForm() {
           </div>
         </div>
         <DialogFooter className="flex gap-2 sm:gap-0">
-          <Button variant="ghost" onClick={() => setSelectedStar(null)} className="flex-1 text-starlight/60 hover:text-starlight rounded-xl">
+          <Button variant="ghost" onClick={handleClose} className="flex-1 text-starlight/60 hover:text-starlight rounded-xl">
             <X className="w-4 h-4 mr-2" /> Cancel
           </Button>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={isSaving || !notes.trim()}
             className="flex-1 bg-nebula text-space-black hover:bg-nebula/80 font-bold rounded-xl shadow-lg"
           >

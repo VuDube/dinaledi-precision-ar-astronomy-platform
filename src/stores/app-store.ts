@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { StarRecord } from '@/data/star-catalog';
 import { DSORecord } from '@/data/dso-catalog';
-export type AppMode = 'intro' | 'skyview' | 'log' | 'settings' | 'highlights';
+export type AppMode = 'intro' | 'skyview' | 'log' | 'settings' | 'highlights' | 'search';
 export type PermissionStatus = 'prompt' | 'granted' | 'denied' | 'unavailable';
 interface Orientation {
   alpha: number;
@@ -24,10 +24,12 @@ interface AppState {
   isSensorActive: boolean;
   permissionStatus: PermissionStatus;
   calibrationOffset: number;
-  // Phase 6 Additions
   simulationTime: Date;
   timeSpeed: number;
-  // Actions
+  latitude: number;
+  longitude: number;
+  searchQuery: string;
+  isSearchOpen: boolean;
   setMode: (mode: AppMode) => void;
   setCalibrated: (status: boolean) => void;
   setBortleScale: (scale: number) => void;
@@ -43,6 +45,9 @@ interface AppState {
   setCalibrationOffset: (offset: number) => void;
   setSimulationTime: (time: Date) => void;
   setTimeSpeed: (speed: number) => void;
+  setLocation: (lat: number, lon: number) => void;
+  setSearchQuery: (query: string) => void;
+  setSearchOpen: (open: boolean) => void;
 }
 export const useAppStore = create<AppState>((set) => ({
   mode: 'intro',
@@ -61,6 +66,10 @@ export const useAppStore = create<AppState>((set) => ({
   calibrationOffset: 0,
   simulationTime: new Date(),
   timeSpeed: 1,
+  latitude: -26.2,
+  longitude: 28.0,
+  searchQuery: '',
+  isSearchOpen: false,
   setMode: (mode) => set({ mode }),
   setCalibrated: (status) => set({ isCalibrated: status }),
   setBortleScale: (scale) => {
@@ -79,4 +88,7 @@ export const useAppStore = create<AppState>((set) => ({
   setCalibrationOffset: (offset) => set({ calibrationOffset: offset }),
   setSimulationTime: (simulationTime) => set({ simulationTime }),
   setTimeSpeed: (timeSpeed) => set({ timeSpeed }),
+  setLocation: (latitude, longitude) => set({ latitude, longitude }),
+  setSearchQuery: (searchQuery) => set({ searchQuery }),
+  setSearchOpen: (isSearchOpen) => set({ isSearchOpen }),
 }));

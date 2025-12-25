@@ -1,34 +1,39 @@
 import React from 'react';
-import { Compass as CompassIcon, Target, Settings as SettingsIcon, Book, Crosshair, AlertTriangle, Layers, PenLine, Sparkles, Moon } from 'lucide-react';
+import { Compass as CompassIcon, Target, Settings as SettingsIcon, Book, Crosshair, Search, Layers, PenLine, Sparkles, Moon } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
 import { Button } from '@/components/ui/button';
 import { SettingsPanel } from '@/components/ui/settings-panel';
 import { HighlightsPanel } from '@/components/ui/highlights-panel';
 import { TemporalControls } from '@/components/ui/temporal-controls';
+import { SearchPanel } from '@/components/ui/search-panel';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getLunarPhase } from '@/lib/astronomy-math';
+import { getLunarPhase, getSunPosition } from '@/lib/astronomy-math';
 export function HUDOverlay() {
   const mode = useAppStore(s => s.mode);
   const setMode = useAppStore(s => s.setMode);
   const orientation = useAppStore(s => s.orientation);
   const isSensorActive = useAppStore(s => s.isSensorActive);
-  const permissionStatus = useAppStore(s => s.permissionStatus);
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
   const toggleConstellations = useAppStore(s => s.toggleConstellations);
   const toggleGrid = useAppStore(s => s.toggleGrid);
   const showConstellations = useAppStore(s => s.showConstellations);
   const simulationTime = useAppStore(s => s.simulationTime);
+  const lat = useAppStore(s => s.latitude);
+  const lon = useAppStore(s => s.longitude);
+  const setSearchOpen = useAppStore(s => s.setSearchOpen);
   if (mode === 'intro') return null;
+  const sunPos = getSunPosition(simulationTime, lat, lon);
+  const isDay = sunPos.altitude > -6;
   const azimuth = Math.round(orientation.heading);
   const altitude = Math.round(orientation.beta);
   const moon = getLunarPhase(simulationTime);
+  const activeTarget = selectedStar || selectedDSO;
   const getCardinal = (deg: number) => {
     const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     return directions[Math.round(deg / 45) % 8];
   };
-  const activeTarget = selectedStar || selectedDSO;
   return (
     <>
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6 z-20 overflow-hidden">
@@ -60,6 +65,14 @@ export function HUDOverlay() {
               onClick={() => setMode('highlights')}
             >
               <Sparkles className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="glass h-10 w-10 text-starlight"
+              onClick={() => setSearchOpen(true)}
+            >
+              <Search className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
@@ -99,15 +112,6 @@ export function HUDOverlay() {
                       <div className="text-starlight/40 text-[8px] uppercase">Mag</div>
                       <div className="text-starlight font-mono text-xs">{activeTarget.mag.toFixed(1)}</div>
                     </div>
-                    {('dist' in activeTarget) && (
-                      <>
-                        <div className="w-px h-6 bg-starlight/10" />
-                        <div className="text-center">
-                          <div className="text-starlight/40 text-[8px] uppercase">Dist (LY)</div>
-                          <div className="text-starlight font-mono text-xs">{(activeTarget as any).dist || "???"}</div>
-                        </div>
-                      </>
-                    )}
                   </div>
                 </div>
                 <Button
@@ -124,7 +128,13 @@ export function HUDOverlay() {
           )}
         </AnimatePresence>
         <div className="flex-1 flex items-center justify-center relative">
-          <Crosshair className={cn("w-16 h-16 transition-colors duration-300", activeTarget ? "text-nebula scale-110" : "text-starlight/20")} strokeWidth={0.5} />
+          <Crosshair 
+            className={cn(
+              "w-16 h-16 transition-all duration-500", 
+              activeTarget ? "text-nebula scale-110" : isDay ? "text-space-black/40" : "text-starlight/20"
+            )} 
+            strokeWidth={0.5} 
+          />
         </div>
         {/* Footer */}
         <div className="flex justify-center">
@@ -156,6 +166,7 @@ export function HUDOverlay() {
       <SettingsPanel />
       <HighlightsPanel />
       <TemporalControls />
+      <SearchPanel />
     </>
   );
 }
