@@ -77,25 +77,7 @@ function updateWranglerJsonc() {
 }
 
 function runSetupCommands() {
-    const commands = [
-    "bun add three@^0.169.0",
-    "bun add @react-three/fiber@^8.17.6",
-    "bun add @react-three/drei@^9.115.0",
-    "bun add idb@^8.0.3",
-    "bun add lucide-react@latest",
-    "bun add cmdk",
-    "bun add uuid",
-    "bun add sonner",
-    "bun add embla-carousel-react",
-    "bun add three @react-three/fiber @react-three/drei",
-    "bun add react-use",
-    "bun add framer-motion lucide-react clsx tailwind-merge",
-    "bun add -d @types/three",
-    "bun add date-fns@latest --force",
-    "bun remove date-fns",
-    "bun add date-fns@^3.6.0",
-    "bun add date-fns"
-];
+    const commands = [];
     
     if (commands.length === 0) {
         console.log('⊘ No setup commands to run');
