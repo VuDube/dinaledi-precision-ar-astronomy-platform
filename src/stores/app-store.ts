@@ -3,20 +3,21 @@ import { StarRecord } from '@/data/star-catalog';
 export type AppMode = 'intro' | 'skyview' | 'log' | 'settings';
 export type PermissionStatus = 'prompt' | 'granted' | 'denied' | 'unavailable';
 interface Orientation {
-  alpha: number; 
-  beta: number;  
-  gamma: number; 
-  heading: number; 
+  alpha: number;
+  beta: number;
+  gamma: number;
+  heading: number;
 }
 interface AppState {
   mode: AppMode;
   isCalibrated: boolean;
   magnitudeLimit: number;
+  bortleScale: number;
   showConstellations: boolean;
+  showConstellationLabels: boolean;
   showGrid: boolean;
   targetObject: string | null;
   selectedStar: StarRecord | null;
-  // Phase 2: Sensor States
   orientation: Orientation;
   isSensorActive: boolean;
   permissionStatus: PermissionStatus;
@@ -24,12 +25,12 @@ interface AppState {
   // Actions
   setMode: (mode: AppMode) => void;
   setCalibrated: (status: boolean) => void;
-  setMagnitudeLimit: (limit: number) => void;
+  setBortleScale: (scale: number) => void;
   toggleConstellations: () => void;
+  toggleConstellationLabels: () => void;
   toggleGrid: () => void;
   setTarget: (target: string | null) => void;
   setSelectedStar: (star: StarRecord | null) => void;
-  // Sensor Actions
   setOrientation: (orientation: Orientation) => void;
   setSensorActive: (active: boolean) => void;
   setPermissionStatus: (status: PermissionStatus) => void;
@@ -39,7 +40,9 @@ export const useAppStore = create<AppState>((set) => ({
   mode: 'intro',
   isCalibrated: false,
   magnitudeLimit: 6.5,
+  bortleScale: 4, // Default rural/suburban transition
   showConstellations: true,
+  showConstellationLabels: true,
   showGrid: true,
   targetObject: null,
   selectedStar: null,
@@ -49,8 +52,14 @@ export const useAppStore = create<AppState>((set) => ({
   calibrationOffset: 0,
   setMode: (mode) => set({ mode }),
   setCalibrated: (status) => set({ isCalibrated: status }),
-  setMagnitudeLimit: (limit) => set({ magnitudeLimit: limit }),
+  setBortleScale: (scale) => {
+    // Map Bortle Scale (1-9) to limiting magnitude (approximate)
+    // 1: 7.0+, 9: < 4.0
+    const mag = Math.max(3.5, 7.5 - (scale * 0.4));
+    set({ bortleScale: scale, magnitudeLimit: mag });
+  },
   toggleConstellations: () => set((state) => ({ showConstellations: !state.showConstellations })),
+  toggleConstellationLabels: () => set((state) => ({ showConstellationLabels: !state.showConstellationLabels })),
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
   setTarget: (target) => set({ targetObject: target }),
   setSelectedStar: (star) => set({ selectedStar: star }),

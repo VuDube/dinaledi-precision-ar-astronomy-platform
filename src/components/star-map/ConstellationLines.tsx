@@ -9,7 +9,8 @@ export function ConstellationLines() {
     const points: THREE.Vector3[] = [];
     CONSTELLATIONS.forEach((c) => {
       c.lines.forEach(([ra1, dec1, ra2, dec2]) => {
-        // Render at radius 990 (slightly inside stars at 1000) to avoid z-fighting
+        // Render at radius 995 (slightly inside stars at 1000) to ensure stars stay on top visually
+        // but avoid clipping behind atmospheric effects
         points.push(radecToVector3(ra1, dec1, 995));
         points.push(radecToVector3(ra2, dec2, 995));
       });
@@ -22,9 +23,10 @@ export function ConstellationLines() {
       <lineBasicMaterial
         color="#EAB308"
         transparent
-        opacity={0.4}
+        opacity={0.35}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
+        linewidth={1}
       />
     </lineSegments>
   );

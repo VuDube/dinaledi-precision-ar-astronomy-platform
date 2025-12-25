@@ -2,10 +2,11 @@ import React, { useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useObservationStore } from '@/stores/observation-store';
 import { useAppStore } from '@/stores/app-store';
-import { Calendar, MapPin, CloudSync, CheckCircle2, History } from 'lucide-react';
+import { Calendar, MapPin, Cloud, RefreshCcw, History } from 'lucide-react';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 export function ObservationLog() {
   const mode = useAppStore(s => s.mode);
   const setMode = useAppStore(s => s.setMode);
@@ -49,7 +50,7 @@ export function ObservationLog() {
                 </div>
               ) : (
                 observations.map((obs) => (
-                  <div key={obs.id} className="glass-dark border-starlight/5 p-4 rounded-2xl space-y-3 hover:border-nebula/30 transition-colors">
+                  <div key={obs.id} className="glass-dark border-starlight/5 p-4 rounded-2xl space-y-3 hover:border-nebula/30 transition-all hover:scale-[1.01] duration-300">
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="text-nebula font-bold text-sm uppercase tracking-wider">{obs.starName}</h4>
@@ -59,9 +60,9 @@ export function ObservationLog() {
                         </div>
                       </div>
                       {obs.syncStatus === 'synced' ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-500/50" />
+                        <Cloud className="w-4 h-4 text-green-500/50" />
                       ) : (
-                        <CloudSync className="w-4 h-4 text-nebula/50 animate-pulse" />
+                        <RefreshCcw className="w-4 h-4 text-nebula/50 animate-spin" />
                       )}
                     </div>
                     <p className="text-starlight/80 text-sm leading-relaxed line-clamp-3 italic">
