@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAppStore } from '@/stores/app-store';
 import { useObservationStore } from '@/stores/observation-store';
 import { Star, Save, X, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { v4 as uuidv4 } from 'uuid';
 export function ObservationForm() {
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
@@ -31,7 +30,7 @@ export function ObservationForm() {
     try {
       const location = { lat: -26.20, lng: 28.04 };
       await addObservation({
-        id: uuidv4(),
+        id: crypto.randomUUID(),
         starId: activeTarget.id,
         starName: activeTarget.name || 'Unknown Object',
         timestamp: new Date().toISOString(),
@@ -56,6 +55,9 @@ export function ObservationForm() {
           <DialogTitle className="text-2xl font-bold tracking-tight text-starlight">
             {activeTarget?.name || 'Celestial Object'}
           </DialogTitle>
+          <DialogDescription className='text-sm font-medium text-starlight/60 mb-6'>
+            Log your observation details for {activeTarget?.name || 'celestial object'}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-6 py-4">
           <div className="space-y-2">

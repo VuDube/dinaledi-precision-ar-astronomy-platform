@@ -4,6 +4,7 @@ import { useAppStore } from '@/stores/app-store';
 import { STAR_CATALOG } from '@/data/star-catalog';
 import { DSO_CATALOG } from '@/data/dso-catalog';
 import { Star, Telescope, Search, Compass } from 'lucide-react';
+import { DialogTitle, DialogDescription } from '@/components/ui/dialog';
 export function SearchPanel() {
   const isSearchOpen = useAppStore(s => s.isSearchOpen);
   const setSearchOpen = useAppStore(s => s.setSearchOpen);
@@ -18,9 +19,11 @@ export function SearchPanel() {
   };
   return (
     <CommandDialog open={isSearchOpen} onOpenChange={setSearchOpen}>
+      <DialogTitle className="sr-only">Search the night sky</DialogTitle>
+      <DialogDescription className="sr-only">Type to find stars, nebulae, galaxies, and more. Use arrows to navigate.</DialogDescription>
       <div className="bg-space-black/95 text-starlight border-nebula/20">
-        <CommandInput 
-          placeholder="Search stars, nebulae, galaxies..." 
+        <CommandInput
+          placeholder="Search stars, nebulae, galaxies..."
           className="text-starlight"
         />
         <CommandList className="max-h-[300px] overflow-y-auto">

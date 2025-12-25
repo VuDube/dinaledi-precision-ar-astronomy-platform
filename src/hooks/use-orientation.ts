@@ -5,6 +5,7 @@ export function useOrientation() {
   const setPermissionStatus = useAppStore((s) => s.setPermissionStatus);
   const setSensorActive = useAppStore((s) => s.setSensorActive);
   const calibrationOffset = useAppStore((s) => s.calibrationOffset);
+  const isSensorActive = useAppStore((s) => s.isSensorActive);
   const lastHeading = useRef<number>(0);
   const filterAlpha = 0.15; // EWMA Smoothing factor
   const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
@@ -39,8 +40,9 @@ export function useOrientation() {
           console.debug('High precision sensor available');
         });
         sensor.start();
+        sensor.stop(); // Test availability only, don't run permanently
       } catch (e) {
-        console.warn('AbsoluteOrientationSensor failed, falling back', e);
+        console.debug('AbsoluteOrientationSensor unavailable (expected on desktop), falling back', e);
       }
     }
     const requestPermissionFn = (DeviceOrientationEvent as any).requestPermission;
@@ -66,19 +68,14 @@ export function useOrientation() {
       return false;
     }
   }, [setPermissionStatus, setSensorActive]);
+  const isIOS = typeof (DeviceOrientationEvent as any).requestPermission === 'function';
+
   useEffect(() => {
-    const isIOS = typeof (DeviceOrientationEvent as any).requestPermission === 'function';
-    if (!isIOS) {
+    if (!isIOS && isSensorActive) {
       window.addEventListener('deviceorientation', handleOrientation);
     }
     return () => window.removeEventListener('deviceorientation', handleOrientation);
-  }, [handleOrientation]);
-  useEffect(() => {
-    const isActive = useAppStore.getState().isSensorActive;
-    if (isActive) {
-      window.addEventListener('deviceorientation', handleOrientation);
-    }
-    return () => window.removeEventListener('deviceorientation', handleOrientation);
-  }, [handleOrientation]);
+  }, [handleOrientation, isSensorActive]);
+  // Removed duplicate listener effect - first effect handles non-iOS case correctly
   return { requestPermission };
 }
