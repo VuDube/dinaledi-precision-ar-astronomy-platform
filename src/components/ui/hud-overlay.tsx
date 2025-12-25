@@ -1,123 +1,64 @@
 import React from 'react';
-import { Wifi, CloudOff, CloudUpload, RefreshCw, Cloud, Crosshair } from 'lucide-react';
+import { Compass, Target, Settings as SettingsIcon, Book, Crosshair } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
-import { useObservationStore } from '@/stores/observation-store';
-import { BottomNav } from '@/components/ui/bottom-nav';
-import { HighlightsCarousel } from '@/components/ui/highlights-carousel';
-import { TemporalControls } from '@/components/ui/temporal-controls';
-import { SearchPanel } from '@/components/ui/search-panel';
-import { TargetNavigator } from '@/components/ui/target-navigator';
-import { RadialSearchWheel } from '@/components/ui/radial-search-wheel';
-import { TargetDetailsDrawer } from '@/components/ui/target-details-drawer';
-import { PWAInstallModal } from '@/components/ui/pwa-install-modal';
-import { Progress } from '@/components/ui/progress';
-import { StarPoint } from '@/components/ui/sesotho-patterns';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
-import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { usePWA } from '@/hooks/use-pwa';
-
 export function HUDOverlay() {
   const mode = useAppStore(s => s.mode);
-  const orientation = useAppStore(s => s.orientation);
-  const isSensorActive = useAppStore(s => s.isSensorActive);
-  const selectedStar = useAppStore(s => s.selectedStar);
-  const selectedDSO = useAppStore(s => s.selectedDSO);
-  const isCatalogReady = useAppStore(s => s.isCatalogReady);
-  const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
-  const isOnline = useAppStore(s => s.isOnline);
-  const isRadialOpen = useAppStore(s => s.isRadialOpen);
-  const setRadialOpen = useAppStore(s => s.setRadialOpen);
-  const setDetailOpen = useAppStore(s => s.setDetailOpen);
-  const lastSyncTime = useAppStore(s => s.lastSyncTime);
-  const isSyncing = useObservationStore(s => s.isSyncing);
-  const pendingCount = useObservationStore(s => s.pendingCount);
-  const { isInstallModalOpen, setIsInstallModalOpen, triggerInstallPrompt } = usePWA();
+  const setMode = useAppStore(s => s.setMode);
   if (mode === 'intro') return null;
-  const activeTarget = selectedStar || selectedDSO;
-  const azimuthValue = orientation?.heading ? Math.round(orientation.heading) : 0;
-  const altitudeValue = orientation?.beta ? Math.round(orientation.beta) : 0;
   return (
-    <TooltipProvider>
-      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 sm:p-6 pb-[env(safe-area-inset-bottom,24px)] pt-[env(safe-area-inset-top,16px)] z-30 overflow-hidden">
-        <div className="flex flex-wrap justify-between items-start relative z-10 w-full max-w-[calc(100vw-24px)] mx-auto gap-2">
-          <motion.div layout className="flex flex-col gap-2 min-w-0">
-            <AnimatePresence>
-              {!isCatalogReady && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="glass px-2 py-1.5 rounded-lg w-32 sm:w-40 overflow-hidden shrink-0 backdrop-filter-none"
-                >
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[6px] font-mono text-starlight/40 uppercase tracking-widest">CAT_SYNC</span>
-                    <span className="text-[6px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress || 0)}%</span>
-                  </div>
-                  <Progress value={catalogLoadingProgress} className="h-0.5 bg-starlight/10" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <div className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-white/5 backdrop-blur-3xl shrink-0 backdrop-filter-none">
-              <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", isSensorActive ? "bg-green-500" : "bg-yellow-500")} />
-              <div className="flex gap-x-2.5 font-mono text-[9px] uppercase tracking-widest font-bold tabular-nums text-starlight overflow-hidden">
-                <span className="whitespace-nowrap">HDG {(azimuthValue || 0).toString().padStart(3, '0')}°</span>
-                <span className="whitespace-nowrap">ALT {(altitudeValue || 0).toString().padStart(3, '0')}°</span>
-              </div>
-            </div>
-          </motion.div>
-          <div className="flex items-center gap-2 pointer-events-auto shrink-0">
-             <Tooltip>
-               <TooltipTrigger asChild>
-                 <div className="flex items-center gap-1.5">
-                    <AnimatePresence mode="wait">
-                      {isSyncing ? (
-                        <motion.div key="syncing" className="glass px-2 py-1 rounded-full border-nebula/20 backdrop-filter-none">
-                          <RefreshCw className="w-3 h-3 text-nebula animate-spin" />
-                        </motion.div>
-                      ) : pendingCount > 0 ? (
-                        <motion.div key="pending" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 border-yellow-500/20 bg-yellow-500/10 backdrop-filter-none">
-                          <CloudUpload className="w-3 h-3 text-yellow-500" />
-                          <span className="hidden xs:inline text-[8px] font-mono text-yellow-500">{pendingCount} PND</span>
-                        </motion.div>
-                      ) : (
-                        <motion.div key="status" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 border-white/5 backdrop-filter-none">
-                          {isOnline ? <Cloud className="w-3 h-3 text-green-500" /> : <CloudOff className="w-3 h-3 text-red-500" />}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    <div className="glass px-2 py-1 rounded-full border-white/5 backdrop-filter-none">
-                       {isOnline ? <Wifi className="w-3 h-3 text-green-500" /> : <CloudOff className="w-3 h-3 text-starlight/20" />}
-                    </div>
-                 </div>
-               </TooltipTrigger>
-               <TooltipContent side="bottom" className="bg-space-black border-white/10 text-starlight text-[10px] uppercase font-mono tracking-widest">
-                  {lastSyncTime ? `Last Handshake: ${Math.floor((Date.now() - (typeof lastSyncTime === 'number' ? lastSyncTime : lastSyncTime.getTime())) / 60000)}m ago` : 'Waiting for Edge Sync'}
-               </TooltipContent>
-             </Tooltip>
+    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6 z-20">
+      {/* Top Bar */}
+      <div className="flex justify-between items-start">
+        <div className="glass px-4 py-2 rounded-xl flex items-center gap-3 animate-fade-in pointer-events-auto">
+          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          <div className="text-xs font-mono">
+            <div className="text-starlight/60 uppercase tracking-widest">Azimuth</div>
+            <div className="text-starlight font-bold">142° SE</div>
+          </div>
+          <div className="w-px h-6 bg-starlight/20" />
+          <div className="text-xs font-mono">
+            <div className="text-starlight/60 uppercase tracking-widest">Altitude</div>
+            <div className="text-starlight font-bold">+24.5°</div>
           </div>
         </div>
-        {!isRadialOpen && <TargetNavigator />}
-        <HighlightsCarousel />
-        <div className="flex-1 flex items-center justify-center relative">
-           <StarPoint className="w-64 h-64 scale-150" opacity={0.015} />
-           <div
-             className="relative pointer-events-auto p-12 sm:p-16 rounded-full cursor-pointer group"
-             onClick={() => {
-               if (activeTarget) setDetailOpen(true);
-               else setRadialOpen(!isRadialOpen);
-             }}
-           >
-              <Crosshair className={cn("w-12 h-12 sm:w-16 sm:h-16 transition-all", activeTarget ? "text-nebula scale-110" : "text-starlight/5 group-hover:text-starlight/10")} strokeWidth={0.2} />
-           </div>
-           <RadialSearchWheel />
+        <div className="pointer-events-auto">
+          <Button variant="ghost" size="icon" className="glass h-10 w-10 text-starlight hover:bg-starlight/20">
+            <SettingsIcon className="h-5 w-5" />
+          </Button>
         </div>
-        <BottomNav />
       </div>
-      <TargetDetailsDrawer />
-      <SearchPanel />
-      <TemporalControls />
-      <PWAInstallModal isOpen={isInstallModalOpen} onClose={() => setIsInstallModalOpen(false)} onInstall={triggerInstallPrompt} />
-    </TooltipProvider>
+      {/* Central Crosshair */}
+      <div className="flex-1 flex items-center justify-center opacity-40">
+        <Crosshair className="w-12 h-12 text-nebula" strokeWidth={1} />
+      </div>
+      {/* Navigation Footer */}
+      <div className="flex justify-center">
+        <div className="glass-dark p-2 rounded-2xl flex items-center gap-2 pointer-events-auto">
+          <Button 
+            variant="ghost" 
+            className={cn("rounded-xl gap-2", mode === 'skyview' && "bg-nebula/20 text-nebula")}
+            onClick={() => setMode('skyview')}
+          >
+            <Compass className="h-4 w-4" />
+            Sky View
+          </Button>
+          <Button 
+            variant="ghost" 
+            className={cn("rounded-xl gap-2", mode === 'log' && "bg-nebula/20 text-nebula")}
+            onClick={() => setMode('log')}
+          >
+            <Book className="h-4 w-4" />
+            Journal
+          </Button>
+          <div className="w-px h-4 bg-starlight/10 mx-1" />
+          <Button variant="ghost" className="rounded-xl gap-2 text-starlight/70">
+            <Target className="h-4 w-4" />
+            Explore
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
