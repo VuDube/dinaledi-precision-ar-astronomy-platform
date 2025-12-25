@@ -1,32 +1,48 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/stores/app-store';
 export function useOrientation() {
   const setOrientation = useAppStore((s) => s.setOrientation);
   const setPermissionStatus = useAppStore((s) => s.setPermissionStatus);
   const setSensorActive = useAppStore((s) => s.setSensorActive);
   const calibrationOffset = useAppStore((s) => s.calibrationOffset);
+  const lastHeading = useRef<number>(0);
+  const filterAlpha = 0.15; // EWMA Smoothing factor
   const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
     const { alpha, beta, gamma } = event;
-    // Normalize values
     const a = alpha || 0;
     const b = beta || 0;
     const g = gamma || 0;
-    // Simple heading calculation
-    const heading = (a + calibrationOffset) % 360;
+    // Smooth heading with EWMA to reduce jitter
+    let heading = (a + calibrationOffset) % 360;
+    if (heading < 0) heading += 360;
+    const smoothedHeading = lastHeading.current + filterAlpha * (heading - lastHeading.current);
+    lastHeading.current = smoothedHeading;
     setOrientation({
       alpha: a,
       beta: b,
       gamma: g,
-      heading: heading < 0 ? heading + 360 : heading
+      heading: smoothedHeading
     });
   }, [setOrientation, calibrationOffset]);
   const requestPermission = useCallback(async () => {
-    // Check if DeviceOrientationEvent exists
     if (typeof DeviceOrientationEvent === 'undefined') {
       setPermissionStatus('unavailable');
       return false;
     }
-    // iOS 13+ requires explicit permission
+    // High Precision API Check (Chrome/Android)
+    if ('AbsoluteOrientationSensor' in window) {
+      try {
+        const sensor = new (window as any).AbsoluteOrientationSensor({ frequency: 60 });
+        sensor.addEventListener('reading', () => {
+          // Manual Quat to Euler conversion would go here if needed
+          // For now, we fallback to DeviceOrientation for compatibility but log potential
+          console.debug('High precision sensor available');
+        });
+        sensor.start();
+      } catch (e) {
+        console.warn('AbsoluteOrientationSensor failed, falling back', e);
+      }
+    }
     const requestPermissionFn = (DeviceOrientationEvent as any).requestPermission;
     try {
       if (typeof requestPermissionFn === 'function') {
@@ -41,30 +57,23 @@ export function useOrientation() {
           return false;
         }
       } else {
-        // Non-iOS or older versions
         setPermissionStatus('granted');
         setSensorActive(true);
         return true;
       }
     } catch (error) {
-      console.error('Error requesting orientation permission:', error);
       setPermissionStatus('denied');
       return false;
     }
   }, [setPermissionStatus, setSensorActive]);
   useEffect(() => {
     const isIOS = typeof (DeviceOrientationEvent as any).requestPermission === 'function';
-    const eventName = 'deviceorientation'; // Use standard event for simplicity in Phase 2
-    // Only auto-start if not on iOS (which requires user gesture)
     if (!isIOS) {
-      window.addEventListener(eventName, handleOrientation);
+      window.addEventListener('deviceorientation', handleOrientation);
     }
-    return () => {
-      window.removeEventListener(eventName, handleOrientation);
-    };
+    return () => window.removeEventListener('deviceorientation', handleOrientation);
   }, [handleOrientation]);
   useEffect(() => {
-    // Re-attach listener if sensor becomes active
     const isActive = useAppStore.getState().isSensorActive;
     if (isActive) {
       window.addEventListener('deviceorientation', handleOrientation);

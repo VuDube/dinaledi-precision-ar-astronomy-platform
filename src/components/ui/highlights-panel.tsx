@@ -2,8 +2,8 @@ import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useAppStore } from '@/stores/app-store';
 import { DSO_CATALOG } from '@/data/dso-catalog';
-import { getLunarPhase, getSunPosition } from '@/lib/astronomy-math';
-import { Sparkles, Moon, Telescope, ArrowUpRight, Clock } from 'lucide-react';
+import { getLunarPhase } from '@/lib/astronomy-math';
+import { Sparkles, Moon, Telescope, ArrowUpRight, Compass } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,8 +14,8 @@ export function HighlightsPanel() {
   const setSelectedDSO = useAppStore(s => s.setSelectedDSO);
   const moonInfo = getLunarPhase(simulationTime);
   const isOpen = mode === 'highlights';
-  // Sort DSOs by magnitude (brightness) for better curation
-  const visibleDSOs = DSO_CATALOG.filter(d => d.mag < 7.0).sort((a, b) => a.mag - b.mag);
+  // Mock visibility filtering (In reality would use Alt-Az calculation)
+  const visibleDSOs = DSO_CATALOG.filter(d => d.mag < 6.5);
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && setMode('skyview')}>
       <SheetContent side="left" className="w-full sm:max-w-md bg-space-black/95 border-starlight/10 text-starlight p-0">
@@ -32,9 +32,9 @@ export function HighlightsPanel() {
             </div>
           </SheetHeader>
           <ScrollArea className="flex-1 p-6">
-            <div className="max-w-7xl mx-auto space-y-8">
+            <div className="space-y-6">
               {/* Moon Section */}
-              <div className="glass-dark p-4 rounded-2xl border-nebula/20 flex items-center justify-between">
+              <div className="glass-dark p-4 rounded-2xl border-nebula/20">
                 <div className="flex items-center gap-3">
                   <Moon className="w-8 h-8 text-starlight" />
                   <div>
@@ -44,59 +44,38 @@ export function HighlightsPanel() {
                     </p>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-nebula border-nebula/20">
-                  {moonInfo.phase > 0.5 ? 'High Light' : 'Low Light'}
-                </Badge>
               </div>
               {/* DSOs Section */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-nebula text-[10px] font-bold uppercase tracking-widest">
-                    <Telescope className="w-3 h-3" />
-                    Deep Sky Highlights
-                  </div>
-                  <Badge variant="outline" className="text-[8px] text-starlight/30 uppercase border-starlight/10">
-                    Hipparcos Ref
-                  </Badge>
+                <div className="flex items-center gap-2 text-nebula text-[10px] font-bold uppercase tracking-widest">
+                  <Telescope className="w-3 h-3" />
+                  Deep Sky Highlights
                 </div>
-                <div className="grid gap-4">
+                <div className="grid gap-3">
                   {visibleDSOs.map(dso => (
                     <div key={dso.id} className="glass-dark p-4 rounded-2xl border-white/5 hover:border-nebula/30 transition-all group">
                       <div className="flex justify-between items-start">
-                        <div className="space-y-2">
-                          <div className="flex gap-2">
-                            <Badge variant="outline" className="text-[8px] bg-nebula/10 text-nebula border-none h-4">
-                              {dso.type}
-                            </Badge>
-                          </div>
-                          <h4 className="text-starlight font-bold text-lg">{dso.name}</h4>
-                          <div className="flex items-center gap-3">
-                            <p className="text-starlight/40 text-[10px] font-mono">
-                              MAG {dso.mag.toFixed(1)} �� {dso.messier || dso.caldwell}
-                            </p>
-                            <div className="flex items-center gap-1 text-starlight/20 text-[10px]">
-                              <Clock className="w-2 h-2" />
-                              <span>21:00 Peak</span>
-                            </div>
-                          </div>
+                        <div>
+                          <Badge variant="outline" className="text-[8px] bg-nebula/10 text-nebula border-none mb-2">
+                            {dso.type}
+                          </Badge>
+                          <h4 className="text-starlight font-bold">{dso.name}</h4>
+                          <p className="text-starlight/40 text-[10px] font-mono mt-1">
+                            MAG {dso.mag.toFixed(1)} • {dso.messier || dso.caldwell}
+                          </p>
                         </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="rounded-full bg-white/5 group-hover:bg-nebula group-hover:text-space-black transition-all h-10 w-10"
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="rounded-full bg-white/5 group-hover:bg-nebula group-hover:text-space-black transition-all"
                           onClick={() => {
                             setSelectedDSO(dso);
                             setMode('skyview');
                           }}
                         >
-                          <ArrowUpRight className="w-5 h-5" />
+                          <ArrowUpRight className="w-4 h-4" />
                         </Button>
                       </div>
-                      {dso.description && (
-                        <p className="text-starlight/40 text-[11px] mt-3 line-clamp-2 leading-relaxed italic">
-                          {dso.description}
-                        </p>
-                      )}
                     </div>
                   ))}
                 </div>
