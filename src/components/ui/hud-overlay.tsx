@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass as CompassIcon, Target, Settings as SettingsIcon, Book, Crosshair, AlertTriangle, Layers } from 'lucide-react';
+import { Compass as CompassIcon, Target, Settings as SettingsIcon, Book, Crosshair, AlertTriangle, Layers, PenLine } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -42,9 +42,9 @@ export function HUDOverlay() {
           </div>
         </div>
         <div className="flex flex-col gap-2 pointer-events-auto items-end">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className={cn("glass h-10 w-10 text-starlight", !showConstellations && "opacity-50")}
             onClick={toggleConstellations}
           >
@@ -61,29 +61,42 @@ export function HUDOverlay() {
           )}
         </div>
       </div>
-      {/* Target Info Card (Center Bottom-ish) */}
+      {/* Target Info Card */}
       <AnimatePresence>
         {selectedStar && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             className="absolute left-1/2 -translate-x-1/2 bottom-32 pointer-events-auto"
           >
-            <div className="glass-dark border-nebula/30 px-6 py-4 rounded-2xl flex flex-col items-center gap-1 shadow-2xl min-w-[200px]">
-              <div className="text-nebula text-[10px] font-bold uppercase tracking-[0.2em]">Target Acquired</div>
-              <div className="text-starlight text-xl font-bold tracking-tight">{selectedStar.name || "Unknown Star"}</div>
-              <div className="flex gap-4 mt-2">
-                <div className="text-center">
-                  <div className="text-starlight/40 text-[8px] uppercase">Mag</div>
-                  <div className="text-starlight font-mono text-xs">{selectedStar.mag.toFixed(1)}</div>
-                </div>
-                <div className="w-px h-6 bg-starlight/10" />
-                <div className="text-center">
-                  <div className="text-starlight/40 text-[8px] uppercase">Dist (LY)</div>
-                  <div className="text-starlight font-mono text-xs">{selectedStar.dist || "???"}</div>
+            <div className="glass-dark border-nebula/30 px-6 py-4 rounded-2xl flex flex-col items-center gap-3 shadow-2xl min-w-[240px]">
+              <div className="flex flex-col items-center gap-1">
+                <div className="text-nebula text-[10px] font-bold uppercase tracking-[0.2em]">Target Acquired</div>
+                <div className="text-starlight text-xl font-bold tracking-tight">{selectedStar.name || "Unknown Star"}</div>
+                <div className="flex gap-4 mt-1">
+                  <div className="text-center">
+                    <div className="text-starlight/40 text-[8px] uppercase">Mag</div>
+                    <div className="text-starlight font-mono text-xs">{selectedStar.mag.toFixed(1)}</div>
+                  </div>
+                  <div className="w-px h-6 bg-starlight/10" />
+                  <div className="text-center">
+                    <div className="text-starlight/40 text-[8px] uppercase">Dist (LY)</div>
+                    <div className="text-starlight font-mono text-xs">{selectedStar.dist || "???"}</div>
+                  </div>
                 </div>
               </div>
+              <Button 
+                size="sm"
+                variant="ghost" 
+                className="w-full bg-nebula/10 text-nebula hover:bg-nebula hover:text-space-black rounded-xl gap-2 font-bold"
+                onClick={() => {
+                  // Trigger form by keeping selectedStar and showing modal (handled by StarForm in HomePage)
+                }}
+              >
+                <PenLine className="w-3.5 h-3.5" />
+                Log Sighting
+              </Button>
             </div>
           </motion.div>
         )}

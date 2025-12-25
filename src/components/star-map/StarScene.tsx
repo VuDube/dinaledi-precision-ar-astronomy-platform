@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars, PerspectiveCamera } from '@react-three/drei';
 import { StarField } from './StarField';
@@ -6,9 +6,29 @@ import { ARController } from './ARController';
 import { ConstellationLines } from './ConstellationLines';
 import { useAppStore } from '@/stores/app-store';
 import * as THREE from 'three';
+function CelestialGrid() {
+  const showGrid = useAppStore(s => s.showGrid);
+  const gridRef = useRef<THREE.GridHelper>(null);
+  useEffect(() => {
+    if (gridRef.current) {
+      const material = gridRef.current.material as THREE.LineBasicMaterial;
+      material.transparent = true;
+      material.opacity = 0.05;
+      material.depthWrite = false;
+    }
+  }, [showGrid]);
+  if (!showGrid) return null;
+  return (
+    <group rotation={[Math.PI / 2, 0, 0]}>
+      <gridHelper
+        ref={gridRef}
+        args={[2000, 24, '#F8FAFC', '#F8FAFC']}
+      />
+    </group>
+  );
+}
 export function StarScene() {
   const isSensorActive = useAppStore(s => s.isSensorActive);
-  const showGrid = useAppStore(s => s.showGrid);
   const orientation = useAppStore(s => s.orientation);
   const ambientIntensity = Math.max(0.1, 0.4 - Math.abs(orientation.beta / 180));
   return (
@@ -30,17 +50,7 @@ export function StarScene() {
             fade
             speed={1}
           />
-          {showGrid && (
-            <group rotation={[Math.PI / 2, 0, 0]}>
-              <gridHelper 
-                args={[2000, 24, '#F8FAFC', '#F8FAFC']} 
-                onBeforeCompile={(shader) => {
-                  shader.transparent = true;
-                  shader.uniforms.opacity = { value: 0.05 };
-                }}
-              />
-            </group>
-          )}
+          <CelestialGrid />
         </Suspense>
         {isSensorActive ? (
           <ARController />

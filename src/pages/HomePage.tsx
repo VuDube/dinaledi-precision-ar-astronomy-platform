@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { StarScene } from '@/components/star-map/StarScene';
 import { HUDOverlay } from '@/components/ui/hud-overlay';
+import { ObservationLog } from '@/components/ui/observation-log';
+import { ObservationForm } from '@/components/ui/observation-form';
 import { useAppStore } from '@/stores/app-store';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOrientation } from '@/hooks/use-orientation';
+import { cn } from '@/lib/utils';
 export function HomePage() {
   const mode = useAppStore(s => s.mode);
   const setMode = useAppStore(s => s.setMode);
@@ -16,9 +19,7 @@ export function HomePage() {
   const [progress, setProgress] = useState(0);
   const handleStart = async () => {
     setIsInitializing(true);
-    // 1. Request Sensors
     const granted = await requestPermission();
-    // 2. Calibration Simulation
     let currentProgress = 0;
     const interval = setInterval(() => {
       currentProgress += 5;
@@ -32,7 +33,15 @@ export function HomePage() {
   };
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-space-black">
-      <StarScene />
+      {/* 3D Core - Always renders behind UI */}
+      <div className={cn("transition-all duration-700", mode !== 'skyview' && "scale-105 blur-sm opacity-50")}>
+        <StarScene />
+      </div>
+      {/* HUD System Overlay */}
+      <HUDOverlay />
+      {/* Observation Overlays */}
+      <ObservationLog />
+      <ObservationForm />
       <AnimatePresence>
         {mode === 'intro' && (
           <motion.div
@@ -58,7 +67,7 @@ export function HomePage() {
                       DIN<span className="text-nebula">A</span>LEDI
                     </motion.h1>
                     <p className="text-xl text-starlight/60 font-light max-w-lg mx-auto">
-                      Precise AR astronomy for the southern hemisphere. 
+                      Precise AR astronomy for the southern hemisphere.
                       Calibrating to your local horizon.
                     </p>
                   </div>
@@ -88,7 +97,6 @@ export function HomePage() {
           </motion.div>
         )}
       </AnimatePresence>
-      <HUDOverlay />
     </div>
   );
 }
