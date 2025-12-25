@@ -12,13 +12,15 @@ export function ObservationForm() {
   const selectedDSO = useAppStore(s => s.selectedDSO);
   const setSelectedStar = useAppStore(s => s.setSelectedStar);
   const setSelectedDSO = useAppStore(s => s.setSelectedDSO);
+  const isObserving = useAppStore(s => s.isObserving);
+  const setObserving = useAppStore(s => s.setObserving);
   const addObservation = useObservationStore(s => s.addObservation);
   const [notes, setNotes] = useState('');
   const [seeing, setSeeing] = useState(3);
   const [isSaving, setIsSaving] = useState(false);
   const activeTarget = selectedStar || selectedDSO;
-  const isOpen = !!activeTarget;
   const handleClose = () => {
+    setObserving(false);
     setSelectedStar(null);
     setSelectedDSO(null);
     setNotes('');
@@ -43,9 +45,8 @@ export function ObservationForm() {
       setIsSaving(false);
     }
   };
-  if (!isOpen) return null;
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={isObserving} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-[425px] bg-space-black/95 border-nebula/20 text-starlight">
         <DialogHeader>
           <div className="flex items-center gap-2 text-nebula text-[10px] font-bold uppercase tracking-widest mb-1">

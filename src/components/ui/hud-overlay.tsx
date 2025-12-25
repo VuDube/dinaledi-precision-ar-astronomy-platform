@@ -9,6 +9,7 @@ import { SearchPanel } from '@/components/ui/search-panel';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getLunarPhase, getSunPosition } from '@/lib/astronomy-math';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 export function HUDOverlay() {
   const mode = useAppStore(s => s.mode);
   const setMode = useAppStore(s => s.setMode);
@@ -23,6 +24,7 @@ export function HUDOverlay() {
   const lat = useAppStore(s => s.latitude);
   const lon = useAppStore(s => s.longitude);
   const setSearchOpen = useAppStore(s => s.setSearchOpen);
+  const setObserving = useAppStore(s => s.setObserving);
   if (mode === 'intro') return null;
   const sunPos = getSunPosition(simulationTime, lat, lon);
   const isDay = sunPos.altitude > -6;
@@ -35,7 +37,7 @@ export function HUDOverlay() {
     return directions[Math.round(deg / 45) % 8];
   };
   return (
-    <>
+    <TooltipProvider>
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6 z-20 overflow-hidden">
         {/* Top Bar */}
         <div className="flex justify-between items-start">
@@ -58,38 +60,58 @@ export function HUDOverlay() {
             </div>
           </div>
           <div className="flex flex-col gap-2 pointer-events-auto items-end">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="glass h-10 w-10 text-nebula shadow-[0_0_15px_rgba(234,179,8,0.2)]"
-              onClick={() => setMode('highlights')}
-            >
-              <Sparkles className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="glass h-10 w-10 text-starlight"
-              onClick={() => setSearchOpen(true)}
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn("glass h-10 w-10 text-starlight", !showConstellations && "opacity-50")}
-              onClick={toggleConstellations}
-            >
-              <Layers className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="glass h-10 w-10 text-starlight"
-              onClick={() => setMode('settings')}
-            >
-              <SettingsIcon className="h-5 w-5" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="glass h-10 w-10 text-nebula shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+                  onClick={() => setMode('highlights')}
+                >
+                  <Sparkles className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Tonight's Best</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="glass h-10 w-10 text-starlight"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Search Celestial Database</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn("glass h-10 w-10 text-starlight", !showConstellations && "opacity-50")}
+                  onClick={toggleConstellations}
+                >
+                  <Layers className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Toggle Constellations</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="glass h-10 w-10 text-starlight"
+                  onClick={() => setMode('settings')}
+                >
+                  <SettingsIcon className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">System Settings</TooltipContent>
+            </Tooltip>
           </div>
         </div>
         {/* Target Info */}
@@ -104,7 +126,7 @@ export function HUDOverlay() {
               <div className="glass-dark border-nebula/30 px-6 py-4 rounded-2xl flex flex-col items-center gap-3 shadow-[0_0_40px_rgba(234,179,8,0.15)] min-w-[240px]">
                 <div className="flex flex-col items-center gap-1">
                   <div className="text-nebula text-[10px] font-bold uppercase tracking-[0.2em] drop-shadow-glow">
-                    {('type' in activeTarget) ? 'DSO Identified' : 'Star Acquired'}
+                    {('type' in activeTarget) ? `${activeTarget.type} Detected` : 'Star Identified'}
                   </div>
                   <div className="text-starlight text-xl font-bold tracking-tight">{activeTarget.name || "Unknown"}</div>
                   <div className="flex gap-4 mt-1">
@@ -118,22 +140,22 @@ export function HUDOverlay() {
                   size="sm"
                   variant="ghost"
                   className="w-full bg-nebula/10 text-nebula hover:bg-nebula hover:text-space-black rounded-xl gap-2 font-bold transition-all"
-                  onClick={() => {}}
+                  onClick={() => setObserving(true)}
                 >
                   <PenLine className="w-3.5 h-3.5" />
-                  Log Sighting
+                  Log Observation
                 </Button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
         <div className="flex-1 flex items-center justify-center relative">
-          <Crosshair 
+          <Crosshair
             className={cn(
-              "w-16 h-16 transition-all duration-500", 
+              "w-16 h-16 transition-all duration-500",
               activeTarget ? "text-nebula scale-110" : isDay ? "text-space-black/40" : "text-starlight/20"
-            )} 
-            strokeWidth={0.5} 
+            )}
+            strokeWidth={0.5}
           />
         </div>
         {/* Footer */}
@@ -167,6 +189,6 @@ export function HUDOverlay() {
       <HighlightsPanel />
       <TemporalControls />
       <SearchPanel />
-    </>
+    </TooltipProvider>
   );
 }

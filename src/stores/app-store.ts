@@ -12,6 +12,7 @@ interface Orientation {
 interface AppState {
   mode: AppMode;
   isCalibrated: boolean;
+  isObserving: boolean;
   magnitudeLimit: number;
   bortleScale: number;
   showConstellations: boolean;
@@ -32,6 +33,7 @@ interface AppState {
   isSearchOpen: boolean;
   setMode: (mode: AppMode) => void;
   setCalibrated: (status: boolean) => void;
+  setObserving: (observing: boolean) => void;
   setBortleScale: (scale: number) => void;
   toggleConstellations: () => void;
   toggleConstellationLabels: () => void;
@@ -52,6 +54,7 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   mode: 'intro',
   isCalibrated: false,
+  isObserving: false,
   magnitudeLimit: 6.5,
   bortleScale: 4,
   showConstellations: true,
@@ -72,6 +75,7 @@ export const useAppStore = create<AppState>((set) => ({
   isSearchOpen: false,
   setMode: (mode) => set({ mode }),
   setCalibrated: (status) => set({ isCalibrated: status }),
+  setObserving: (isObserving) => set({ isObserving }),
   setBortleScale: (scale) => {
     const mag = Math.max(3.5, 7.5 - (scale * 0.4));
     set({ bortleScale: scale, magnitudeLimit: mag });

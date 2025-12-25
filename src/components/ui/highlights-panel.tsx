@@ -11,8 +11,6 @@ export function HighlightsPanel() {
   const mode = useAppStore(s => s.mode);
   const setMode = useAppStore(s => s.setMode);
   const simulationTime = useAppStore(s => s.simulationTime);
-  const lat = useAppStore(s => s.latitude);
-  const lon = useAppStore(s => s.longitude);
   const setSelectedDSO = useAppStore(s => s.setSelectedDSO);
   const moonInfo = getLunarPhase(simulationTime);
   const isOpen = mode === 'highlights';
@@ -57,7 +55,9 @@ export function HighlightsPanel() {
                     <Telescope className="w-3 h-3" />
                     Deep Sky Highlights
                   </div>
-                  <Badge variant="ghost" className="text-[8px] text-starlight/30 uppercase">Hipparcos Ref</Badge>
+                  <Badge variant="outline" className="text-[8px] text-starlight/30 uppercase border-starlight/10">
+                    Hipparcos Ref
+                  </Badge>
                 </div>
                 <div className="grid gap-4">
                   {visibleDSOs.map(dso => (
@@ -72,7 +72,7 @@ export function HighlightsPanel() {
                           <h4 className="text-starlight font-bold text-lg">{dso.name}</h4>
                           <div className="flex items-center gap-3">
                             <p className="text-starlight/40 text-[10px] font-mono">
-                              MAG {dso.mag.toFixed(1)} • {dso.messier || dso.caldwell}
+                              MAG {dso.mag.toFixed(1)} �� {dso.messier || dso.caldwell}
                             </p>
                             <div className="flex items-center gap-1 text-starlight/20 text-[10px]">
                               <Clock className="w-2 h-2" />
