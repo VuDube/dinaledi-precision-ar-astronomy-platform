@@ -3,6 +3,7 @@ import { StarRecord } from '@/data/star-catalog';
 import { DSORecord } from '@/data/dso-catalog';
 export type AppMode = 'intro' | 'skyview' | 'log' | 'settings' | 'highlights' | 'search';
 export type PermissionStatus = 'prompt' | 'granted' | 'denied' | 'unavailable';
+export type GPSStatus = 'idle' | 'tracking' | 'error';
 interface Orientation {
   alpha: number;
   beta: number;
@@ -15,6 +16,7 @@ interface AppState {
   isObserving: boolean;
   magnitudeLimit: number;
   bortleScale: number;
+  autoBortle: boolean;
   showConstellations: boolean;
   showConstellationLabels: boolean;
   showGrid: boolean;
@@ -24,6 +26,8 @@ interface AppState {
   orientation: Orientation;
   isSensorActive: boolean;
   permissionStatus: PermissionStatus;
+  gpsStatus: GPSStatus;
+  isInstallable: boolean;
   calibrationOffset: number;
   simulationTime: Date;
   timeSpeed: number;
@@ -35,6 +39,7 @@ interface AppState {
   setCalibrated: (status: boolean) => void;
   setObserving: (observing: boolean) => void;
   setBortleScale: (scale: number) => void;
+  setAutoBortle: (auto: boolean) => void;
   toggleConstellations: () => void;
   toggleConstellationLabels: () => void;
   toggleGrid: () => void;
@@ -44,6 +49,8 @@ interface AppState {
   setOrientation: (orientation: Orientation) => void;
   setSensorActive: (active: boolean) => void;
   setPermissionStatus: (status: PermissionStatus) => void;
+  setGPSStatus: (status: GPSStatus) => void;
+  setInstallable: (status: boolean) => void;
   setCalibrationOffset: (offset: number) => void;
   setSimulationTime: (time: Date) => void;
   setTimeSpeed: (speed: number) => void;
@@ -57,6 +64,7 @@ export const useAppStore = create<AppState>((set) => ({
   isObserving: false,
   magnitudeLimit: 6.5,
   bortleScale: 4,
+  autoBortle: true,
   showConstellations: true,
   showConstellationLabels: true,
   showGrid: true,
@@ -66,6 +74,8 @@ export const useAppStore = create<AppState>((set) => ({
   orientation: { alpha: 0, beta: 0, gamma: 0, heading: 0 },
   isSensorActive: false,
   permissionStatus: 'prompt',
+  gpsStatus: 'idle',
+  isInstallable: false,
   calibrationOffset: 0,
   simulationTime: new Date(),
   timeSpeed: 1,
@@ -80,6 +90,7 @@ export const useAppStore = create<AppState>((set) => ({
     const mag = Math.max(3.5, 7.5 - (scale * 0.4));
     set({ bortleScale: scale, magnitudeLimit: mag });
   },
+  setAutoBortle: (autoBortle) => set({ autoBortle }),
   toggleConstellations: () => set((state) => ({ showConstellations: !state.showConstellations })),
   toggleConstellationLabels: () => set((state) => ({ showConstellationLabels: !state.showConstellationLabels })),
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
@@ -89,6 +100,8 @@ export const useAppStore = create<AppState>((set) => ({
   setOrientation: (orientation) => set({ orientation }),
   setSensorActive: (active) => set({ isSensorActive: active }),
   setPermissionStatus: (status) => set({ permissionStatus: status }),
+  setGPSStatus: (gpsStatus) => set({ gpsStatus }),
+  setInstallable: (isInstallable) => set({ isInstallable }),
   setCalibrationOffset: (offset) => set({ calibrationOffset: offset }),
   setSimulationTime: (simulationTime) => set({ simulationTime }),
   setTimeSpeed: (timeSpeed) => set({ timeSpeed }),

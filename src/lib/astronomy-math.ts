@@ -45,12 +45,24 @@ export const getSunPosition = (date: Date, lat: number, lon: number) => {
   const az = radToDeg(Math.atan2(-Math.sin(ha), Math.cos(phi) * Math.tan(delta) - Math.sin(phi) * Math.cos(ha)));
   return { altitude: alt, azimuth: az };
 };
+export const predictBortleFromLocation = (lat: number, lon: number): number => {
+  // Mock prediction: Higher Bortle near South African city centers
+  const JHB = { lat: -26.2, lon: 28.0 };
+  const CPT = { lat: -33.9, lon: 18.4 };
+  const DUR = { lat: -29.8, lon: 31.0 };
+  const dist = (p1: any, p2: any) => Math.sqrt(Math.pow(p1.lat - p2.lat, 2) + Math.pow(p1.lon - p2.lon, 2));
+  const minCityDist = Math.min(dist({lat, lon}, JHB), dist({lat, lon}, CPT), dist({lat, lon}, DUR));
+  if (minCityDist < 0.1) return 8; // City center
+  if (minCityDist < 0.5) return 6; // Suburban
+  if (minCityDist < 1.5) return 4; // Rural
+  return 2; // Dark sky
+};
 export const getSkyColor = (sunAltitude: number): string => {
-  if (sunAltitude > 0) return "#87ceeb"; // Day
-  if (sunAltitude > -6) return "#1e3a8a"; // Civil Twilight
-  if (sunAltitude > -12) return "#1e1b4b"; // Nautical Twilight
-  if (sunAltitude > -18) return "#020617"; // Astronomical Twilight
-  return "#020617"; // Night
+  if (sunAltitude > 0) return "#87ceeb";
+  if (sunAltitude > -6) return "#1e3a8a";
+  if (sunAltitude > -12) return "#1e1b4b";
+  if (sunAltitude > -18) return "#020617";
+  return "#020617";
 };
 export const getLunarPhase = (date: Date): { phase: number; name: string } => {
   const jd = getJulianDate(date);
