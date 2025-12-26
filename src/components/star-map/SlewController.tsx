@@ -10,22 +10,25 @@ export function SlewController() {
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
   const isSensorActive = useAppStore(s => s.isSensorActive);
-  const targetPosition = useRef<THREE.Vector3 | null>(null);
   const targetQuat = useRef(new THREE.Quaternion());
   const lookAtMatrix = useRef(new THREE.Matrix4());
+  const hasTarget = useRef(false);
   useEffect(() => {
     const target = selectedStar || selectedDSO;
     if (target && !isSensorActive) {
-      const pos = radecToVector3(target.ra, target.dec, 10).normalize().multiplyScalar(-1);
-      targetPosition.current = pos;
-      lookAtMatrix.current.lookAt(camera.position, pos, camera.up);
+      // Corrected: Mapping RA/Dec to Vector3 usually places the camera at origin
+      // The camera should rotate to look at the point on the celestial sphere
+      const pos = radecToVector3(target.ra, target.dec, 10); 
+      // We look from origin (0,0,0) towards the star position
+      lookAtMatrix.current.lookAt(new THREE.Vector3(0, 0, 0), pos, new THREE.Vector3(0, 1, 0));
       targetQuat.current.setFromRotationMatrix(lookAtMatrix.current);
+      hasTarget.current = true;
     } else {
-      targetPosition.current = null;
+      hasTarget.current = false;
     }
-  }, [selectedStar, selectedDSO, isSensorActive, camera]);
+  }, [selectedStar, selectedDSO, isSensorActive]);
   useFrame(() => {
-    if (!isSlewing || isSensorActive || !targetPosition.current) return;
+    if (!isSlewing || isSensorActive || !hasTarget.current) return;
     // Slew towards target orientation
     camera.quaternion.slerp(targetQuat.current, 0.05);
     // Stop slewing when close enough

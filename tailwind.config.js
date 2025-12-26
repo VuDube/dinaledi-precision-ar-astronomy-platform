@@ -90,8 +90,6 @@ export default {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
-  		},
-  		colors: {
   			'space-black': '#020617',
   			'starlight': '#F8FAFC',
   			'nebula': '#EAB308',

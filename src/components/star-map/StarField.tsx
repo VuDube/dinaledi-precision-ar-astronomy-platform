@@ -55,15 +55,18 @@ export function StarField() {
   useFrame(() => {
     projScreenMatrix.current.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     frustum.current.setFromProjectionMatrix(projScreenMatrix.current);
-    let primaryChanged = false;
+    const EPSILON = 0.005;
     if (meshRef.current) {
+      let primaryChanged = false;
       primaryStars.forEach((star, i) => {
         const isVisible = star.mag <= magnitudeLimit && frustum.current.containsPoint(star.pos);
         const targetScale = isVisible ? star.baseScale : 0;
         meshRef.current!.getMatrixAt(i, dummy.matrix);
         dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
-        if (Math.abs(dummy.scale.x - targetScale) > 0.001) {
-          dummy.scale.setScalar(targetScale);
+        // Use lerp for smoother visibility transitions
+        if (Math.abs(dummy.scale.x - targetScale) > EPSILON) {
+          const nextScale = THREE.MathUtils.lerp(dummy.scale.x, targetScale, 0.15);
+          dummy.scale.setScalar(nextScale);
           dummy.updateMatrix();
           meshRef.current!.setMatrixAt(i, dummy.matrix);
           primaryChanged = true;
@@ -71,15 +74,16 @@ export function StarField() {
       });
       if (primaryChanged) meshRef.current.instanceMatrix.needsUpdate = true;
     }
-    let faintChanged = false;
     if (faintMeshRef.current) {
+      let faintChanged = false;
       faintStars.forEach((star, i) => {
         const isVisible = star.mag <= magnitudeLimit && frustum.current.containsPoint(star.pos);
         const targetScale = isVisible ? star.baseScale : 0;
         faintMeshRef.current!.getMatrixAt(i, dummy.matrix);
         dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
-        if (Math.abs(dummy.scale.x - targetScale) > 0.001) {
-          dummy.scale.setScalar(targetScale);
+        if (Math.abs(dummy.scale.x - targetScale) > EPSILON) {
+          const nextScale = THREE.MathUtils.lerp(dummy.scale.x, targetScale, 0.15);
+          dummy.scale.setScalar(nextScale);
           dummy.updateMatrix();
           faintMeshRef.current!.setMatrixAt(i, dummy.matrix);
           faintChanged = true;

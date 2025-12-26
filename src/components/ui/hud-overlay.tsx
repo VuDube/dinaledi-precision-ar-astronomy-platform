@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Wifi, Crosshair, Triangle, Loader2 } from 'lucide-react';
+import { Wifi, Crosshair, Triangle, Loader2, Diamond } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
 import { BottomNav } from '@/components/ui/bottom-nav';
 import { SettingsPanel } from '@/components/ui/settings-panel';
@@ -74,14 +74,14 @@ export function HUDOverlay() {
         {/* Slewing Indicator */}
         <AnimatePresence>
           {isSlewing && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               className="absolute top-24 left-1/2 -translate-x-1/2 glass px-4 py-2 rounded-full border-nebula/30 flex items-center gap-2"
             >
               <Loader2 className="w-3 h-3 text-nebula animate-spin" />
-              <span className="text-[10px] font-mono font-bold text-nebula uppercase tracking-widest">Slewing to Target</span>
+              <span className="text-[10px] font-mono font-bold text-nebula uppercase tracking-widest">Slewing</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -97,8 +97,11 @@ export function HUDOverlay() {
               className="absolute left-1/2 -translate-x-1/2 bottom-32 pointer-events-auto"
             >
               <div className="glass-dark border-nebula/30 px-6 py-4 rounded-3xl flex flex-col items-center gap-3 shadow-2xl min-w-[280px] backdrop-blur-3xl relative overflow-hidden">
-                <div className="absolute -top-4 -right-4 opacity-5">
-                   <Triangle className="w-16 h-16 text-nebula" strokeWidth={1} />
+                <div className="absolute -top-4 -right-4 opacity-10">
+                   <Diamond className="w-16 h-16 text-nebula" strokeWidth={1} />
+                </div>
+                <div className="absolute -bottom-2 -left-2 opacity-5">
+                   <Triangle className="w-12 h-12 text-nebula rotate-45" strokeWidth={0.5} />
                 </div>
                 <div className="text-center">
                   <div className="text-nebula text-[9px] font-bold uppercase tracking-widest mb-1">
@@ -107,7 +110,7 @@ export function HUDOverlay() {
                   <div className="text-starlight text-xl font-display font-bold tracking-tight">
                     {getDisplayName(activeTarget)}
                   </div>
-                  {activeTarget.mag && (
+                  {activeTarget.mag !== undefined && (
                     <div className="text-starlight/30 text-[9px] font-mono uppercase mt-1">
                       Mag: {activeTarget.mag.toFixed(2)} • HIP_{activeTarget.id.padStart(4, '0')}
                     </div>
@@ -125,7 +128,18 @@ export function HUDOverlay() {
         </AnimatePresence>
         {/* Reticle Area */}
         <div className="flex-1 flex items-center justify-center">
-           <Crosshair className={cn("w-14 h-14 transition-all duration-700", activeTarget ? "text-nebula scale-125 rotate-45 opacity-60" : "text-starlight/5")} strokeWidth={0.2} />
+           <div className="relative">
+              <Crosshair className={cn("w-14 h-14 transition-all duration-700", activeTarget ? "text-nebula scale-125 rotate-45 opacity-60" : "text-starlight/5")} strokeWidth={0.2} />
+              {activeTarget && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  <div className="w-1 h-1 bg-nebula rounded-full shadow-glow" />
+                </motion.div>
+              )}
+           </div>
         </div>
         {/* Mobile Navigation */}
         <BottomNav />
