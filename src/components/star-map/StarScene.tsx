@@ -7,6 +7,7 @@ import { DeepSkyObjects } from './DeepSkyObjects';
 import { ConstellationLines } from './ConstellationLines';
 import { ConstellationBoundaries } from './ConstellationBoundaries';
 import { SolarSystem } from './SolarSystem';
+import { SlewController } from './SlewController';
 import { useAppStore } from '@/stores/app-store';
 import { getSunPosition, getSkyColor } from '@/lib/astronomy-math';
 import { useCatalogLoader } from '@/hooks/use-catalog-loader';
@@ -35,9 +36,8 @@ function Atmosphere() {
   const lon = useAppStore(s => s.longitude);
   const bortleScale = useAppStore(s => s.bortleScale);
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
-  // Adapt turbidity based on light pollution
-  const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 20);
-  const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -20, 20, 0.1, 4);
+  const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 15);
+  const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -25, 15, 0.05, 6);
   return (
     <Sky
       sunPosition={[
@@ -59,7 +59,7 @@ export function StarScene() {
   const lon = useAppStore(s => s.longitude);
   useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
-  const ambientIntensity = Math.max(0.05, THREE.MathUtils.mapLinear(sunPos.altitude, -18, 10, 0.1, 1));
+  const ambientIntensity = Math.max(0.05, THREE.MathUtils.mapLinear(sunPos.altitude, -18, 10, 0.1, 1.2));
   const skyColor = getSkyColor(sunPos.altitude);
   return (
     <div className="absolute inset-0 transition-colors duration-1000" style={{ backgroundColor: skyColor }}>
@@ -67,7 +67,7 @@ export function StarScene() {
         gl={{ antialias: true, stencil: false, depth: true, powerPreference: "high-performance" }}
         dpr={[1, 2]}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={60} far={3000} />
+        <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={55} far={3500} />
         <Suspense fallback={null}>
           <Atmosphere />
           <StarField />
@@ -75,7 +75,8 @@ export function StarScene() {
           <DeepSkyObjects />
           <ConstellationLines />
           <ConstellationBoundaries />
-          <Stars radius={600} depth={60} count={5000} factor={4} saturation={0.5} fade speed={0.5} />
+          <SlewController />
+          <Stars radius={600} depth={60} count={6000} factor={4} saturation={0.5} fade speed={0.4} />
           <CelestialGrid />
           <Environment preset="night" />
         </Suspense>
@@ -85,12 +86,14 @@ export function StarScene() {
           <OrbitControls
             enableZoom={false}
             enablePan={false}
-            autoRotate={!isSensorActive && sunPos.altitude < -12}
-            autoRotateSpeed={0.1}
-            rotateSpeed={-0.3}
+            autoRotate={!isSensorActive && sunPos.altitude < -15}
+            autoRotateSpeed={0.08}
+            rotateSpeed={-0.2}
+            enableDamping
+            dampingFactor={0.05}
           />
         )}
-        <fog attach="fog" args={[skyColor, 800, 2800]} />
+        <fog attach="fog" args={[skyColor, 900, 3000]} />
         <ambientLight intensity={ambientIntensity} />
       </Canvas>
     </div>

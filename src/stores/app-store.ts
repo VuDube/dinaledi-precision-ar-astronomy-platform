@@ -19,6 +19,8 @@ interface AppState {
   catalogLoadingProgress: number;
   preferredLore: LorePreference;
   isObserving: boolean;
+  nightMode: boolean;
+  isSlewing: boolean;
   magnitudeLimit: number;
   bortleScale: number;
   autoBortle: boolean;
@@ -51,6 +53,8 @@ interface AppState {
   setCatalogLoadingProgress: (progress: number) => void;
   setPreferredLore: (lore: LorePreference) => void;
   setObserving: (observing: boolean) => void;
+  toggleNightMode: () => void;
+  setSlewing: (slewing: boolean) => void;
   setBortleScale: (scale: number) => void;
   setAutoBortle: (auto: boolean) => void;
   togglePlanets: () => void;
@@ -70,9 +74,9 @@ interface AppState {
   setInstallable: (status: boolean) => void;
   setCalibrationOffset: (offset: number) => void;
   setSimulationTime: (time: Date) => void;
-  setTimeSpeed: (speed: number) => void;
+  setTimeSpeed: (timeSpeed: number) => void;
   setLocation: (lat: number, lon: number) => void;
-  setSearchQuery: (query: string) => void;
+  setSearchQuery: (searchQuery: string) => void;
   setSearchOpen: (open: boolean) => void;
 }
 export const useAppStore = create<AppState>((set) => ({
@@ -83,6 +87,8 @@ export const useAppStore = create<AppState>((set) => ({
   catalogLoadingProgress: 0,
   preferredLore: 'both',
   isObserving: false,
+  nightMode: false,
+  isSlewing: false,
   magnitudeLimit: 6.5,
   bortleScale: 4,
   autoBortle: true,
@@ -109,9 +115,9 @@ export const useAppStore = create<AppState>((set) => ({
   searchQuery: '',
   isSearchOpen: false,
   setMode: (mode) => set({ mode }),
-  setCalibrated: (status) => set({ 
+  setCalibrated: (status) => set({
     isCalibrated: status,
-    calibrationProgress: status ? 100 : 0 
+    calibrationProgress: status ? 100 : 0
   }),
   setCalibrationProgress: (progress) => set((state) => ({
     calibrationProgress: typeof progress === 'function' ? progress(state.calibrationProgress) : progress
@@ -120,6 +126,8 @@ export const useAppStore = create<AppState>((set) => ({
   setCatalogLoadingProgress: (progress) => set({ catalogLoadingProgress: progress }),
   setPreferredLore: (lore) => set({ preferredLore: lore }),
   setObserving: (isObserving) => set({ isObserving }),
+  toggleNightMode: () => set((state) => ({ nightMode: !state.nightMode })),
+  setSlewing: (isSlewing) => set({ isSlewing }),
   setBortleScale: (scale) => {
     const mag = Math.max(3.5, 7.5 - (scale * 0.4));
     set({ bortleScale: scale, magnitudeLimit: mag });
@@ -132,8 +140,16 @@ export const useAppStore = create<AppState>((set) => ({
   toggleConstellationLabels: () => set((state) => ({ showConstellationLabels: !state.showConstellationLabels })),
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
   setTarget: (target) => set({ targetObject: target }),
-  setSelectedStar: (star) => set({ selectedStar: star, selectedDSO: null }),
-  setSelectedDSO: (dso) => set({ selectedDSO: dso, selectedStar: null }),
+  setSelectedStar: (star) => set((state) => ({ 
+    selectedStar: star, 
+    selectedDSO: null, 
+    isSlewing: star !== null && !state.isSensorActive 
+  })),
+  setSelectedDSO: (dso) => set((state) => ({ 
+    selectedDSO: dso, 
+    selectedStar: null, 
+    isSlewing: dso !== null && !state.isSensorActive 
+  })),
   setOrientation: (orientation) => set({ orientation }),
   setSensorActive: (active) => set({ isSensorActive: active }),
   setPermissionStatus: (status) => set({ permissionStatus: status }),

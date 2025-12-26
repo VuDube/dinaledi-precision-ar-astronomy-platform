@@ -2,13 +2,30 @@ import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/stores/app-store';
 import { radecToVector3 } from '@/lib/astronomy-math';
+import { useThree } from '@react-three/fiber';
 import { ChevronUp } from 'lucide-react';
+import * as THREE from 'three';
 export function TargetNavigator() {
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
-  const targetTelemetry = useAppStore(s => s.targetTelemetry);
+  const isSensorActive = useAppStore(s => s.isSensorActive);
+  const { camera } = useThree();
   const target = selectedStar || selectedDSO;
-  if (!targetTelemetry || targetTelemetry.onScreen) return null;
+  const telemetry = useMemo(() => {
+    if (!target) return null;
+    const targetPos = radecToVector3(target.ra, target.dec, 100).normalize();
+    const cameraForward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+    const angle = cameraForward.angleTo(targetPos) * (180 / Math.PI);
+    // Check if on screen
+    const frustum = new THREE.Frustum();
+    frustum.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    const onScreen = frustum.containsPoint(targetPos.clone().multiplyScalar(100));
+    // Calculate relative screen position for arrow
+    const screenPos = targetPos.clone().multiplyScalar(100).project(camera);
+    const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
+    return { angle, onScreen, azimuth };
+  }, [target, camera]);
+  if (!telemetry || telemetry.onScreen) return null;
   return (
     <AnimatePresence>
       <motion.div
@@ -19,7 +36,7 @@ export function TargetNavigator() {
       >
         <div className="relative w-64 h-64 border border-starlight/5 rounded-full flex items-center justify-center">
           <motion.div
-            style={{ rotate: -targetTelemetry.azimuth }}
+            style={{ rotate: -telemetry.azimuth }}
             className="absolute"
           >
             <motion.div
@@ -29,7 +46,7 @@ export function TargetNavigator() {
             >
               <ChevronUp className="w-8 h-8 text-nebula drop-shadow-glow" />
               <div className="bg-space-black/80 backdrop-blur-md border border-nebula/20 px-2 py-0.5 rounded-full text-[10px] font-mono text-nebula font-bold">
-                {Math.round(targetTelemetry.angle)}°
+                {Math.round(telemetry.angle)}°
               </div>
             </motion.div>
           </motion.div>
