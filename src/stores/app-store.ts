@@ -54,10 +54,11 @@ interface AppState {
   searchQuery: string;
   isSearchOpen: boolean;
   targetTelemetry: TargetTelemetry | null;
-  // Phase 21 additions
   fov: number;
   isRadialOpen: boolean;
   isGesturingTime: boolean;
+  isDetailOpen: boolean;
+  lastSyncTime: Date | null;
   setMode: (mode: AppMode) => void;
   setCalibrated: (status: boolean) => void;
   setCalibrationProgress: (progress: number | ((prev: number) => number)) => void;
@@ -93,10 +94,11 @@ interface AppState {
   setSearchQuery: (searchQuery: string) => void;
   setSearchOpen: (open: boolean) => void;
   setTargetTelemetry: (telemetry: TargetTelemetry | null) => void;
-  // Phase 21 actions
   setFOV: (fov: number) => void;
   setRadialOpen: (open: boolean) => void;
   setGesturingTime: (gesturing: boolean) => void;
+  setDetailOpen: (open: boolean) => void;
+  setLastSyncTime: (time: Date | null) => void;
 }
 export const useAppStore = create<AppState>((set) => ({
   mode: 'intro',
@@ -136,18 +138,14 @@ export const useAppStore = create<AppState>((set) => ({
   searchQuery: '',
   isSearchOpen: false,
   targetTelemetry: null,
-  // Phase 21 defaults
   fov: 55,
   isRadialOpen: false,
   isGesturingTime: false,
+  isDetailOpen: false,
+  lastSyncTime: null,
   setMode: (mode) => set({ mode }),
-  setCalibrated: (status) => set({
-    isCalibrated: status,
-    calibrationProgress: status ? 100 : 0
-  }),
-  setCalibrationProgress: (progress) => set((state) => ({
-    calibrationProgress: typeof progress === 'function' ? progress(state.calibrationProgress) : progress
-  })),
+  setCalibrated: (status) => set({ isCalibrated: status, calibrationProgress: status ? 100 : 0 }),
+  setCalibrationProgress: (progress) => set((state) => ({ calibrationProgress: typeof progress === 'function' ? progress(state.calibrationProgress) : progress })),
   setCatalogReady: (status) => set({ isCatalogReady: status }),
   setCatalogLoadingProgress: (progress) => set({ catalogLoadingProgress: progress }),
   setPreferredLore: (lore) => set({ preferredLore: lore }),
@@ -169,12 +167,14 @@ export const useAppStore = create<AppState>((set) => ({
   setSelectedStar: (star) => set((state) => ({
     selectedStar: star,
     selectedDSO: null,
-    isSlewing: star !== null && !state.isSensorActive
+    isSlewing: star !== null && !state.isSensorActive,
+    isDetailOpen: star !== null && !state.isSensorActive
   })),
   setSelectedDSO: (dso) => set((state) => ({
     selectedDSO: dso,
     selectedStar: null,
-    isSlewing: dso !== null && !state.isSensorActive
+    isSlewing: dso !== null && !state.isSensorActive,
+    isDetailOpen: dso !== null && !state.isSensorActive
   })),
   setOrientation: (orientation) => set({ orientation }),
   setSensorActive: (active) => set({ isSensorActive: active }),
@@ -182,10 +182,7 @@ export const useAppStore = create<AppState>((set) => ({
   setGPSStatus: (gpsStatus) => set({ gpsStatus }),
   setGPSEnabled: (gpsEnabled) => set({ gpsEnabled }),
   setInstallable: (isInstallable) => set({ isInstallable }),
-  setDeferredPrompt: (deferredPrompt) => set({
-    deferredPrompt,
-    isInstallable: !!deferredPrompt
-  }),
+  setDeferredPrompt: (deferredPrompt) => set({ deferredPrompt, isInstallable: !!deferredPrompt }),
   setIsOnline: (isOnline) => set({ isOnline }),
   setCalibrationOffset: (offset) => set({ calibrationOffset: offset }),
   setSimulationTime: (simulationTime) => set({ simulationTime }),
@@ -194,8 +191,9 @@ export const useAppStore = create<AppState>((set) => ({
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setSearchOpen: (isSearchOpen) => set({ isSearchOpen }),
   setTargetTelemetry: (telemetry) => set({ targetTelemetry: telemetry }),
-  // Phase 21 actions
   setFOV: (fov) => set({ fov: Math.max(10, Math.min(90, fov)) }),
   setRadialOpen: (isRadialOpen) => set({ isRadialOpen }),
   setGesturingTime: (isGesturingTime) => set({ isGesturingTime }),
+  setDetailOpen: (isDetailOpen) => set({ isDetailOpen }),
+  setLastSyncTime: (lastSyncTime) => set({ lastSyncTime }),
 }));

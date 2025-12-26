@@ -11,8 +11,7 @@ import { Sparkles, ArrowRight, Loader2, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOrientation } from '@/hooks/use-orientation';
 import { usePWA } from '@/hooks/use-pwa';
-import { cn } from '@/lib/utils';
-import { DiamondGrid } from '@/components/ui/sesotho-patterns';
+import { DiamondGrid, StarPoint } from '@/components/ui/sesotho-patterns';
 export function HomePage() {
   const mode = useAppStore(s => s.mode);
   const setMode = useAppStore(s => s.setMode);
@@ -33,7 +32,6 @@ export function HomePage() {
       return () => clearTimeout(timer);
     }
   }, [isCalibrated, mode, setMode]);
-  // Auto-start for returning installed users
   useEffect(() => {
     if (isStandalone && !isInitializing && mode === 'intro') {
       const timer = setTimeout(() => {
@@ -66,18 +64,24 @@ export function HomePage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, scale: 1.2, filter: 'blur(60px)' }}
               transition={{ duration: 1.2, ease: "circIn" }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/60 backdrop-blur-sm"
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/80 backdrop-blur-md"
             >
-              <DiamondGrid opacity={0.05} />
+              <motion.div 
+                animate={{ rotate: 360 }} 
+                transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-0 pointer-events-none"
+              >
+                <DiamondGrid opacity={0.04} />
+              </motion.div>
               <div className="max-w-2xl w-full py-12 text-center space-y-12 relative z-10">
                 <div className="flex justify-center">
                   <motion.div
                     initial={{ scale: 0, rotate: -45 }}
                     animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: 'spring', damping: 12, delay: 0.2 }}
-                    className="w-24 h-24 rounded-[2.5rem] bg-gradient-to-br from-nebula to-[#D14615] flex items-center justify-center shadow-[0_0_60px_rgba(234,179,8,0.5)]"
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-[2.5rem] sm:rounded-[3rem] bg-gradient-to-br from-nebula to-[#D14615] flex items-center justify-center shadow-[0_0_80px_rgba(234,179,8,0.4)]"
                   >
-                    <Sparkles className="w-12 h-12 text-white" />
+                    <Sparkles className="w-12 h-12 sm:w-14 sm:h-14 text-white" />
                   </motion.div>
                 </div>
                 {!isInitializing ? (
@@ -86,51 +90,56 @@ export function HomePage() {
                       <motion.h1
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        className="text-7xl md:text-9xl font-display font-black text-starlight tracking-tighter"
+                        className="text-6xl sm:text-7xl md:text-9xl font-display font-black text-starlight tracking-tighter"
                       >
                         DIN<span className="text-nebula">A</span>LEDI
                       </motion.h1>
-                      <p className="text-xl md:text-2xl text-starlight/60 font-light max-w-lg mx-auto leading-relaxed text-pretty">
+                      <p className="text-lg sm:text-xl md:text-2xl text-starlight/60 font-light max-w-lg mx-auto leading-relaxed text-pretty px-4">
                         A precision-calibrated viewport into ancestral skies.
                         Professional data meets South African celestial lore.
                       </p>
                     </div>
                     <Button
                       onClick={handleStart}
-                      className="h-20 px-16 rounded-[2rem] bg-starlight text-space-black hover:bg-nebula hover:scale-105 transition-all duration-500 text-2xl font-bold group shadow-2xl"
+                      className="h-20 px-12 sm:px-16 rounded-[2rem] bg-starlight text-space-black hover:bg-nebula hover:scale-105 transition-all duration-500 text-xl sm:text-2xl font-black group shadow-[0_0_50px_rgba(255,255,255,0.2)] active:scale-95"
                     >
-                      {isStandalone ? 'Resume Observation' : 'Begin Observation'}
-                      <ArrowRight className="ml-3 w-8 h-8 group-hover:translate-x-2 transition-transform" />
+                      {isStandalone ? 'RESUME VOYAGE' : 'BEGIN OBSERVATION'}
+                      <ArrowRight className="ml-3 w-6 h-6 sm:w-8 sm:h-8 group-hover:translate-x-2 transition-transform" />
                     </Button>
                     <div className="pt-20 flex flex-col items-center gap-4 opacity-30">
-                      <div className="flex items-center gap-2 text-[10px] font-mono text-starlight uppercase tracking-[0.5em]">
+                      <div className="flex items-center gap-3 text-[9px] font-mono text-starlight uppercase tracking-[0.5em]">
                         <Globe className="w-3 h-3" />
-                        {isStandalone ? 'PWA NATIVE MODE' : 'VALIDATED VIA CLOUDFLARE EDGE'}
+                        {isStandalone ? 'NATIVE_APP_ACTIVE' : 'VALIDATED_VIA_EDGE'}
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-12">
                     <div className="flex flex-col items-center gap-8">
-                      <div className="relative">
-                        <Loader2 className="w-24 h-24 text-nebula animate-spin" strokeWidth={1} />
+                      <div className="relative flex items-center justify-center">
+                        <Loader2 className="w-32 h-32 text-nebula/20 animate-spin" strokeWidth={0.5} />
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-4 h-4 bg-nebula rounded-full animate-pulse shadow-[0_0_20px_rgba(234,179,8,1)]" />
+                           <StarPoint className="w-24 h-24 animate-pulse opacity-100" />
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <h2 className="text-4xl font-bold text-starlight tracking-tight">
-                          {isCalibrated ? "Ready for Voyage" : "Precision Calibration"}
+                        <h2 className="text-3xl sm:text-4xl font-black text-starlight tracking-tight">
+                          {isCalibrated ? "ALIGNMENT_COMPLETE" : "NEUTRALIZING_BIAS"}
                         </h2>
-                        <p className="text-starlight/40 font-mono text-xs uppercase tracking-[0.4em]">
-                          {isCalibrated ? "Celestial sphere aligned" : "Keep device steady • Neutralizing bias"}
+                        <p className="text-starlight/40 font-mono text-[10px] uppercase tracking-[0.4em]">
+                          {isCalibrated ? "Celestial sphere locked" : "Hold device steady • Sampling gravity"}
                         </p>
                       </div>
                     </div>
                     <div className="max-w-xs mx-auto w-full space-y-4">
-                      <Progress value={calibrationProgress} className="h-1 bg-white/10" />
-                      <div className="flex justify-between font-mono text-[10px] text-starlight/30 tabular-nums">
-                        <span>SENSOR_SYMMETRY</span>
+                      <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                        <motion.div 
+                          className="absolute inset-y-0 left-0 bg-nebula shadow-[0_0_15px_rgba(234,179,8,1)]"
+                          animate={{ width: `${calibrationProgress}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between font-mono text-[9px] text-starlight/20 tabular-nums uppercase tracking-widest">
+                        <span>Calibration_Sync</span>
                         <span>{Math.round(calibrationProgress)}%</span>
                       </div>
                     </div>
