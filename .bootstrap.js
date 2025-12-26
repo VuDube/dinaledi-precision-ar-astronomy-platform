@@ -84,7 +84,8 @@ function runSetupCommands() {
     "bun add idb@^8.0.3",
     "bun add lucide-react@latest",
     "bun add cmdk",
-    "bun add uuid"
+    "bun add uuid",
+    "bun add sonner"
 ];
     
     if (commands.length === 0) {
