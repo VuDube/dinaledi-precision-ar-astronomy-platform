@@ -1,4 +1,5 @@
 import React, { Suspense, useRef, useEffect, useMemo } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars, PerspectiveCamera, Environment, Sky } from '@react-three/drei';
 import { StarField } from './StarField';
@@ -11,6 +12,9 @@ import { SlewController } from './SlewController';
 import { MilkyWay } from './MilkyWay';
 import { useAppStore } from '@/stores/app-store';
 import { getSunPosition, getSkyColor } from '@/lib/astronomy-math';
+import { radecToVector3 } from '@/lib/astronomy-math';
+import { StarRecord } from '@/data/star-catalog';
+import { DSORecord } from '@/data/dso-catalog';
 import { useCatalogLoader } from '@/hooks/use-catalog-loader';
 import * as THREE from 'three';
 function CelestialGrid() {
@@ -53,6 +57,32 @@ function Atmosphere() {
     />
   );
 }
+function TargetTelemetry() {
+  const selectedStar = useAppStore(s => s.selectedStar);
+  const selectedDSO = useAppStore(s => s.selectedDSO);
+  const target = selectedStar || selectedDSO;
+  const camera = useThree(state => state.camera);
+  const setTargetTelemetry = useAppStore(s => s.setTargetTelemetry);
+  
+  useFrame(() => {
+    if(!target || !camera) {
+      setTargetTelemetry(null);
+      return;
+    }
+    const targetPos = radecToVector3(target.ra, target.dec, 100).normalize();
+    const cameraForward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+    const angle = cameraForward.angleTo(targetPos) * (180 / Math.PI);
+    const frustum = new THREE.Frustum();
+    frustum.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    const onScreen = frustum.containsPoint(targetPos.clone().multiplyScalar(100));
+    const screenPos = targetPos.clone().multiplyScalar(100).project(camera);
+    const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
+    setTargetTelemetry({ angle, onScreen, azimuth });
+  });
+  
+  return null;
+}
+
 export function StarScene() {
   const isSensorActive = useAppStore(s => s.isSensorActive);
   const simulationTime = useAppStore(s => s.simulationTime);
@@ -80,6 +110,7 @@ export function StarScene() {
           <SlewController />
           <Stars radius={700} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} />
           <CelestialGrid />
+          <TargetTelemetry />
           <Environment preset="night" />
         </Suspense>
         {isSensorActive ? (

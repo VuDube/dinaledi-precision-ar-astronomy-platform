@@ -11,6 +11,13 @@ interface Orientation {
   gamma: number;
   heading: number;
 }
+
+interface TargetTelemetry {
+  angle: number;
+  onScreen: boolean;
+  azimuth: number;
+}
+
 interface AppState {
   mode: AppMode;
   isCalibrated: boolean;
@@ -82,6 +89,8 @@ interface AppState {
   setLocation: (lat: number, lon: number) => void;
   setSearchQuery: (searchQuery: string) => void;
   setSearchOpen: (open: boolean) => void;
+  targetTelemetry: TargetTelemetry | null;
+  setTargetTelemetry: (telemetry: TargetTelemetry | null) => void;
 }
 export const useAppStore = create<AppState>((set) => ({
   mode: 'intro',
@@ -120,6 +129,7 @@ export const useAppStore = create<AppState>((set) => ({
   longitude: 28.0,
   searchQuery: '',
   isSearchOpen: false,
+  targetTelemetry: null,
   setMode: (mode) => set({ mode }),
   setCalibrated: (status) => set({
     isCalibrated: status,
@@ -173,4 +183,5 @@ export const useAppStore = create<AppState>((set) => ({
   setLocation: (latitude, longitude) => set({ latitude, longitude }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setSearchOpen: (isSearchOpen) => set({ isSearchOpen }),
+  setTargetTelemetry: (telemetry) => set({ targetTelemetry: telemetry }),
 }));
