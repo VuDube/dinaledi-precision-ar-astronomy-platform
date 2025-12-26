@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAppStore } from '@/stores/app-store';
 import { useObservationStore } from '@/stores/observation-store';
-import { Star, Save, X, Info } from 'lucide-react';
+import { Star, Save, X, Info, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 export function ObservationForm() {
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
@@ -13,6 +14,9 @@ export function ObservationForm() {
   const setSelectedDSO = useAppStore(s => s.setSelectedDSO);
   const isObserving = useAppStore(s => s.isObserving);
   const setObserving = useAppStore(s => s.setObserving);
+  const latitude = useAppStore(s => s.latitude);
+  const longitude = useAppStore(s => s.longitude);
+  const gpsStatus = useAppStore(s => s.gpsStatus);
   const addObservation = useObservationStore(s => s.addObservation);
   const [notes, setNotes] = useState('');
   const [seeing, setSeeing] = useState(3);
@@ -23,12 +27,13 @@ export function ObservationForm() {
     setSelectedStar(null);
     setSelectedDSO(null);
     setNotes('');
+    setSeeing(3);
   };
   const handleSave = async () => {
     if (!activeTarget) return;
     setIsSaving(true);
     try {
-      const location = { lat: -26.20, lng: 28.04 };
+      const location = { lat: latitude, lng: longitude };
       await addObservation({
         id: crypto.randomUUID(),
         starId: activeTarget.id,
@@ -40,23 +45,25 @@ export function ObservationForm() {
         syncStatus: 'local',
       });
       handleClose();
+    } catch (err) {
+      console.error('Failed to save observation:', err);
     } finally {
       setIsSaving(false);
     }
   };
   return (
     <Dialog open={isObserving} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-[425px] bg-space-black/95 border-nebula/20 text-starlight">
+      <DialogContent className="sm:max-w-[425px] bg-space-black/98 border-nebula/20 text-starlight backdrop-blur-2xl">
         <DialogHeader>
           <div className="flex items-center gap-2 text-nebula text-[10px] font-bold uppercase tracking-widest mb-1">
             <Info className="w-3 h-3" />
             New Observation
           </div>
           <DialogTitle className="text-2xl font-bold tracking-tight text-starlight">
-            {activeTarget?.name || 'Celestial Object'}
+            {activeTarget?.localName || activeTarget?.name || 'Celestial Object'}
           </DialogTitle>
           <DialogDescription className='text-sm font-medium text-starlight/60 mb-6'>
-            Log your observation details for {activeTarget?.name || 'celestial object'}
+            Log your observation details for {activeTarget?.name || 'this object'}.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-6 py-4">
@@ -64,8 +71,10 @@ export function ObservationForm() {
             <label className="text-xs font-medium text-starlight/40 uppercase tracking-tighter">Seeing Conditions</label>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((i) => (
-                <button
+                <motion.button
                   key={i}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => setSeeing(i)}
                   className={cn(
                     "w-10 h-10 rounded-xl flex items-center justify-center transition-all border",
@@ -75,7 +84,7 @@ export function ObservationForm() {
                   )}
                 >
                   <Star className={cn("w-5 h-5", seeing >= i && "fill-current")} />
-                </button>
+                </motion.button>
               ))}
             </div>
             <p className="text-[10px] text-starlight/20 italic">1: Poor (Turbulent) • 5: Perfect (Steady)</p>
@@ -84,20 +93,29 @@ export function ObservationForm() {
             <label className="text-xs font-medium text-starlight/40 uppercase tracking-tighter">Notes</label>
             <Textarea
               placeholder="What do you see through the lens? Describe the magnitude, color index, or surrounding context..."
-              className="bg-white/5 border-white/10 text-starlight placeholder:text-starlight/20 min-h-[120px] rounded-xl focus:ring-nebula focus:border-nebula"
+              className="bg-white/5 border-white/10 text-starlight placeholder:text-starlight/20 min-h-[120px] rounded-xl focus:ring-nebula focus:border-nebula resize-none"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
+          <div className="flex items-center justify-between px-3 py-2 bg-white/5 rounded-lg border border-white/5">
+             <div className="flex items-center gap-2">
+                <MapPin className={cn("w-3 h-3", gpsStatus === 'tracking' ? "text-green-500" : "text-starlight/20")} />
+                <span className="text-[10px] font-mono text-starlight/40 uppercase tracking-widest">Location Locked</span>
+             </div>
+             <span className="text-[10px] font-mono text-starlight/60 tabular-nums">
+                {latitude.toFixed(2)}, {longitude.toFixed(2)}
+             </span>
+          </div>
         </div>
-        <DialogFooter className="flex gap-2 sm:gap-0">
+        <DialogFooter className="flex gap-2 sm:gap-0 mt-4">
           <Button variant="ghost" onClick={handleClose} className="flex-1 text-starlight/60 hover:text-starlight rounded-xl">
             <X className="w-4 h-4 mr-2" /> Cancel
           </Button>
           <Button
             onClick={handleSave}
             disabled={isSaving || !notes.trim()}
-            className="flex-1 bg-nebula text-space-black hover:bg-nebula/80 font-bold rounded-xl shadow-lg"
+            className="flex-1 bg-nebula text-space-black hover:bg-nebula/90 font-bold rounded-xl shadow-lg transition-transform active:scale-95"
           >
             {isSaving ? 'Syncing...' : <><Save className="w-4 h-4 mr-2" /> Log Sighting</>}
           </Button>

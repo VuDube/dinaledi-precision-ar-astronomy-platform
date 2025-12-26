@@ -11,23 +11,46 @@ export interface StarRecord {
   dist?: number; // Light years
 }
 export const STAR_CATALOG: StarRecord[] = [
-  { 
-    id: "1", 
-    name: "Sirius", 
-    localName: "Inkhanyeti", 
-    culture: "SeSwati", 
+  {
+    id: "1",
+    name: "Sirius",
+    localName: "Inkhanyeti",
+    culture: "SeSwati",
     lore: "The 'Brightest One', often used as a seasonal marker for the harvest in the Mpumalanga region.",
-    ra: 6.75, dec: -16.71, mag: -1.46, bv: 0.00, dist: 8.6 
+    ra: 6.75, dec: -16.71, mag: -1.46, bv: 0.00, dist: 8.6
+  },
+  {
+    id: "2",
+    name: "Canopus",
+    localName: "Naka",
+    culture: "Sotho/Tswana",
+    lore: "The 'Messenger Star'. Its appearance in the winter morning sky signals the beginning of the traditional new year and the arrival of frost.",
+    ra: 6.4, dec: -52.7, mag: -0.72, bv: 0.15, dist: 310
   },
   { 
-    id: "2", 
-    name: "Canopus", 
-    localName: "Naka", 
-    culture: "Sotho/Tswana", 
-    lore: "The 'Messenger Star'. Its appearance in the winter morning sky signals the beginning of the traditional new year and the arrival of frost.",
-    ra: 6.4, dec: -52.7, mag: -0.72, bv: 0.15, dist: 310 
+    id: "3", 
+    name: "Alpha Centauri", 
+    localName: "Isandla", 
+    culture: "Zulu", 
+    lore: "Part of the 'Hand' or 'Eyes' of the giant celestial hunter. Its brightness represents the watchful eyes of ancestors.", 
+    ra: 14.66, dec: -60.83, mag: -0.27, bv: 0.71, dist: 4.37 
   },
-  { id: "3", name: "Alpha Centauri", localName: "Isandla", culture: "Zulu", lore: "Part of the hand or eyes of the giant celestial hunter.", ra: 14.66, dec: -60.83, mag: -0.27, bv: 0.71, dist: 4.37 },
+  { 
+    id: "15", 
+    name: "Antares", 
+    localName: "Khuphu", 
+    culture: "Venda", 
+    lore: "The 'Fire Star'. In Venda tradition, its deep red color represents the fire of the cosmic hearth during the cold months.", 
+    ra: 16.49, dec: -26.43, mag: 0.96, bv: 1.83, dist: 550 
+  },
+  { 
+    id: "16", 
+    name: "Spica", 
+    localName: "Inonzi", 
+    culture: "Shona", 
+    lore: "The 'Sweet Star'. Associated with the arrival of spring rains and the ripening of fruits in the northern regions of Southern Africa.", 
+    ra: 13.42, dec: -11.16, mag: 0.98, bv: -0.23, dist: 260 
+  },
   { id: "4", name: "Arcturus", ra: 14.26, dec: 19.18, mag: -0.05, bv: 1.23, dist: 36.7 },
   { id: "5", name: "Vega", ra: 18.61, dec: 38.78, mag: 0.03, bv: 0.00, dist: 25 },
   { id: "6", name: "Capella", ra: 5.28, dec: 46.0, mag: 0.08, bv: 0.8, dist: 42.9 },
@@ -39,8 +62,6 @@ export const STAR_CATALOG: StarRecord[] = [
   { id: "12", name: "Altair", ra: 19.85, dec: 8.87, mag: 0.76, bv: 0.22, dist: 16.7 },
   { id: "13", name: "Acrux", ra: 12.44, dec: -63.1, mag: 0.77, bv: -0.24, dist: 320 },
   { id: "14", name: "Aldebaran", ra: 4.59, dec: 16.51, mag: 0.85, bv: 1.54, dist: 65.1 },
-  { id: "15", name: "Antares", ra: 16.49, dec: -26.43, mag: 0.96, bv: 1.83, dist: 550 },
-  { id: "16", name: "Spica", ra: 13.42, dec: -11.16, mag: 0.98, bv: -0.23, dist: 260 },
   { id: "17", name: "Pollux", ra: 7.76, dec: 28.02, mag: 1.14, bv: 1.0, dist: 33.7 },
   { id: "18", name: "Fomalhaut", ra: 22.96, dec: -29.62, mag: 1.16, bv: 0.09, dist: 25.1 },
   { id: "19", name: "Deneb", ra: 20.69, dec: 45.28, mag: 1.25, bv: 0.09, dist: 2600 },

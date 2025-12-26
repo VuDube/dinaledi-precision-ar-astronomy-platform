@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef, useState } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/stores/app-store';
 export function useOrientation() {
   const setOrientation = useAppStore((s) => s.setOrientation);
@@ -6,10 +6,11 @@ export function useOrientation() {
   const setSensorActive = useAppStore((s) => s.setSensorActive);
   const setCalibrationProgress = useAppStore((s) => s.setCalibrationProgress);
   const setCalibrated = useAppStore((s) => s.setCalibrated);
+  const setCalibrationOffset = useAppStore((s) => s.setCalibrationOffset);
   const calibrationOffset = useAppStore((s) => s.calibrationOffset);
   const isSensorActive = useAppStore((s) => s.isSensorActive);
   const lastHeading = useRef<number>(0);
-  const filterAlpha = 0.12; 
+  const filterAlpha = 0.12;
   const biasSamples = useRef<number[]>([]);
   const isCalibrating = useRef(false);
   const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
@@ -21,8 +22,10 @@ export function useOrientation() {
       biasSamples.current.push(a);
       return;
     }
+    // Apply the calibration offset to the raw alpha heading
     let heading = (a + calibrationOffset) % 360;
     if (heading < 0) heading += 360;
+    // Smooth heading using simple low-pass filter
     let diff = heading - lastHeading.current;
     if (diff > 180) diff -= 360;
     if (diff < -180) diff += 360;
@@ -53,12 +56,14 @@ export function useOrientation() {
         return prev + 2;
       });
     }, 100);
-    // After 5s, calculate bias
+    // After 5s, calculate bias offset
     setTimeout(() => {
       isCalibrating.current = false;
       if (biasSamples.current.length > 0) {
+        // Calculate average orientation during rest period to set as 'true north' or baseline
         const avg = biasSamples.current.reduce((a, b) => a + b, 0) / biasSamples.current.length;
-        // Logic to store bias can go to app-store if needed
+        // The offset is the negative of the average to normalize it to 0
+        setCalibrationOffset(-avg);
         setCalibrated(true);
       }
       setCalibrationProgress(100);
@@ -81,10 +86,11 @@ export function useOrientation() {
         return true;
       }
     } catch (error) {
+      console.error('Orientation permission request failed:', error);
       setPermissionStatus('denied');
       return false;
     }
-  }, [setPermissionStatus, setSensorActive, setCalibrationProgress, setCalibrated]);
+  }, [setPermissionStatus, setSensorActive, setCalibrationProgress, setCalibrated, setCalibrationOffset]);
   const isIOS = typeof (DeviceOrientationEvent as any).requestPermission === 'function';
   useEffect(() => {
     if (!isIOS && isSensorActive) {
