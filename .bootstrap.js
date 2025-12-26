@@ -85,7 +85,8 @@ function runSetupCommands() {
     "bun add lucide-react@latest",
     "bun add cmdk",
     "bun add uuid",
-    "bun add sonner"
+    "bun add sonner",
+    "bun add embla-carousel-react"
 ];
     
     if (commands.length === 0) {
