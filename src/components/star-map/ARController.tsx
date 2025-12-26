@@ -9,6 +9,7 @@ export function ARController() {
   const { camera } = useThree();
   const orientation = useAppStore(s => s.orientation);
   const isSensorActive = useAppStore(s => s.isSensorActive);
+  const isSlewing = useAppStore(s => s.isSlewing);
   const isObserving = useAppStore(s => s.isObserving);
   const setSelectedStar = useAppStore(s => s.setSelectedStar);
   const setSelectedDSO = useAppStore(s => s.setSelectedDSO);
@@ -24,7 +25,8 @@ export function ARController() {
     euler.current.set(betaRad, alphaRad, -gammaRad, 'YXZ');
     targetQuaternion.current.setFromEuler(euler.current);
     camera.quaternion.slerp(targetQuaternion.current, 0.1);
-    if (isObserving) return;
+    // Skip object acquisition if observing or slewing to prevent HUD flickering
+    if (isObserving || isSlewing) return;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     let closestObject = null;
     let objectType: 'star' | 'dso' | null = null;

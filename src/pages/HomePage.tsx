@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StarScene } from '@/components/star-map/StarScene';
 import { HUDOverlay } from '@/components/ui/hud-overlay';
 import { ObservationLog } from '@/components/ui/observation-log';
@@ -21,6 +21,10 @@ export function HomePage() {
   const { requestPermission } = useOrientation();
   const { isStandalone } = usePWA();
   const [isInitializing, setIsInitializing] = useState(false);
+  const handleStart = useCallback(async () => {
+    setIsInitializing(true);
+    await requestPermission();
+  }, [requestPermission]);
   useEffect(() => {
     if (isCalibrated && mode === 'intro') {
       const timer = setTimeout(() => {
@@ -37,11 +41,7 @@ export function HomePage() {
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [isStandalone, isInitializing, mode]);
-  const handleStart = async () => {
-    setIsInitializing(true);
-    await requestPermission();
-  };
+  }, [isStandalone, isInitializing, mode, handleStart]);
   return (
     <NightModeProvider>
       <div className="relative h-screen w-screen overflow-hidden bg-space-black">

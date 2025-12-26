@@ -71,7 +71,6 @@ export function useOrientation() {
               setCalibrationOffset(-avg);
               setCalibrated(true);
             } else {
-              // Fallback if no samples were collected
               setCalibrationOffset(0);
               setCalibrated(true);
             }
@@ -89,7 +88,6 @@ export function useOrientation() {
     }
   }, [setPermissionStatus, setSensorActive, setCalibrationProgress, setCalibrated, setCalibrationOffset]);
   useEffect(() => {
-    // Both iOS and Android need the listener once active
     if (isSensorActive) {
       window.addEventListener('deviceorientation', handleOrientation);
     }

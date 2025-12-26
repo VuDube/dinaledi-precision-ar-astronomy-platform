@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAppStore } from '@/stores/app-store';
 import { predictBortleFromLocation } from '@/lib/astronomy-math';
-
 export function useGPS() {
   const setLocation = useAppStore(s => s.setLocation);
   const setGPSStatus = useAppStore(s => s.setGPSStatus);
@@ -9,22 +8,20 @@ export function useGPS() {
   const autoBortle = useAppStore(s => s.autoBortle);
   const gpsEnabled = useAppStore(s => s.gpsEnabled);
   const watchId = useRef<number | null>(null);
-  const autoBortleRef = useRef<boolean | undefined>(undefined);
-
-  // Update ref with current autoBortle value
+  const autoBortleRef = useRef<boolean>(autoBortle);
+  // Keep a stable ref of autoBortle to use in memoized handlers
   useEffect(() => {
     autoBortleRef.current = autoBortle;
   }, [autoBortle]);
-
-  const handlePosition = useCallback((latitude: number, longitude: number) => {
+  const handlePositionUpdate = useCallback((latitude: number, longitude: number) => {
     setLocation(latitude, longitude);
     if (autoBortleRef.current) {
       const predicted = predictBortleFromLocation(latitude, longitude);
       setBortleScale(predicted);
     }
   }, [setLocation, setBortleScale]);
-
   useEffect(() => {
+    // Cleanup existing watch if disabled
     if (!gpsEnabled || !('geolocation' in navigator)) {
       if (watchId.current !== null) {
         navigator.geolocation.clearWatch(watchId.current);
@@ -33,61 +30,35 @@ export function useGPS() {
       setGPSStatus('idle');
       return;
     }
-
-    const opts = {
+    const opts: PositionOptions = {
       enableHighAccuracy: true,
       timeout: 10000,
       maximumAge: 60000
     };
-
-    if (watchId.current !== null) {
-      navigator.geolocation.clearWatch(watchId.current);
-      watchId.current = null;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        handlePosition(latitude, longitude);
-        setGPSStatus('tracking');
-
-        watchId.current = navigator.geolocation.watchPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            handlePosition(latitude, longitude);
-          },
-          (error) => {
-            if (error.code === 2) {
-              setGPSStatus('unavailable');
-            } else if (error.code === 1 || error.code === 3) {
-              setGPSStatus('denied');
-            } else {
-              setGPSStatus('error');
-            }
-          },
-          opts
-        );
-      },
-      (error) => {
-        if (error.code === 2) {
-          setGPSStatus('unavailable');
-        } else if (error.code === 1 || error.code === 3) {
-          setGPSStatus('denied');
-        } else {
-          setGPSStatus('error');
-        }
-      },
-      opts
-    );
-
+    const onPos = (position: GeolocationPosition) => {
+      const { latitude, longitude } = position.coords;
+      handlePositionUpdate(latitude, longitude);
+      setGPSStatus('tracking');
+    };
+    const onErr = (error: GeolocationPositionError) => {
+      if (error.code === 2) {
+        setGPSStatus('unavailable');
+      } else if (error.code === 1) {
+        setGPSStatus('denied');
+      } else {
+        setGPSStatus('error');
+      }
+    };
+    // Immediate update
+    navigator.geolocation.getCurrentPosition(onPos, onErr, opts);
+    // Continuous tracking
+    watchId.current = navigator.geolocation.watchPosition(onPos, onErr, opts);
     return () => {
       if (watchId.current !== null) {
         navigator.geolocation.clearWatch(watchId.current);
         watchId.current = null;
       }
     };
-  }, [gpsEnabled, handlePosition, setGPSStatus]);
-
+  }, [gpsEnabled, handlePositionUpdate, setGPSStatus]);
   return null;
 }
-//
