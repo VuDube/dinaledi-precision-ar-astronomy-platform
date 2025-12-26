@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Telescope, MapPin, Globe, Sparkles, X, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { StarRecord } from '@/data/star-catalog';
 export function TargetDetailsDrawer() {
   const isDetailOpen = useAppStore(s => s.isDetailOpen);
   const setDetailOpen = useAppStore(s => s.setDetailOpen);
@@ -16,8 +17,11 @@ export function TargetDetailsDrawer() {
   const target = selectedStar || selectedDSO;
   if (!target) return null;
   const isDSO = 'type' in target;
+  const isStar = !isDSO;
   const culture = target.culture || "IAU Standard";
   const displayName = (preferredLore === 'western' ? target.name : target.localName) || target.name || target.id;
+  // Type-safe access to distance
+  const distance = isStar ? (target as StarRecord).dist : undefined;
   return (
     <Drawer.Root open={isDetailOpen} onOpenChange={setDetailOpen}>
       <Drawer.Portal>
@@ -29,14 +33,14 @@ export function TargetDetailsDrawer() {
             <header className="space-y-4 mb-8">
               <div className="flex justify-between items-start">
                 <Badge variant="outline" className="bg-nebula/10 text-nebula border-none px-3 h-6 uppercase tracking-widest text-[10px] font-black">
-                  {isDSO ? target.type : 'Celestial Star'}
+                  {isDSO ? (target as any).type : 'Celestial Star'}
                 </Badge>
                 <button onClick={() => setDetailOpen(false)} className="p-2 rounded-full bg-white/5 text-starlight/40">
                    <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="space-y-1">
-                <motion.h2 
+                <motion.h2
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   className="text-4xl sm:text-5xl font-display font-black text-starlight tracking-tight leading-none"
@@ -54,10 +58,10 @@ export function TargetDetailsDrawer() {
                   <Globe className="w-3.5 h-3.5" />
                   <span>{culture} Lore</span>
                 </div>
-                {target.dist && (
+                {distance && (
                   <div className="flex items-center gap-2 text-starlight/40 text-xs">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>{target.dist} Light Years</span>
+                    <span>{distance} Light Years</span>
                   </div>
                 )}
               </div>
@@ -82,21 +86,21 @@ export function TargetDetailsDrawer() {
                   <div className="text-starlight text-sm font-mono">{target.ra.toFixed(2)}h / {target.dec.toFixed(2)}°</div>
                 </div>
               </div>
-              {isDSO && target.description && (
+              {isDSO && (target as any).description && (
                 <div className="space-y-3">
                   <h3 className="text-starlight/40 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
                     <Telescope className="w-3.5 h-3.5 text-nebula" />
                     Scientific Context
                   </h3>
                   <p className="text-starlight/60 text-sm leading-relaxed">
-                    {target.description}
+                    {(target as any).description}
                   </p>
                 </div>
               )}
             </section>
           </div>
           <footer className="p-6 sm:p-8 bg-space-black/80 backdrop-blur-xl border-t border-white/5">
-            <Button 
+            <Button
               className="w-full h-16 rounded-2xl bg-nebula text-space-black hover:bg-nebula/90 font-black text-lg shadow-2xl transition-transform active:scale-95 flex items-center justify-center gap-3"
               onClick={() => {
                 setDetailOpen(false);

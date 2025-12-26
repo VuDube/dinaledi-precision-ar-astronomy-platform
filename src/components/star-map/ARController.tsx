@@ -25,15 +25,14 @@ export function ARController() {
     euler.current.set(betaRad, alphaRad, -gammaRad, 'YXZ');
     targetQuaternion.current.setFromEuler(euler.current);
     camera.quaternion.slerp(targetQuaternion.current, 0.1);
-    // Skip object acquisition if observing or slewing to prevent HUD flickering
     if (isObserving || isSlewing) return;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     let closestObject = null;
     let objectType: 'star' | 'dso' | null = null;
     let minDistance = Infinity;
     const threshold = 0.05;
-    // Check DSOs first (prio)
-    DSO_CATALOG.forEach(dso => {
+    // Check DSOs first (priority)
+    for (const dso of DSO_CATALOG) {
       const dsoPos = radecToVector3(dso.ra, dso.dec, 1).normalize();
       const dist = forward.distanceTo(dsoPos);
       if (dist < threshold && dist < minDistance) {
@@ -41,10 +40,10 @@ export function ARController() {
         closestObject = dso;
         objectType = 'dso';
       }
-    });
+    }
     // Check Stars if no DSO found
     if (!closestObject) {
-      STAR_CATALOG.forEach(star => {
+      for (const star of STAR_CATALOG) {
         const starPos = radecToVector3(star.ra, star.dec, 1).normalize();
         const dist = forward.distanceTo(starPos);
         if (dist < threshold && dist < minDistance) {
@@ -52,16 +51,19 @@ export function ARController() {
           closestObject = star;
           objectType = 'star';
         }
-      });
+      }
     }
+    // Stability: Only update store if selection changed
     if (objectType === 'star') {
-      if (closestObject !== currentSelectedStar) {
+      if (closestObject && closestObject.id !== currentSelectedStar?.id) {
         setSelectedStar(closestObject as any);
       }
+      if (currentSelectedDSO !== null) setSelectedDSO(null);
     } else if (objectType === 'dso') {
-      if (closestObject !== currentSelectedDSO) {
+      if (closestObject && closestObject.id !== currentSelectedDSO?.id) {
         setSelectedDSO(closestObject as any);
       }
+      if (currentSelectedStar !== null) setSelectedStar(null);
     } else {
       if (currentSelectedStar !== null) setSelectedStar(null);
       if (currentSelectedDSO !== null) setSelectedDSO(null);

@@ -12,6 +12,9 @@ export function StarField() {
   const frustum = useRef(new THREE.Frustum());
   const projScreenMatrix = useRef(new THREE.Matrix4());
   const dummy = useMemo(() => new THREE.Object3D(), []);
+  // Performance: Track current scales locally to avoid matrix decomposition
+  const primaryScales = useRef<Float32Array>(new Float32Array(0));
+  const faintScales = useRef<Float32Array>(new Float32Array(0));
   const { primaryStars, faintStars } = useMemo(() => {
     const primary = [];
     const faint = [];
@@ -26,6 +29,8 @@ export function StarField() {
       if (star.mag < 3.5) primary.push(data);
       else faint.push(data);
     }
+    primaryScales.current = new Float32Array(primary.length);
+    faintScales.current = new Float32Array(faint.length);
     return { primaryStars: primary, faintStars: faint };
   }, []);
   useLayoutEffect(() => {
@@ -33,6 +38,7 @@ export function StarField() {
       primaryStars.forEach((star, i) => {
         dummy.position.copy(star.pos);
         dummy.scale.setScalar(star.baseScale);
+        primaryScales.current[i] = star.baseScale;
         dummy.updateMatrix();
         meshRef.current!.setMatrixAt(i, dummy.matrix);
         meshRef.current!.setColorAt(i, star.color);
@@ -44,6 +50,7 @@ export function StarField() {
       faintStars.forEach((star, i) => {
         dummy.position.copy(star.pos);
         dummy.scale.setScalar(star.baseScale);
+        faintScales.current[i] = star.baseScale;
         dummy.updateMatrix();
         faintMeshRef.current!.setMatrixAt(i, dummy.matrix);
         faintMeshRef.current!.setColorAt(i, star.color);
@@ -61,11 +68,11 @@ export function StarField() {
       primaryStars.forEach((star, i) => {
         const isVisible = star.mag <= magnitudeLimit && frustum.current.containsPoint(star.pos);
         const targetScale = isVisible ? star.baseScale : 0;
-        meshRef.current!.getMatrixAt(i, dummy.matrix);
-        dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
-        // Use lerp for smoother visibility transitions
-        if (Math.abs(dummy.scale.x - targetScale) > EPSILON) {
-          const nextScale = THREE.MathUtils.lerp(dummy.scale.x, targetScale, 0.15);
+        const currentScale = primaryScales.current[i];
+        if (Math.abs(currentScale - targetScale) > EPSILON) {
+          const nextScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.15);
+          primaryScales.current[i] = nextScale;
+          dummy.position.copy(star.pos);
           dummy.scale.setScalar(nextScale);
           dummy.updateMatrix();
           meshRef.current!.setMatrixAt(i, dummy.matrix);
@@ -79,10 +86,11 @@ export function StarField() {
       faintStars.forEach((star, i) => {
         const isVisible = star.mag <= magnitudeLimit && frustum.current.containsPoint(star.pos);
         const targetScale = isVisible ? star.baseScale : 0;
-        faintMeshRef.current!.getMatrixAt(i, dummy.matrix);
-        dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
-        if (Math.abs(dummy.scale.x - targetScale) > EPSILON) {
-          const nextScale = THREE.MathUtils.lerp(dummy.scale.x, targetScale, 0.15);
+        const currentScale = faintScales.current[i];
+        if (Math.abs(currentScale - targetScale) > EPSILON) {
+          const nextScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.15);
+          faintScales.current[i] = nextScale;
+          dummy.position.copy(star.pos);
           dummy.scale.setScalar(nextScale);
           dummy.updateMatrix();
           faintMeshRef.current!.setMatrixAt(i, dummy.matrix);

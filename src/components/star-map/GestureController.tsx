@@ -2,13 +2,19 @@ import React, { useRef, useEffect } from 'react';
 import { useAppStore } from '@/stores/app-store';
 import { addHours } from 'date-fns';
 export function GestureController() {
-  const fov = useAppStore(s => s.fov);
-  const setFOV = useAppStore(s => s.setFOV);
   const simulationTime = useAppStore(s => s.simulationTime);
   const setSimulationTime = useAppStore(s => s.setSimulationTime);
   const isSensorActive = useAppStore(s => s.isSensorActive);
   const isRadialOpen = useAppStore(s => s.isRadialOpen);
-  // Use a transparent group or simply null to avoid R3F namespace errors with 'div'
+  // Stability: Use refs to capture current state for event listeners
+  const timeRef = useRef(simulationTime);
+  const sensorRef = useRef(isSensorActive);
+  const radialRef = useRef(isRadialOpen);
+  useEffect(() => {
+    timeRef.current = simulationTime;
+    sensorRef.current = isSensorActive;
+    radialRef.current = isRadialOpen;
+  }, [simulationTime, isSensorActive, isRadialOpen]);
   useEffect(() => {
     let startX = 0;
     let isDragging = false;
@@ -19,12 +25,13 @@ export function GestureController() {
       }
     };
     const onMove = (e: TouchEvent) => {
-      if (!isDragging || isSensorActive || isRadialOpen) return;
+      if (!isDragging || sensorRef.current || radialRef.current) return;
       const currentX = e.touches[0].clientX;
       const deltaX = currentX - startX;
       if (Math.abs(deltaX) > 10) {
         const intensity = Math.sign(deltaX) * Math.pow(Math.abs(deltaX) / 20, 1.5);
-        setSimulationTime(addHours(simulationTime, intensity));
+        // Use functional update or ref to calculate next time
+        setSimulationTime(addHours(timeRef.current, intensity));
         startX = currentX;
       }
     };
@@ -37,6 +44,6 @@ export function GestureController() {
       window.removeEventListener('touchmove', onMove);
       window.removeEventListener('touchend', onEnd);
     };
-  }, [isSensorActive, isRadialOpen, simulationTime, setSimulationTime]);
+  }, [setSimulationTime]);
   return null;
 }
