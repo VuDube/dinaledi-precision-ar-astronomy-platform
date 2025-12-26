@@ -9,7 +9,7 @@ export function useGPS() {
   const autoBortle = useAppStore(s => s.autoBortle);
   const gpsEnabled = useAppStore(s => s.gpsEnabled);
   const watchId = useRef<number | null>(null);
-  const autoBortleRef = useRef(autoBortle);
+  const autoBortleRef = useRef<boolean | undefined>(undefined);
 
   // Update ref with current autoBortle value
   useEffect(() => {
@@ -60,10 +60,8 @@ export function useGPS() {
             if (error.code === 2) {
               setGPSStatus('unavailable');
             } else if (error.code === 1 || error.code === 3) {
-              console.warn('GPS watch failed:', error);
               setGPSStatus('denied');
             } else {
-              console.warn('GPS watch failed:', error);
               setGPSStatus('error');
             }
           },
@@ -74,10 +72,8 @@ export function useGPS() {
         if (error.code === 2) {
           setGPSStatus('unavailable');
         } else if (error.code === 1 || error.code === 3) {
-          console.warn('GPS init failed:', error);
           setGPSStatus('denied');
         } else {
-          console.warn('GPS init failed:', error);
           setGPSStatus('error');
         }
       },
