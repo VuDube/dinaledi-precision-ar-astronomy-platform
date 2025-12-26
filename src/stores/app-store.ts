@@ -108,7 +108,7 @@ export const useAppStore = create<AppState>((set) => ({
   catalogLoadingProgress: 0,
   preferredLore: 'both',
   isObserving: false,
-  nightMode: false,
+  nightMode: true,
   isSlewing: false,
   magnitudeLimit: 6.5,
   bortleScale: 4,

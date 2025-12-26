@@ -1,4 +1,4 @@
-import React, { Suspense, useRef, useEffect, useMemo } from 'react';
+import React, { Suspense, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars, PerspectiveCamera, Environment, Sky } from '@react-three/drei';
@@ -55,15 +55,27 @@ function Atmosphere() {
     />
   );
 }
+
 function TargetTelemetry() {
+  const targetRef = useRef(null);
+  const setTargetTelemetryRef = useRef(useAppStore.getState().setTargetTelemetry);
+  const camera = useThree(state => state.camera);
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
-  const target = selectedStar || selectedDSO;
-  const camera = useThree(state => state.camera);
-  const setTargetTelemetry = useAppStore(s => s.setTargetTelemetry);
+
+  useEffect(() => {
+    const newTarget = selectedStar || selectedDSO;
+    if (targetRef.current !== newTarget) {
+      targetRef.current = newTarget;
+    }
+  }, [selectedStar, selectedDSO]);
+
   useFrame(() => {
+    const target = targetRef.current;
+    const setTargetTelemetry = setTargetTelemetryRef.current;
+
     if(!target || !camera) {
-      setTargetTelemetry(null);
+      setTargetTelemetry?.(null);
       return;
     }
     const targetPos = radecToVector3(target.ra, target.dec, 100).normalize();
@@ -76,6 +88,7 @@ function TargetTelemetry() {
     const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
     setTargetTelemetry({ angle, onScreen, azimuth });
   });
+
   return null;
 }
 export function StarScene() {
@@ -87,14 +100,15 @@ export function StarScene() {
   useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const ambientIntensity = Math.max(0.05, THREE.MathUtils.mapLinear(sunPos.altitude, -18, 10, 0.1, 1.2));
-  const skyColor = getSkyColor(sunPos.altitude);
+  const skyColor = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
   return (
     <div className="absolute inset-0 transition-colors duration-1000" style={{ backgroundColor: skyColor }}>
       <Canvas
-        gl={{ antialias: true, stencil: false, depth: true, powerPreference: "high-performance" }}
-        dpr={[1, 2]}
+        gl={{ antialias: false, alpha: false, powerPreference: 'default', stencil: false, depth: true }}
+        dpr={1}
       >
         <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={fov} far={3500} />
+        <color attach='background' args={['#020617']} />
         <Suspense fallback={null}>
           <Atmosphere />
           <MilkyWay />
@@ -116,9 +130,9 @@ export function StarScene() {
           <OrbitControls
             enableZoom={false}
             enablePan={false}
-            autoRotate={!isSensorActive && sunPos.altitude < -15}
+            autoRotate={!isSensorActive}
             autoRotateSpeed={0.06}
-            rotateSpeed={-0.2 * (fov / 55)} // Adjust sensitivity based on zoom
+            rotateSpeed={-0.2 * (fov / 55)}
             enableDamping
             dampingFactor={0.05}
           />
