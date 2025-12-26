@@ -87,7 +87,8 @@ function runSetupCommands() {
     "bun add uuid",
     "bun add sonner",
     "bun add embla-carousel-react",
-    "bun add three @react-three/fiber @react-three/drei"
+    "bun add three @react-three/fiber @react-three/drei",
+    "bun add react-use"
 ];
     
     if (commands.length === 0) {
