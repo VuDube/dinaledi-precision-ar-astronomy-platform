@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { StarRecord } from '@/data/star-catalog';
 import { DSORecord } from '@/data/dso-catalog';
-export type AppMode = 'intro' | 'skyview' | 'log' | 'settings' | 'highlights' | 'search';
+export type AppMode = 'intro' | 'skyview' | 'log' | 'settings' | 'highlights' | 'search' | 'pwa-install';
 export type PermissionStatus = 'prompt' | 'granted' | 'denied' | 'unavailable';
 export type GPSStatus = 'idle' | 'tracking' | 'error' | 'denied' | 'unavailable';
 export type LorePreference = 'western' | 'african' | 'both';
@@ -39,6 +39,8 @@ interface AppState {
   gpsStatus: GPSStatus;
   gpsEnabled: boolean;
   isInstallable: boolean;
+  deferredPrompt: any | null;
+  isOnline: boolean;
   calibrationOffset: number;
   simulationTime: Date;
   timeSpeed: number;
@@ -72,6 +74,8 @@ interface AppState {
   setGPSStatus: (status: GPSStatus) => void;
   setGPSEnabled: (enabled: boolean) => void;
   setInstallable: (status: boolean) => void;
+  setDeferredPrompt: (prompt: any) => void;
+  setIsOnline: (online: boolean) => void;
   setCalibrationOffset: (offset: number) => void;
   setSimulationTime: (time: Date) => void;
   setTimeSpeed: (timeSpeed: number) => void;
@@ -107,6 +111,8 @@ export const useAppStore = create<AppState>((set) => ({
   gpsStatus: 'idle',
   gpsEnabled: true,
   isInstallable: false,
+  deferredPrompt: null,
+  isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
   calibrationOffset: 0,
   simulationTime: new Date(),
   timeSpeed: 1,
@@ -140,15 +146,15 @@ export const useAppStore = create<AppState>((set) => ({
   toggleConstellationLabels: () => set((state) => ({ showConstellationLabels: !state.showConstellationLabels })),
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
   setTarget: (target) => set({ targetObject: target }),
-  setSelectedStar: (star) => set((state) => ({ 
-    selectedStar: star, 
-    selectedDSO: null, 
-    isSlewing: star !== null && !state.isSensorActive 
+  setSelectedStar: (star) => set((state) => ({
+    selectedStar: star,
+    selectedDSO: null,
+    isSlewing: star !== null && !state.isSensorActive
   })),
-  setSelectedDSO: (dso) => set((state) => ({ 
-    selectedDSO: dso, 
-    selectedStar: null, 
-    isSlewing: dso !== null && !state.isSensorActive 
+  setSelectedDSO: (dso) => set((state) => ({
+    selectedDSO: dso,
+    selectedStar: null,
+    isSlewing: dso !== null && !state.isSensorActive
   })),
   setOrientation: (orientation) => set({ orientation }),
   setSensorActive: (active) => set({ isSensorActive: active }),
@@ -156,6 +162,11 @@ export const useAppStore = create<AppState>((set) => ({
   setGPSStatus: (gpsStatus) => set({ gpsStatus }),
   setGPSEnabled: (gpsEnabled) => set({ gpsEnabled }),
   setInstallable: (isInstallable) => set({ isInstallable }),
+  setDeferredPrompt: (deferredPrompt) => set({ 
+    deferredPrompt, 
+    isInstallable: !!deferredPrompt 
+  }),
+  setIsOnline: (isOnline) => set({ isOnline }),
   setCalibrationOffset: (offset) => set({ calibrationOffset: offset }),
   setSimulationTime: (simulationTime) => set({ simulationTime }),
   setTimeSpeed: (timeSpeed) => set({ timeSpeed }),

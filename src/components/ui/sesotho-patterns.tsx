@@ -1,15 +1,14 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
 interface PatternProps {
   className?: string;
   opacity?: number;
 }
 export function DiamondGrid({ className, opacity = 0.05 }: PatternProps) {
   return (
-    <svg
-      className={cn("absolute inset-0 w-full h-full pointer-events-none", className)}
-      xmlns="http://www.w3.org/2000/svg"
+    <svg 
+      className={cn("absolute inset-0 w-full h-full pointer-events-none", className)} 
+      xmlns="http://www.w3.org/2000/svg" 
       style={{ opacity }}
     >
       <defs>
@@ -22,62 +21,11 @@ export function DiamondGrid({ className, opacity = 0.05 }: PatternProps) {
     </svg>
   );
 }
-export function CalibrationMotion({ className, opacity = 0.5 }: PatternProps) {
-  return (
-    <div className={cn("relative w-64 h-40 flex items-center justify-center", className)} style={{ opacity }}>
-      <svg width="220" height="120" viewBox="0 0 180 100" className="text-nebula filter drop-shadow-[0_0_8px_rgba(234,179,8,0.4)]">
-        <motion.path
-          d="M 45 50 C 45 20 90 20 90 50 C 90 80 135 80 135 50 C 135 20 90 20 90 50 C 90 80 45 80 45 50 Z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-        />
-        <motion.circle
-          r="5"
-          fill="currentColor"
-          animate={{
-            offsetDistance: ["0%", "100%"]
-          }}
-          style={{ offsetPath: "path('M 45 50 C 45 20 90 20 90 50 C 90 80 135 80 135 50 C 135 20 90 20 90 50 C 90 80 45 80 45 50 Z')" }}
-          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-        />
-      </svg>
-      <div className="absolute inset-x-0 -bottom-6 text-center">
-        <span className="text-[9px] font-mono uppercase tracking-[0.4em] text-nebula/60 animate-pulse">Mag_Zero Calibration</span>
-      </div>
-    </div>
-  );
-}
-export function ConstellationWeb({ className, opacity = 0.03 }: PatternProps) {
-  return (
-    <svg
-      className={cn("absolute inset-0 w-full h-full pointer-events-none", className)}
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ opacity }}
-    >
-      <defs>
-        <pattern id="web-pattern" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
-          <path d="M 20 20 L 60 40 L 100 20 M 60 40 L 60 100 M 10 70 L 60 40" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 2" />
-          <circle cx="20" cy="20" r="1" fill="currentColor" />
-          <circle cx="60" cy="40" r="1.5" fill="currentColor" />
-          <circle cx="100" cy="20" r="1" fill="currentColor" />
-          <circle cx="60" cy="100" r="1" fill="currentColor" />
-          <circle cx="100" cy="70" r="1.5" fill="currentColor" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#web-pattern)" />
-    </svg>
-  );
-}
 export function ChevronFlow({ className, opacity = 0.03 }: PatternProps) {
   return (
-    <svg
-      className={cn("absolute inset-0 w-full h-full pointer-events-none", className)}
-      xmlns="http://www.w3.org/2000/svg"
+    <svg 
+      className={cn("absolute inset-0 w-full h-full pointer-events-none", className)} 
+      xmlns="http://www.w3.org/2000/svg" 
       style={{ opacity }}
     >
       <defs>
@@ -91,7 +39,7 @@ export function ChevronFlow({ className, opacity = 0.03 }: PatternProps) {
 }
 export function StarPoint({ className, opacity = 0.08 }: PatternProps) {
   return (
-    <div className={cn("absolute flex items-center justify-center pointer-events-none", className)} style={{ opacity }}>
+    <div className={cn("absolute flex items-center justify-center opacity-10", className)}>
       <svg width="200" height="200" viewBox="0 0 100 100" className="text-nebula">
         <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.1" strokeDasharray="2 2" />
         <path d="M 50 0 L 55 45 L 100 50 L 55 55 L 50 100 L 45 55 L 0 50 L 45 45 Z" fill="currentColor" />

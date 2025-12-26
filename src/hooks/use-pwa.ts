@@ -1,32 +1,20 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useAppStore } from '@/stores/app-store';
-import { toast } from 'sonner';
 export function usePWA() {
   const setDeferredPrompt = useAppStore(s => s.setDeferredPrompt);
   const setIsOnline = useAppStore(s => s.setIsOnline);
   const deferredPrompt = useAppStore(s => s.deferredPrompt);
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   useEffect(() => {
-    const checkStandalone = () => {
-      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
-        || (window.navigator as any).standalone
-        || document.referrer.includes('android-app://');
-      setIsStandalone(isStandaloneMode);
-    };
-    checkStandalone();
     const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
+      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
-      console.log('PWA: Install prompt available');
     };
     const handleAppInstalled = () => {
+      // Clear the deferredPrompt so it can be garbage collected
       setDeferredPrompt(null);
-      setIsInstallModalOpen(false);
-      toast.success('Dinaledi is now in your Starport!', {
-        description: 'Launch from your home screen for the full immersive experience.',
-        duration: 5000,
-      });
+      console.log('PWA: Application successfully installed');
     };
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -41,28 +29,15 @@ export function usePWA() {
       window.removeEventListener('offline', handleOffline);
     };
   }, [setDeferredPrompt, setIsOnline]);
-  const triggerInstallPrompt = useCallback(async () => {
-    if (!deferredPrompt) {
-      toast.info('Installation Ready', {
-        description: 'Use your browser menu to "Add to Home Screen" if the prompt does not appear.',
-      });
-      return;
-    }
-    try {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`PWA: User response to install prompt: ${outcome}`);
-      setDeferredPrompt(null);
-      setIsInstallModalOpen(false);
-    } catch (err) {
-      console.error('PWA: Installation failed', err);
-      setIsInstallModalOpen(false);
-    }
+  const installApp = useCallback(async () => {
+    if (!deferredPrompt) return;
+    // Show the install prompt
+    deferredPrompt.prompt();
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`PWA: User response to install prompt: ${outcome}`);
+    // We've used the prompt, and can't use it again, throw it away
+    setDeferredPrompt(null);
   }, [deferredPrompt, setDeferredPrompt]);
-  return { 
-    triggerInstallPrompt, 
-    isStandalone, 
-    isInstallModalOpen, 
-    setIsInstallModalOpen 
-  };
+  return { installApp };
 }
