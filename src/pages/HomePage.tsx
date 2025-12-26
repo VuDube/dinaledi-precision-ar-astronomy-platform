@@ -7,7 +7,7 @@ import { NightModeProvider } from '@/components/ui/night-mode-provider';
 import { useAppStore } from '@/stores/app-store';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Sparkles, ArrowRight, Loader2, Triangle, Globe } from 'lucide-react';
+import { Sparkles, ArrowRight, Loader2, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOrientation } from '@/hooks/use-orientation';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,7 @@ export function HomePage() {
     if (isCalibrated && mode === 'intro') {
       const timer = setTimeout(() => {
         setMode('skyview');
-      }, 1200);
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [isCalibrated, mode, setMode]);
@@ -35,8 +35,13 @@ export function HomePage() {
     <NightModeProvider>
       <div className="relative h-screen w-screen overflow-hidden bg-space-black">
         <motion.div
-          className={cn("transition-all duration-1000", mode !== 'skyview' && "scale-105 blur-lg opacity-30")}
-          animate={{ opacity: mode === 'intro' ? 0.2 : 1 }}
+          className="absolute inset-0 z-0"
+          animate={{ 
+            opacity: mode === 'intro' ? 0.3 : 1,
+            scale: mode === 'intro' ? 1.05 : 1,
+            filter: mode === 'intro' ? 'blur(4px)' : 'blur(0px)'
+          }}
+          transition={{ duration: 2, ease: "easeInOut" }}
         >
           <StarScene />
         </motion.div>
@@ -48,18 +53,18 @@ export function HomePage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.1, filter: 'blur(40px)' }}
-              transition={{ duration: 0.8 }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/70 backdrop-blur-md"
+              exit={{ opacity: 0, scale: 1.2, filter: 'blur(60px)' }}
+              transition={{ duration: 1.2, ease: "circIn" }}
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/60 backdrop-blur-sm"
             >
               <DiamondGrid opacity={0.05} />
-              <div className="max-w-2xl w-full py-8 md:py-12 text-center space-y-12 relative z-10">
+              <div className="max-w-2xl w-full py-12 text-center space-y-12 relative z-10">
                 <div className="flex justify-center">
                   <motion.div
                     initial={{ scale: 0, rotate: -45 }}
                     animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: 'spring', damping: 12 }}
-                    className="w-24 h-24 rounded-[2.5rem] bg-gradient-to-br from-nebula to-[#D14615] flex items-center justify-center shadow-[0_0_50px_rgba(234,179,8,0.4)]"
+                    transition={{ type: 'spring', damping: 12, delay: 0.2 }}
+                    className="w-24 h-24 rounded-[2.5rem] bg-gradient-to-br from-nebula to-[#D14615] flex items-center justify-center shadow-[0_0_60px_rgba(234,179,8,0.5)]"
                   >
                     <Sparkles className="w-12 h-12 text-white" />
                   </motion.div>
@@ -70,34 +75,34 @@ export function HomePage() {
                       <motion.h1
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        className="text-7xl md:text-9xl font-display font-bold text-starlight tracking-tight"
+                        className="text-7xl md:text-9xl font-display font-black text-starlight tracking-tighter"
                       >
                         DIN<span className="text-nebula">A</span>LEDI
                       </motion.h1>
                       <p className="text-xl md:text-2xl text-starlight/60 font-light max-w-lg mx-auto leading-relaxed text-pretty">
-                        A high-precision viewport into the ancestral sky.
-                        Professional astronomy meets South African lore.
+                        A precision-calibrated viewport into ancestral skies.
+                        Professional data meets South African celestial lore.
                       </p>
                     </div>
                     <Button
                       onClick={handleStart}
-                      className="h-20 px-14 rounded-4xl bg-starlight text-space-black hover:bg-nebula hover:scale-105 transition-all duration-500 text-2xl font-bold group shadow-3xl animate-pulse"
+                      className="h-20 px-16 rounded-[2rem] bg-starlight text-space-black hover:bg-nebula hover:scale-105 transition-all duration-500 text-2xl font-bold group shadow-2xl"
                     >
                       Begin Observation
                       <ArrowRight className="ml-3 w-8 h-8 group-hover:translate-x-2 transition-transform" />
                     </Button>
-                    <div className="pt-16 flex flex-col items-center gap-4">
-                      <div className="flex items-center gap-2 text-[11px] font-mono text-starlight/20 uppercase tracking-[0.5em]">
-                        <Globe className="w-3.5 h-3.5" />
-                        Authenticated with Cloudflare Edge
+                    <div className="pt-20 flex flex-col items-center gap-4 opacity-30">
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-starlight uppercase tracking-[0.5em]">
+                        <Globe className="w-3 h-3" />
+                        Validated via Cloudflare Edge
                       </div>
-                      <div className="text-[10px] font-mono text-starlight/10 uppercase tracking-widest">
-                        Sesotho Starpoint Visual System v1.5 • Final Release
+                      <div className="text-[9px] font-mono text-starlight uppercase tracking-widest">
+                        Sesotho Starpoint Visual System v1.8 • Final Build
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-12 animate-in fade-in zoom-in duration-1000">
+                  <div className="space-y-12">
                     <div className="flex flex-col items-center gap-8">
                       <div className="relative">
                         <Loader2 className="w-24 h-24 text-nebula animate-spin" strokeWidth={1} />
@@ -109,15 +114,15 @@ export function HomePage() {
                         <h2 className="text-4xl font-bold text-starlight tracking-tight">
                           {isCalibrated ? "Ready for Voyage" : "Precision Calibration"}
                         </h2>
-                        <p className="text-starlight/40 font-mono text-sm uppercase tracking-[0.4em]">
-                          {isCalibrated ? "Celestial sphere initialized" : "Neutralizing sensor bias • Keep steady"}
+                        <p className="text-starlight/40 font-mono text-xs uppercase tracking-[0.4em]">
+                          {isCalibrated ? "Celestial sphere aligned" : "Keep device steady • Neutralizing bias"}
                         </p>
                       </div>
                     </div>
                     <div className="max-w-xs mx-auto w-full space-y-4">
-                      <Progress value={calibrationProgress} className="h-1.5 bg-white/5" />
-                      <div className="flex justify-between font-mono text-[11px] text-starlight/30 tabular-nums">
-                        <span>SENSOR_STABILITY</span>
+                      <Progress value={calibrationProgress} className="h-1 bg-white/10" />
+                      <div className="flex justify-between font-mono text-[10px] text-starlight/30 tabular-nums">
+                        <span>SENSOR_SYMMETRY</span>
                         <span>{Math.round(calibrationProgress)}%</span>
                       </div>
                     </div>

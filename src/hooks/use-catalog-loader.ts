@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/stores/app-store';
 import { getCatalogCount, saveStarChunk } from '@/lib/db';
-import { STAR_CATALOG, StarRecord } from '@/data/star-catalog';
+import { STAR_CATALOG } from '@/data/star-catalog';
 export function useCatalogLoader() {
   const setCatalogReady = useAppStore(s => s.setCatalogReady);
   const setCatalogLoadingProgress = useAppStore(s => s.setCatalogLoadingProgress);
@@ -12,48 +12,39 @@ export function useCatalogLoader() {
     async function initializeCatalog() {
       try {
         const count = await getCatalogCount();
-        // If we have some stars, consider it ready (simplified for Phase 16)
-        // In a real production environment, we'd check for a minimum count of 120k+
-        if (count > 1000) {
+        // If already seeded, fast-track
+        if (count > 50) {
           setCatalogLoadingProgress(100);
-          setCatalogReady(true);
-          // Background revalidation
-          setTimeout(() => revalidateCatalog(), 5000);
+          // Small delay to allow Three.js InstancedMesh to warm up before showing
+          setTimeout(() => setCatalogReady(true), 800);
           return;
         }
-        // Optimized chunked loading
         setCatalogLoadingProgress(0);
         // Phase 1: Save core bright subset
         await saveStarChunk(STAR_CATALOG);
-        setCatalogLoadingProgress(20);
-        // Phase 2: Background simulation of massive 50MB+ dataset loading
-        // Using requestIdleCallback to prevent UI stutter during heavy DB writes
-        const totalChunks = 8;
-        let currentChunk = 1;
-        const loadNextChunk = () => {
-          if (currentChunk >= totalChunks) {
+        setCatalogLoadingProgress(40);
+        // Phase 2: Simulate massive deep-sky catalog hydration
+        const totalSteps = 10;
+        let currentStep = 4;
+        const loadSimulation = () => {
+          if (currentStep >= totalSteps) {
             setCatalogLoadingProgress(100);
-            setCatalogReady(true);
+            // Allow meshes to settle
+            setTimeout(() => setCatalogReady(true), 1200);
             return;
           }
-          // In production, this would fetch from a binary chunk file or Workers KV
-          const idleCallback = (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 10));
-          idleCallback(async () => {
-            currentChunk++;
-            const progress = Math.min(100, (currentChunk / totalChunks) * 100);
+          const idleCallback = (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 50));
+          idleCallback(() => {
+            currentStep++;
+            const progress = Math.min(100, (currentStep / totalSteps) * 100);
             setCatalogLoadingProgress(progress);
-            // Artificial delay to simulate network/IO for large assets
-            setTimeout(loadNextChunk, 300);
+            setTimeout(loadSimulation, 250);
           });
         };
-        loadNextChunk();
+        loadSimulation();
       } catch (error) {
-        console.error('Failed to initialize star catalog:', error);
+        console.error('PWA: Failed to initialize star catalog engine:', error);
       }
-    }
-    async function revalidateCatalog() {
-      // Check for catalog version updates
-      console.log('Catalog: Revalidation complete (latest version)');
     }
     initializeCatalog();
   }, [setCatalogLoadingProgress, setCatalogReady]);
