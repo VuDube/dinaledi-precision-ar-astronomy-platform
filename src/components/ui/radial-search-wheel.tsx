@@ -4,9 +4,11 @@ import { useAppStore } from '@/stores/app-store';
 import { Search, Sparkles, Book, Target, X } from 'lucide-react';
 import { DiamondGrid } from '@/components/ui/sesotho-patterns';
 import { cn } from '@/lib/utils';
+import { LucideProps } from 'lucide-react';
+
 interface RadialButton {
   id: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<LucideProps>;
   label: string;
   action: () => void;
 }

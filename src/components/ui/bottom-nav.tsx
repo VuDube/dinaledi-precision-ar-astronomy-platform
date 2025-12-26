@@ -7,10 +7,11 @@ import { DiamondGrid } from '@/components/ui/sesotho-patterns';
 import { usePWA } from '@/hooks/use-pwa';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 type AppMode = 'intro' | 'skyview' | 'log' | 'settings' | 'highlights' | 'search' | 'pwa-install';
+import type { LucideIcon } from 'lucide-react';
 interface NavItem {
   id: AppMode | 'night' | 'install' | 'search';
   label: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
 }
 const ITEMS: NavItem[] = [
   { id: 'skyview', label: 'Sky', icon: Compass },
@@ -65,7 +66,7 @@ export function BottomNav() {
             const Icon = item.icon;
             return (
               <motion.button
-                key={item.id}
+                key={`${item.id}-${ITEMS.indexOf(item)}`}
                 whileTap={{ scale: 0.92 }}
                 onClick={() => handleNav(item.id)}
                 className={cn(

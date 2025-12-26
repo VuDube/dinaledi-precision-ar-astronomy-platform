@@ -58,7 +58,7 @@ export function StarField() {
       faintMeshRef.current.instanceMatrix.needsUpdate = true;
       if (faintMeshRef.current.instanceColor) faintMeshRef.current.instanceColor.needsUpdate = true;
     }
-  }, [primaryStars, faintStars, dummy]);
+  }, [dummy, primaryStars, faintStars]);
   useFrame(() => {
     projScreenMatrix.current.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     frustum.current.setFromProjectionMatrix(projScreenMatrix.current);
@@ -76,10 +76,14 @@ export function StarField() {
           dummy.scale.setScalar(nextScale);
           dummy.updateMatrix();
           meshRef.current!.setMatrixAt(i, dummy.matrix);
+          meshRef.current!.setColorAt(i, star.color);
           primaryChanged = true;
         }
       });
-      if (primaryChanged) meshRef.current.instanceMatrix.needsUpdate = true;
+      if (primaryChanged) {
+        meshRef.current.instanceMatrix.needsUpdate = true;
+        if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
+      }
     }
     if (faintMeshRef.current) {
       let faintChanged = false;
@@ -94,21 +98,25 @@ export function StarField() {
           dummy.scale.setScalar(nextScale);
           dummy.updateMatrix();
           faintMeshRef.current!.setMatrixAt(i, dummy.matrix);
+          faintMeshRef.current!.setColorAt(i, star.color);
           faintChanged = true;
         }
       });
-      if (faintChanged) faintMeshRef.current.instanceMatrix.needsUpdate = true;
+      if (faintChanged) {
+        faintMeshRef.current.instanceMatrix.needsUpdate = true;
+        if (faintMeshRef.current.instanceColor) faintMeshRef.current.instanceColor.needsUpdate = true;
+      }
     }
   });
   return (
     <group>
       <instancedMesh ref={meshRef} args={[undefined, undefined, primaryStars.length]}>
-        <sphereGeometry args={[1.5, 8, 8]} />
-        <meshBasicMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} />
+        <sphereGeometry args={[2, 12, 12]} />
+        <meshBasicMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
       </instancedMesh>
       <instancedMesh ref={faintMeshRef} args={[undefined, undefined, faintStars.length]}>
-        <sphereGeometry args={[1.0, 6, 6]} />
-        <meshBasicMaterial transparent opacity={0.7} blending={THREE.AdditiveBlending} depthWrite={false} />
+        <sphereGeometry args={[1.5, 8, 8]} />
+        <meshBasicMaterial transparent opacity={0.7} blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
       </instancedMesh>
     </group>
   );

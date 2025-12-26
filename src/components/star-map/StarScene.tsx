@@ -1,5 +1,5 @@
-import React, { Suspense, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import React, { useRef, useEffect, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars, PerspectiveCamera, Environment, Sky } from '@react-three/drei';
 import { StarField } from './StarField';
@@ -128,6 +128,7 @@ export function StarScene() {
   const lat = useAppStore(s => s.latitude);
   const lon = useAppStore(s => s.longitude);
   const fov = useAppStore(s => s.fov);
+  const isCatalogReady = useAppStore(s => s.isCatalogReady);
   useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const ambientIntensity = Math.max(0.05, THREE.MathUtils.mapLinear(sunPos.altitude, -18, 10, 0.1, 1.2));
@@ -140,20 +141,24 @@ export function StarScene() {
       >
         <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={fov} far={3500} />
         <color attach='background' args={['#020617']} />
-        <Suspense fallback={<LoadingIndicator />}>
-          <Atmosphere />
-          <MilkyWay />
-          <StarField />
-          <SolarSystem />
-          <DeepSkyObjects />
-          <ConstellationLines />
-          <ConstellationBoundaries />
-          <SlewController />
-          <Stars radius={700} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} />
-          <CelestialGrid />
-          <TargetTelemetry />
-          <Environment preset="night" />
-        </Suspense>
+        {!isCatalogReady ? (
+          <LoadingIndicator />
+        ) : (
+          <>
+            <Atmosphere />
+            <MilkyWay />
+            <StarField />
+            <SolarSystem />
+            <DeepSkyObjects />
+            <ConstellationLines />
+            <ConstellationBoundaries />
+            <SlewController />
+          </>
+        )}
+        <Stars radius={700} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} />
+        <CelestialGrid />
+        {isCatalogReady && <TargetTelemetry />}
+        <Environment preset="night" />
         <GestureController />
         {isSensorActive ? (
           <ARController />
@@ -168,7 +173,7 @@ export function StarScene() {
             dampingFactor={0.05}
           />
         )}
-        <fog attach="fog" args={[skyColor, 1200, 3000]} />
+        <fog attach="fog" args={[skyColor, 800, 3500]} />
         <ambientLight intensity={ambientIntensity} />
       </Canvas>
     </div>
