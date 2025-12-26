@@ -3,7 +3,7 @@ import { StarRecord } from '@/data/star-catalog';
 import { DSORecord } from '@/data/dso-catalog';
 export type AppMode = 'intro' | 'skyview' | 'log' | 'settings' | 'highlights' | 'search';
 export type PermissionStatus = 'prompt' | 'granted' | 'denied' | 'unavailable';
-export type GPSStatus = 'idle' | 'tracking' | 'error' | 'denied';
+export type GPSStatus = 'idle' | 'tracking' | 'error' | 'denied' | 'unavailable';
 interface Orientation {
   alpha: number;
   beta: number;

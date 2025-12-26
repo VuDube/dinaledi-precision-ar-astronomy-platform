@@ -46,6 +46,7 @@ export function SettingsPanel() {
                   <Label className="text-starlight/80">GPS Tracking</Label>
                   <Switch checked={gpsEnabled} onCheckedChange={setGPSEnabled} />
                 </div>
+                <div className='text-xs text-starlight/40 mt-2 px-3 py-1.5 bg-space-black/30 rounded-lg border border-starlight/5'>Real HTTPS device/browser required for GPS. Unavailable in sandbox/previews.</div>
                 <div className="flex items-center justify-between">
                   <Label className="text-starlight/80">Auto-Bortle Detection</Label>
                   <Switch checked={autoBortle} onCheckedChange={setAutoBortle} />
