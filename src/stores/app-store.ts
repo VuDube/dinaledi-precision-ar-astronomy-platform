@@ -80,7 +80,6 @@ interface AppState {
   setLocation: (lat: number, lon: number) => void;
   setBortleScale: (scale: number) => void;
   setAutoBortle: (auto: boolean) => void;
-  setCalibratedOffset: (offset: number) => void;
   setCalibrationOffset: (offset: number) => void;
   setIsOnline: (online: boolean) => void;
   setDeferredPrompt: (prompt: any) => void;
@@ -176,7 +175,6 @@ export const useAppStore = create<AppState>((set) => ({
     set({ bortleScale: scale, magnitudeLimit: mag });
   },
   setAutoBortle: (autoBortle) => set({ autoBortle }),
-  setCalibratedOffset: (offset) => set({ calibrationOffset: offset }),
   setCalibrationOffset: (offset) => set({ calibrationOffset: offset }),
   setIsOnline: (isOnline) => set({ isOnline }),
   setDeferredPrompt: (deferredPrompt) => set({ deferredPrompt, isInstallable: !!deferredPrompt }),

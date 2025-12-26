@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { useAppStore } from '@/stores/app-store';
 import { STAR_CATALOG } from '@/data/star-catalog';
@@ -7,6 +7,7 @@ import { Star, Telescope, Sparkles, History, Mic, AlertCircle } from 'lucide-rea
 import { DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 export function SearchPanel() {
   const isSearchOpen = useAppStore(s => s.isSearchOpen);
   const setSearchOpen = useAppStore(s => s.setSearchOpen);
@@ -45,12 +46,7 @@ export function SearchPanel() {
       recognitionRef.current = recognition;
     }
   }, []);
-  useEffect(() => {
-    if (isSearchOpen && isVoiceTriggered) {
-      handleToggleVoice();
-    }
-  }, [isSearchOpen, isVoiceTriggered]);
-  const handleToggleVoice = () => {
+  const handleToggleVoice = useCallback(() => {
     if (!recognitionRef.current) {
       toast.error('Speech Recognition not supported in this browser');
       return;
@@ -66,7 +62,12 @@ export function SearchPanel() {
         console.warn('Recognition start failed:', e);
       }
     }
-  };
+  }, [isListening]);
+  useEffect(() => {
+    if (isSearchOpen && isVoiceTriggered) {
+      handleToggleVoice();
+    }
+  }, [isSearchOpen, isVoiceTriggered, handleToggleVoice]);
   const culturalEntities = useMemo(() => {
     const stars = STAR_CATALOG.filter(s => s.culture).map(s => ({ ...s, searchType: 'star' }));
     const dsos = DSO_CATALOG.filter(d => d.culture).map(d => ({ ...d, searchType: 'dso' }));
