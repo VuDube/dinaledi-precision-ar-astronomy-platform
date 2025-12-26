@@ -1,6 +1,9 @@
 export interface StarRecord {
   id: string;
   name?: string;
+  localName?: string;
+  culture?: string;
+  lore?: string;
   ra: number; // Hours (0-24)
   dec: number; // Degrees (-90 to +90)
   mag: number; // Apparent Magnitude
@@ -8,9 +11,23 @@ export interface StarRecord {
   dist?: number; // Light years
 }
 export const STAR_CATALOG: StarRecord[] = [
-  { id: "1", name: "Sirius", ra: 6.75, dec: -16.71, mag: -1.46, bv: 0.00, dist: 8.6 },
-  { id: "2", name: "Canopus", ra: 6.4, dec: -52.7, mag: -0.72, bv: 0.15, dist: 310 },
-  { id: "3", name: "Alpha Centauri", ra: 14.66, dec: -60.83, mag: -0.27, bv: 0.71, dist: 4.37 },
+  { 
+    id: "1", 
+    name: "Sirius", 
+    localName: "Inkhanyeti", 
+    culture: "SeSwati", 
+    lore: "The 'Brightest One', often used as a seasonal marker for the harvest in the Mpumalanga region.",
+    ra: 6.75, dec: -16.71, mag: -1.46, bv: 0.00, dist: 8.6 
+  },
+  { 
+    id: "2", 
+    name: "Canopus", 
+    localName: "Naka", 
+    culture: "Sotho/Tswana", 
+    lore: "The 'Messenger Star'. Its appearance in the winter morning sky signals the beginning of the traditional new year and the arrival of frost.",
+    ra: 6.4, dec: -52.7, mag: -0.72, bv: 0.15, dist: 310 
+  },
+  { id: "3", name: "Alpha Centauri", localName: "Isandla", culture: "Zulu", lore: "Part of the hand or eyes of the giant celestial hunter.", ra: 14.66, dec: -60.83, mag: -0.27, bv: 0.71, dist: 4.37 },
   { id: "4", name: "Arcturus", ra: 14.26, dec: 19.18, mag: -0.05, bv: 1.23, dist: 36.7 },
   { id: "5", name: "Vega", ra: 18.61, dec: 38.78, mag: 0.03, bv: 0.00, dist: 25 },
   { id: "6", name: "Capella", ra: 5.28, dec: 46.0, mag: 0.08, bv: 0.8, dist: 42.9 },

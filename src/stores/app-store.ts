@@ -4,6 +4,7 @@ import { DSORecord } from '@/data/dso-catalog';
 export type AppMode = 'intro' | 'skyview' | 'log' | 'settings' | 'highlights' | 'search';
 export type PermissionStatus = 'prompt' | 'granted' | 'denied' | 'unavailable';
 export type GPSStatus = 'idle' | 'tracking' | 'error' | 'denied' | 'unavailable';
+export type LorePreference = 'western' | 'african' | 'both';
 interface Orientation {
   alpha: number;
   beta: number;
@@ -13,11 +14,16 @@ interface Orientation {
 interface AppState {
   mode: AppMode;
   isCalibrated: boolean;
+  calibrationProgress: number;
+  isCatalogReady: boolean;
+  catalogLoadingProgress: number;
+  preferredLore: LorePreference;
   isObserving: boolean;
   magnitudeLimit: number;
   bortleScale: number;
   autoBortle: boolean;
   showConstellations: boolean;
+  showBoundaries: boolean;
   showConstellationLabels: boolean;
   showGrid: boolean;
   targetObject: string | null;
@@ -38,10 +44,15 @@ interface AppState {
   isSearchOpen: boolean;
   setMode: (mode: AppMode) => void;
   setCalibrated: (status: boolean) => void;
+  setCalibrationProgress: (progress: number | ((prev: number) => number)) => void;
+  setCatalogReady: (status: boolean) => void;
+  setCatalogLoadingProgress: (progress: number) => void;
+  setPreferredLore: (lore: LorePreference) => void;
   setObserving: (observing: boolean) => void;
   setBortleScale: (scale: number) => void;
   setAutoBortle: (auto: boolean) => void;
   toggleConstellations: () => void;
+  toggleBoundaries: () => void;
   toggleConstellationLabels: () => void;
   toggleGrid: () => void;
   setTarget: (target: string | null) => void;
@@ -63,11 +74,16 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   mode: 'intro',
   isCalibrated: false,
+  calibrationProgress: 0,
+  isCatalogReady: false,
+  catalogLoadingProgress: 0,
+  preferredLore: 'both',
   isObserving: false,
   magnitudeLimit: 6.5,
   bortleScale: 4,
   autoBortle: true,
   showConstellations: true,
+  showBoundaries: false,
   showConstellationLabels: true,
   showGrid: true,
   targetObject: null,
@@ -88,6 +104,12 @@ export const useAppStore = create<AppState>((set) => ({
   isSearchOpen: false,
   setMode: (mode) => set({ mode }),
   setCalibrated: (status) => set({ isCalibrated: status }),
+  setCalibrationProgress: (progress) => set((state) => ({ 
+    calibrationProgress: typeof progress === 'function' ? progress(state.calibrationProgress) : progress 
+  })),
+  setCatalogReady: (status) => set({ isCatalogReady: status }),
+  setCatalogLoadingProgress: (progress) => set({ catalogLoadingProgress: progress }),
+  setPreferredLore: (lore) => set({ preferredLore: lore }),
   setObserving: (isObserving) => set({ isObserving }),
   setBortleScale: (scale) => {
     const mag = Math.max(3.5, 7.5 - (scale * 0.4));
@@ -95,6 +117,7 @@ export const useAppStore = create<AppState>((set) => ({
   },
   setAutoBortle: (autoBortle) => set({ autoBortle }),
   toggleConstellations: () => set((state) => ({ showConstellations: !state.showConstellations })),
+  toggleBoundaries: () => set((state) => ({ showBoundaries: !state.showBoundaries })),
   toggleConstellationLabels: () => set((state) => ({ showConstellationLabels: !state.showConstellationLabels })),
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
   setTarget: (target) => set({ targetObject: target }),

@@ -5,8 +5,10 @@ import { StarField } from './StarField';
 import { ARController } from './ARController';
 import { DeepSkyObjects } from './DeepSkyObjects';
 import { ConstellationLines } from './ConstellationLines';
+import { ConstellationBoundaries } from './ConstellationBoundaries';
 import { useAppStore } from '@/stores/app-store';
 import { getSunPosition, getSkyColor } from '@/lib/astronomy-math';
+import { useCatalogLoader } from '@/hooks/use-catalog-loader';
 import * as THREE from 'three';
 function CelestialGrid() {
   const showGrid = useAppStore(s => s.showGrid);
@@ -30,14 +32,13 @@ function Atmosphere() {
   const simulationTime = useAppStore(s => s.simulationTime);
   const lat = useAppStore(s => s.latitude);
   const lon = useAppStore(s => s.longitude);
+  const bortleScale = useAppStore(s => s.bortleScale);
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
-  // Map sun altitude to sky parameters
-  const turbidity = THREE.MathUtils.mapLinear(sunPos.altitude, -20, 20, 10, 2);
-  const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -20, 20, 0.1, 3);
-  const mieCoefficient = 0.005;
-  const mieDirectionalG = 0.7;
+  // Adapt turbidity based on light pollution
+  const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 20);
+  const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -20, 20, 0.1, 4);
   return (
-    <Sky 
+    <Sky
       sunPosition={[
         100 * Math.cos(THREE.MathUtils.degToRad(sunPos.altitude)) * Math.sin(THREE.MathUtils.degToRad(sunPos.azimuth)),
         100 * Math.sin(THREE.MathUtils.degToRad(sunPos.altitude)),
@@ -45,17 +46,17 @@ function Atmosphere() {
       ]}
       turbidity={turbidity}
       rayleigh={rayleigh}
-      mieCoefficient={mieCoefficient}
-      mieDirectionalG={mieDirectionalG}
+      mieCoefficient={0.005}
+      mieDirectionalG={0.8}
     />
   );
 }
 export function StarScene() {
   const isSensorActive = useAppStore(s => s.isSensorActive);
-  const orientation = useAppStore(s => s.orientation);
   const simulationTime = useAppStore(s => s.simulationTime);
   const lat = useAppStore(s => s.latitude);
   const lon = useAppStore(s => s.longitude);
+  useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const ambientIntensity = Math.max(0.05, THREE.MathUtils.mapLinear(sunPos.altitude, -18, 10, 0.1, 1));
   const skyColor = getSkyColor(sunPos.altitude);
@@ -71,15 +72,8 @@ export function StarScene() {
           <StarField />
           <DeepSkyObjects />
           <ConstellationLines />
-          <Stars
-            radius={600}
-            depth={60}
-            count={7000}
-            factor={6}
-            saturation={0.5}
-            fade
-            speed={0.5}
-          />
+          <ConstellationBoundaries />
+          <Stars radius={600} depth={60} count={5000} factor={4} saturation={0.5} fade speed={0.5} />
           <CelestialGrid />
           <Environment preset="night" />
         </Suspense>
@@ -90,11 +84,11 @@ export function StarScene() {
             enableZoom={false}
             enablePan={false}
             autoRotate={!isSensorActive && sunPos.altitude < -12}
-            autoRotateSpeed={0.15}
-            rotateSpeed={-0.4}
+            autoRotateSpeed={0.1}
+            rotateSpeed={-0.3}
           />
         )}
-        <fog attach="fog" args={[skyColor, 500, 2500]} />
+        <fog attach="fog" args={[skyColor, 800, 2800]} />
         <ambientLight intensity={ambientIntensity} />
       </Canvas>
     </div>
