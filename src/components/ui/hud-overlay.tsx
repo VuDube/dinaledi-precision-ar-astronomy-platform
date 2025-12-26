@@ -1,12 +1,14 @@
 import React from 'react';
-import { Wifi, Crosshair, Loader2, Diamond, CloudOff } from 'lucide-react';
+import { Wifi, Crosshair, Loader2, CloudOff, Target } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
 import { BottomNav } from '@/components/ui/bottom-nav';
 import { SettingsPanel } from '@/components/ui/settings-panel';
 import { HighlightsPanel } from '@/components/ui/highlights-panel';
+import { HighlightsCarousel } from '@/components/ui/highlights-carousel';
 import { TemporalControls } from '@/components/ui/temporal-controls';
 import { SearchPanel } from '@/components/ui/search-panel';
 import { TargetNavigator } from '@/components/ui/target-navigator';
+import { RadialSearchWheel } from '@/components/ui/radial-search-wheel';
 import { Progress } from '@/components/ui/progress';
 import { DiamondGrid, StarPoint } from '@/components/ui/sesotho-patterns';
 import { cn } from '@/lib/utils';
@@ -25,6 +27,8 @@ export function HUDOverlay() {
   const setObserving = useAppStore(s => s.setObserving);
   const isSlewing = useAppStore(s => s.isSlewing);
   const isOnline = useAppStore(s => s.isOnline);
+  const setRadialOpen = useAppStore(s => s.setRadialOpen);
+  const isRadialOpen = useAppStore(s => s.isRadialOpen);
   if (mode === 'intro') return null;
   const activeTarget = selectedStar || selectedDSO;
   const azimuth = Math.round(orientation.heading);
@@ -58,8 +62,8 @@ export function HUDOverlay() {
           </div>
           <div className="flex items-center gap-2 pointer-events-auto">
             {!isOnline && (
-              <motion.div 
-                initial={{ scale: 0 }} 
+              <motion.div
+                initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 className="glass px-2 py-1.5 rounded-full flex items-center gap-2 border-red-500/20 bg-red-500/10"
               >
@@ -89,11 +93,10 @@ export function HUDOverlay() {
             </motion.div>
           )}
         </AnimatePresence>
-        {/* Target Navigator Overlay */}
         <TargetNavigator />
-        {/* Targeting Info Card - Adjusted for Mobile Gestures */}
+        <HighlightsCarousel />
         <AnimatePresence>
-          {activeTarget && (
+          {activeTarget && mode === 'skyview' && (
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
@@ -128,8 +131,8 @@ export function HUDOverlay() {
         {/* Reticle Area */}
         <div className="flex-1 flex items-center justify-center relative">
            <StarPoint className="w-72 h-72 scale-150" opacity={0.015} />
-           <div className="relative">
-              <Crosshair className={cn("w-16 h-16 transition-all duration-700", activeTarget ? "text-nebula scale-110 rotate-45 opacity-60" : "text-starlight/5")} strokeWidth={0.2} />
+           <div className="relative pointer-events-auto" onClick={() => setRadialOpen(!isRadialOpen)}>
+              <Crosshair className={cn("w-16 h-16 transition-all duration-700 cursor-pointer active:scale-90", activeTarget ? "text-nebula scale-110 rotate-45 opacity-60" : "text-starlight/20")} strokeWidth={0.2} />
               {activeTarget && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0 }}
@@ -140,8 +143,8 @@ export function HUDOverlay() {
                 </motion.div>
               )}
            </div>
+           <RadialSearchWheel />
         </div>
-        {/* Mobile Navigation */}
         <BottomNav />
       </div>
       <SettingsPanel />

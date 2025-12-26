@@ -1,47 +1,49 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/stores/app-store';
-import { Search, Sparkles, Book, Target, X, Mic, Share2 } from 'lucide-react';
+import { Search, Sparkles, Book, Target, X } from 'lucide-react';
 import { DiamondGrid } from '@/components/ui/sesotho-patterns';
 import { cn } from '@/lib/utils';
-import { LucideProps } from 'lucide-react';
-import { toast } from 'sonner';
 interface RadialButton {
   id: string;
-  icon: React.ComponentType<LucideProps>;
+  icon: React.ElementType;
   label: string;
   action: () => void;
-  color?: string;
 }
 export function RadialSearchWheel() {
   const isRadialOpen = useAppStore(s => s.isRadialOpen);
   const setRadialOpen = useAppStore(s => s.setRadialOpen);
   const setSearchOpen = useAppStore(s => s.setSearchOpen);
   const setMode = useAppStore(s => s.setMode);
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Dinaledi Astronomy',
-          text: 'Check out the stars with me on Dinaledi PWA!',
-          url: window.location.href,
-        });
-      } catch (err) {
-        console.error('Share failed:', err);
-      }
-    } else {
-      toast.info('Sharing not supported on this browser');
-    }
-  };
+  const selectedStar = useAppStore(s => s.selectedStar);
+  const selectedDSO = useAppStore(s => s.selectedDSO);
   const buttons: RadialButton[] = [
-    { id: 'search', icon: Search, label: 'Search', action: () => { setSearchOpen(true); setRadialOpen(false); } },
-    { id: 'highlights', icon: Sparkles, label: 'Tonight', action: () => { setMode('highlights'); setRadialOpen(false); } },
-    { id: 'log', icon: Book, label: 'Journal', action: () => { setMode('log'); setRadialOpen(false); } },
-    { id: 'voice', icon: Mic, label: 'Voice', action: () => { setSearchOpen(true); setRadialOpen(false); }, color: 'text-red-500' },
-    { id: 'share', icon: Share2, label: 'Share', action: () => { handleShare(); setRadialOpen(false); } },
-    { id: 'target', icon: Target, label: 'Info', action: () => { setRadialOpen(false); } },
+    { 
+      id: 'search', 
+      icon: Search, 
+      label: 'Search', 
+      action: () => { setSearchOpen(true); setRadialOpen(false); } 
+    },
+    { 
+      id: 'highlights', 
+      icon: Sparkles, 
+      label: 'Best Tonight', 
+      action: () => { setMode('highlights'); setRadialOpen(false); } 
+    },
+    { 
+      id: 'log', 
+      icon: Book, 
+      label: 'Manual Log', 
+      action: () => { setMode('log'); setRadialOpen(false); } 
+    },
+    { 
+      id: 'target', 
+      icon: Target, 
+      label: 'Target Info', 
+      action: () => { setRadialOpen(false); } 
+    },
   ];
-  const radius = 100;
+  const radius = 90;
   return (
     <AnimatePresence>
       {isRadialOpen && (
@@ -53,7 +55,7 @@ export function RadialSearchWheel() {
             className="absolute inset-0 bg-space-black/60 backdrop-blur-sm"
             onClick={() => setRadialOpen(false)}
           />
-          <div className="relative w-72 h-72 flex items-center justify-center">
+          <div className="relative w-64 h-64 flex items-center justify-center">
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
@@ -77,7 +79,7 @@ export function RadialSearchWheel() {
                   onClick={btn.action}
                   className="absolute w-14 h-14 glass-dark border-nebula/30 rounded-full flex flex-col items-center justify-center shadow-xl group"
                 >
-                  <btn.icon className={cn("w-5 h-5", btn.color || "text-nebula")} />
+                  <btn.icon className="w-5 h-5 text-nebula" />
                   <span className="text-[7px] font-bold uppercase tracking-widest text-starlight mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                     {btn.label}
                   </span>

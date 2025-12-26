@@ -11,13 +11,11 @@ interface Orientation {
   gamma: number;
   heading: number;
 }
-
 interface TargetTelemetry {
   angle: number;
   onScreen: boolean;
   azimuth: number;
 }
-
 interface AppState {
   mode: AppMode;
   isCalibrated: boolean;
@@ -55,6 +53,11 @@ interface AppState {
   longitude: number;
   searchQuery: string;
   isSearchOpen: boolean;
+  targetTelemetry: TargetTelemetry | null;
+  // Phase 21 additions
+  fov: number;
+  isRadialOpen: boolean;
+  isGesturingTime: boolean;
   setMode: (mode: AppMode) => void;
   setCalibrated: (status: boolean) => void;
   setCalibrationProgress: (progress: number | ((prev: number) => number)) => void;
@@ -89,8 +92,11 @@ interface AppState {
   setLocation: (lat: number, lon: number) => void;
   setSearchQuery: (searchQuery: string) => void;
   setSearchOpen: (open: boolean) => void;
-  targetTelemetry: TargetTelemetry | null;
   setTargetTelemetry: (telemetry: TargetTelemetry | null) => void;
+  // Phase 21 actions
+  setFOV: (fov: number) => void;
+  setRadialOpen: (open: boolean) => void;
+  setGesturingTime: (gesturing: boolean) => void;
 }
 export const useAppStore = create<AppState>((set) => ({
   mode: 'intro',
@@ -130,6 +136,10 @@ export const useAppStore = create<AppState>((set) => ({
   searchQuery: '',
   isSearchOpen: false,
   targetTelemetry: null,
+  // Phase 21 defaults
+  fov: 55,
+  isRadialOpen: false,
+  isGesturingTime: false,
   setMode: (mode) => set({ mode }),
   setCalibrated: (status) => set({
     isCalibrated: status,
@@ -172,9 +182,9 @@ export const useAppStore = create<AppState>((set) => ({
   setGPSStatus: (gpsStatus) => set({ gpsStatus }),
   setGPSEnabled: (gpsEnabled) => set({ gpsEnabled }),
   setInstallable: (isInstallable) => set({ isInstallable }),
-  setDeferredPrompt: (deferredPrompt) => set({ 
-    deferredPrompt, 
-    isInstallable: !!deferredPrompt 
+  setDeferredPrompt: (deferredPrompt) => set({
+    deferredPrompt,
+    isInstallable: !!deferredPrompt
   }),
   setIsOnline: (isOnline) => set({ isOnline }),
   setCalibrationOffset: (offset) => set({ calibrationOffset: offset }),
@@ -184,4 +194,8 @@ export const useAppStore = create<AppState>((set) => ({
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setSearchOpen: (isSearchOpen) => set({ isSearchOpen }),
   setTargetTelemetry: (telemetry) => set({ targetTelemetry: telemetry }),
+  // Phase 21 actions
+  setFOV: (fov) => set({ fov: Math.max(10, Math.min(90, fov)) }),
+  setRadialOpen: (isRadialOpen) => set({ isRadialOpen }),
+  setGesturingTime: (isGesturingTime) => set({ isGesturingTime }),
 }));

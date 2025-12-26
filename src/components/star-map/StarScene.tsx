@@ -4,6 +4,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars, PerspectiveCamera, Environment, Sky } from '@react-three/drei';
 import { StarField } from './StarField';
 import { ARController } from './ARController';
+import { GestureController } from './GestureController';
 import { DeepSkyObjects } from './DeepSkyObjects';
 import { ConstellationLines } from './ConstellationLines';
 import { ConstellationBoundaries } from './ConstellationBoundaries';
@@ -11,10 +12,7 @@ import { SolarSystem } from './SolarSystem';
 import { SlewController } from './SlewController';
 import { MilkyWay } from './MilkyWay';
 import { useAppStore } from '@/stores/app-store';
-import { getSunPosition, getSkyColor } from '@/lib/astronomy-math';
-import { radecToVector3 } from '@/lib/astronomy-math';
-import { StarRecord } from '@/data/star-catalog';
-import { DSORecord } from '@/data/dso-catalog';
+import { getSunPosition, getSkyColor, radecToVector3 } from '@/lib/astronomy-math';
 import { useCatalogLoader } from '@/hooks/use-catalog-loader';
 import * as THREE from 'three';
 function CelestialGrid() {
@@ -63,7 +61,6 @@ function TargetTelemetry() {
   const target = selectedStar || selectedDSO;
   const camera = useThree(state => state.camera);
   const setTargetTelemetry = useAppStore(s => s.setTargetTelemetry);
-  
   useFrame(() => {
     if(!target || !camera) {
       setTargetTelemetry(null);
@@ -79,15 +76,14 @@ function TargetTelemetry() {
     const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
     setTargetTelemetry({ angle, onScreen, azimuth });
   });
-  
   return null;
 }
-
 export function StarScene() {
   const isSensorActive = useAppStore(s => s.isSensorActive);
   const simulationTime = useAppStore(s => s.simulationTime);
   const lat = useAppStore(s => s.latitude);
   const lon = useAppStore(s => s.longitude);
+  const fov = useAppStore(s => s.fov);
   useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const ambientIntensity = Math.max(0.05, THREE.MathUtils.mapLinear(sunPos.altitude, -18, 10, 0.1, 1.2));
@@ -98,7 +94,7 @@ export function StarScene() {
         gl={{ antialias: true, stencil: false, depth: true, powerPreference: "high-performance" }}
         dpr={[1, 2]}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={55} far={3500} />
+        <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={fov} far={3500} />
         <Suspense fallback={null}>
           <Atmosphere />
           <MilkyWay />
@@ -113,6 +109,7 @@ export function StarScene() {
           <TargetTelemetry />
           <Environment preset="night" />
         </Suspense>
+        <GestureController />
         {isSensorActive ? (
           <ARController />
         ) : (
@@ -121,7 +118,7 @@ export function StarScene() {
             enablePan={false}
             autoRotate={!isSensorActive && sunPos.altitude < -15}
             autoRotateSpeed={0.06}
-            rotateSpeed={-0.2}
+            rotateSpeed={-0.2 * (fov / 55)} // Adjust sensitivity based on zoom
             enableDamping
             dampingFactor={0.05}
           />
