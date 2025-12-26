@@ -86,7 +86,8 @@ function runSetupCommands() {
     "bun add cmdk",
     "bun add uuid",
     "bun add sonner",
-    "bun add embla-carousel-react"
+    "bun add embla-carousel-react",
+    "bun add three @react-three/fiber @react-three/drei"
 ];
     
     if (commands.length === 0) {
