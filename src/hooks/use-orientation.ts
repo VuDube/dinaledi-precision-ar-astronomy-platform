@@ -43,47 +43,44 @@ export function useOrientation() {
       setPermissionStatus('unavailable');
       return false;
     }
-    // Begin 5s Zero-Motion Calibration
-    isCalibrating.current = true;
-    biasSamples.current = [];
-    setCalibrationProgress(0);
-    const calibrateInterval = setInterval(() => {
-      setCalibrationProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(calibrateInterval);
-          return 100;
-        }
-        return prev + 2;
-      });
-    }, 100);
-    // After 5s, calculate bias offset
-    setTimeout(() => {
-      isCalibrating.current = false;
-      if (biasSamples.current.length > 0) {
-        // Calculate average orientation during rest period to set as 'true north' or baseline
-        const avg = biasSamples.current.reduce((a, b) => a + b, 0) / biasSamples.current.length;
-        // The offset is the negative of the average to normalize it to 0
-        setCalibrationOffset(-avg);
-        setCalibrated(true);
-      }
-      setCalibrationProgress(100);
-    }, 5000);
     const requestPermissionFn = (DeviceOrientationEvent as any).requestPermission;
     try {
+      let status: PermissionState | 'granted' = 'granted';
       if (typeof requestPermissionFn === 'function') {
-        const response = await requestPermissionFn();
-        if (response === 'granted') {
-          setPermissionStatus('granted');
-          setSensorActive(true);
-          return true;
-        } else {
-          setPermissionStatus('denied');
-          return false;
-        }
-      } else {
+        status = await requestPermissionFn();
+      }
+      if (status === 'granted') {
         setPermissionStatus('granted');
         setSensorActive(true);
+        // START Calibration sequence ONLY after permission is granted
+        isCalibrating.current = true;
+        biasSamples.current = [];
+        setCalibrationProgress(0);
+        const calibrateDuration = 5000;
+        const intervalTime = 100;
+        let elapsed = 0;
+        const calibrateInterval = setInterval(() => {
+          elapsed += intervalTime;
+          const progress = Math.min(100, (elapsed / calibrateDuration) * 100);
+          setCalibrationProgress(progress);
+          if (elapsed >= calibrateDuration) {
+            clearInterval(calibrateInterval);
+            isCalibrating.current = false;
+            if (biasSamples.current.length > 0) {
+              const avg = biasSamples.current.reduce((a, b) => a + b, 0) / biasSamples.current.length;
+              setCalibrationOffset(-avg);
+              setCalibrated(true);
+            } else {
+              // Fallback if no samples were collected
+              setCalibrationOffset(0);
+              setCalibrated(true);
+            }
+          }
+        }, intervalTime);
         return true;
+      } else {
+        setPermissionStatus('denied');
+        return false;
       }
     } catch (error) {
       console.error('Orientation permission request failed:', error);
@@ -91,12 +88,12 @@ export function useOrientation() {
       return false;
     }
   }, [setPermissionStatus, setSensorActive, setCalibrationProgress, setCalibrated, setCalibrationOffset]);
-  const isIOS = typeof (DeviceOrientationEvent as any).requestPermission === 'function';
   useEffect(() => {
-    if (!isIOS && isSensorActive) {
+    // Both iOS and Android need the listener once active
+    if (isSensorActive) {
       window.addEventListener('deviceorientation', handleOrientation);
     }
     return () => window.removeEventListener('deviceorientation', handleOrientation);
-  }, [handleOrientation, isSensorActive, isIOS]);
+  }, [handleOrientation, isSensorActive]);
   return { requestPermission };
 }

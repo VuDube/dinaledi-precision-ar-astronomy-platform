@@ -11,10 +11,10 @@ export function StarField() {
   const { camera } = useThree();
   const frustum = useRef(new THREE.Frustum());
   const projScreenMatrix = useRef(new THREE.Matrix4());
+  const dummy = useMemo(() => new THREE.Object3D(), []);
   const { primaryStars, faintStars } = useMemo(() => {
     const primary = [];
     const faint = [];
-    // In Phase 10 we use the available subset; the full catalog expands this via IDB
     for (const star of STAR_CATALOG) {
       const data = {
         pos: radecToVector3(star.ra, star.dec, 1000),
@@ -29,7 +29,6 @@ export function StarField() {
     return { primaryStars: primary, faintStars: faint };
   }, []);
   useLayoutEffect(() => {
-    const dummy = new THREE.Object3D();
     if (meshRef.current) {
       primaryStars.forEach((star, i) => {
         dummy.position.copy(star.pos);
@@ -52,33 +51,41 @@ export function StarField() {
       faintMeshRef.current.instanceMatrix.needsUpdate = true;
       if (faintMeshRef.current.instanceColor) faintMeshRef.current.instanceColor.needsUpdate = true;
     }
-  }, [primaryStars, faintStars]);
+  }, [primaryStars, faintStars, dummy]);
   useFrame(() => {
-    // Dynamic Magnitude & Frustum Filtering
     projScreenMatrix.current.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     frustum.current.setFromProjectionMatrix(projScreenMatrix.current);
-    const dummy = new THREE.Object3D();
+    let primaryChanged = false;
     if (meshRef.current) {
       primaryStars.forEach((star, i) => {
         const isVisible = star.mag <= magnitudeLimit && frustum.current.containsPoint(star.pos);
+        const targetScale = isVisible ? star.baseScale : 0;
         meshRef.current!.getMatrixAt(i, dummy.matrix);
         dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
-        dummy.scale.setScalar(isVisible ? star.baseScale : 0);
-        dummy.updateMatrix();
-        meshRef.current!.setMatrixAt(i, dummy.matrix);
+        if (Math.abs(dummy.scale.x - targetScale) > 0.001) {
+          dummy.scale.setScalar(targetScale);
+          dummy.updateMatrix();
+          meshRef.current!.setMatrixAt(i, dummy.matrix);
+          primaryChanged = true;
+        }
       });
-      meshRef.current.instanceMatrix.needsUpdate = true;
+      if (primaryChanged) meshRef.current.instanceMatrix.needsUpdate = true;
     }
+    let faintChanged = false;
     if (faintMeshRef.current) {
       faintStars.forEach((star, i) => {
         const isVisible = star.mag <= magnitudeLimit && frustum.current.containsPoint(star.pos);
+        const targetScale = isVisible ? star.baseScale : 0;
         faintMeshRef.current!.getMatrixAt(i, dummy.matrix);
         dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
-        dummy.scale.setScalar(isVisible ? star.baseScale : 0);
-        dummy.updateMatrix();
-        faintMeshRef.current!.setMatrixAt(i, dummy.matrix);
+        if (Math.abs(dummy.scale.x - targetScale) > 0.001) {
+          dummy.scale.setScalar(targetScale);
+          dummy.updateMatrix();
+          faintMeshRef.current!.setMatrixAt(i, dummy.matrix);
+          faintChanged = true;
+        }
       });
-      faintMeshRef.current.instanceMatrix.needsUpdate = true;
+      if (faintChanged) faintMeshRef.current.instanceMatrix.needsUpdate = true;
     }
   });
   return (

@@ -103,9 +103,12 @@ export const useAppStore = create<AppState>((set) => ({
   searchQuery: '',
   isSearchOpen: false,
   setMode: (mode) => set({ mode }),
-  setCalibrated: (status) => set({ isCalibrated: status }),
-  setCalibrationProgress: (progress) => set((state) => ({ 
-    calibrationProgress: typeof progress === 'function' ? progress(state.calibrationProgress) : progress 
+  setCalibrated: (status) => set({ 
+    isCalibrated: status,
+    calibrationProgress: status ? 100 : 0 
+  }),
+  setCalibrationProgress: (progress) => set((state) => ({
+    calibrationProgress: typeof progress === 'function' ? progress(state.calibrationProgress) : progress
   })),
   setCatalogReady: (status) => set({ isCatalogReady: status }),
   setCatalogLoadingProgress: (progress) => set({ catalogLoadingProgress: progress }),

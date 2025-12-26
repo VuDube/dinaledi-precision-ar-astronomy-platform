@@ -13,31 +13,29 @@ import { cn } from '@/lib/utils';
 export function HomePage() {
   const mode = useAppStore(s => s.mode);
   const setMode = useAppStore(s => s.setMode);
-  const setCalibrated = useAppStore(s => s.setCalibrated);
+  const isCalibrated = useAppStore(s => s.isCalibrated);
+  const calibrationProgress = useAppStore(s => s.calibrationProgress);
   const { requestPermission } = useOrientation();
   const [isInitializing, setIsInitializing] = useState(false);
-  const [progress, setProgress] = useState(0);
+  // Auto-transition to skyview when calibration completes
+  useEffect(() => {
+    if (isCalibrated && mode === 'intro') {
+      const timer = setTimeout(() => {
+        setMode('skyview');
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isCalibrated, mode, setMode]);
   const handleStart = async () => {
     setIsInitializing(true);
-    const granted = await requestPermission();
-    let currentProgress = 0;
-    const interval = setInterval(() => {
-      currentProgress += 5;
-      setProgress(currentProgress);
-      if (currentProgress >= 100) {
-        clearInterval(interval);
-        setCalibrated(true);
-        setMode('skyview');
-      }
-    }, 100);
+    await requestPermission();
+    // Logic for calibration is now handled inside useOrientation hook
   };
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-space-black">
-      {/* 3D Core - Always renders behind UI */}
       <div className={cn("transition-all duration-1000", mode !== 'skyview' && "scale-105 blur-md opacity-40")}>
         <StarScene />
       </div>
-      {/* Decorative Background for Intro */}
       {mode === 'intro' && (
         <div className="absolute inset-0 pointer-events-none opacity-10">
           <div className="grid grid-cols-4 md:grid-cols-8 gap-12 p-12">
@@ -47,9 +45,7 @@ export function HomePage() {
           </div>
         </div>
       )}
-      {/* HUD System Overlay */}
       <HUDOverlay />
-      {/* Observation Overlays */}
       <ObservationLog />
       <ObservationForm />
       <AnimatePresence>
@@ -58,7 +54,7 @@ export function HomePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 1.1, filter: 'blur(20px)' }}
-            className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6"
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/40 backdrop-blur-sm"
           >
             <div className="max-w-2xl w-full py-8 md:py-12 text-center space-y-12">
               <div className="flex justify-center">
@@ -74,7 +70,7 @@ export function HomePage() {
               {!isInitializing ? (
                 <div className="space-y-10">
                   <div className="space-y-4">
-                    <motion.h1 
+                    <motion.h1
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       className="text-7xl md:text-8xl font-display font-bold text-starlight tracking-tight"
@@ -104,28 +100,23 @@ export function HomePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <h2 className="text-2xl font-bold text-starlight tracking-tight">Zero-Motion Calibration</h2>
+                      <h2 className="text-2xl font-bold text-starlight tracking-tight">
+                        {isCalibrated ? "Calibration Success" : "Zero-Motion Calibration"}
+                      </h2>
                       <p className="text-starlight/40 font-mono text-xs uppercase tracking-[0.3em]">
-                        Keep device steady on a flat surface
+                        {isCalibrated ? "Ready for observation" : "Keep device steady on a flat surface"}
                       </p>
                     </div>
                   </div>
                   <div className="max-w-xs mx-auto w-full space-y-2">
-                    <Progress value={progress} className="h-1 bg-white/10" />
+                    <Progress value={calibrationProgress} className="h-1 bg-white/10" />
                     <div className="flex justify-between font-mono text-[10px] text-starlight/20">
                       <span>STABILITY_CHECK</span>
-                      <span>{progress}%</span>
+                      <span>{Math.round(calibrationProgress)}%</span>
                     </div>
                   </div>
                 </div>
               )}
-            </div>
-            <div className="absolute bottom-12 text-center space-y-2 opacity-30">
-              <div className="flex justify-center gap-4">
-                <Triangle className="w-4 h-4 text-nebula" strokeWidth={1} />
-                <Triangle className="w-4 h-4 text-nebula" strokeWidth={1} />
-                <Triangle className="w-4 h-4 text-nebula" strokeWidth={1} />
-              </div>
             </div>
           </motion.div>
         )}
