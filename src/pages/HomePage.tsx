@@ -6,43 +6,35 @@ import { ObservationForm } from '@/components/ui/observation-form';
 import { NightModeProvider } from '@/components/ui/night-mode-provider';
 import { useAppStore } from '@/stores/app-store';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Sparkles, ArrowRight, Loader2, Globe } from 'lucide-react';
+import { Sparkles, ArrowRight, Loader2, Globe, Compass } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOrientation } from '@/hooks/use-orientation';
 import { usePWA } from '@/hooks/use-pwa';
-import { DiamondGrid, StarPoint } from '@/components/ui/sesotho-patterns';
+import { DiamondGrid, StarPoint, CalibrationMotion } from '@/components/ui/sesotho-patterns';
 import { toast } from 'sonner';
 export function HomePage() {
   const mode = useAppStore(s => s.mode);
   const setMode = useAppStore(s => s.setMode);
   const isCalibrated = useAppStore(s => s.isCalibrated);
   const calibrationProgress = useAppStore(s => s.calibrationProgress);
+  const isCatalogReady = useAppStore(s => s.isCatalogReady);
   const { requestPermission } = useOrientation();
   const { isStandalone } = usePWA();
-  const isCatalogReady = useAppStore(s => s.isCatalogReady);
   const [isInitializing, setIsInitializing] = useState(false);
   const handleStart = useCallback(async () => {
     setIsInitializing(true);
+    if (window.navigator.vibrate) window.navigator.vibrate(50);
     await requestPermission();
   }, [requestPermission]);
   useEffect(() => {
     if (isCalibrated && mode === 'intro') {
+      if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
       const timer = setTimeout(() => {
         setMode('skyview');
       }, 1500);
       return () => clearTimeout(timer);
     }
   }, [isCalibrated, mode, setMode]);
-  useEffect(() => {
-    if (isStandalone && !isInitializing && mode === 'intro') {
-      const timer = setTimeout(() => {
-        handleStart();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [isStandalone, isInitializing, mode, handleStart]);
-
   // Catalog loaded notification
   const hasShownCatalogToast = React.useRef(false);
   useEffect(() => {
@@ -51,6 +43,7 @@ export function HomePage() {
       hasShownCatalogToast.current = true;
     }
   }, [isCatalogReady]);
+  const showCalibrationHint = calibrationProgress > 20 && calibrationProgress < 85;
   return (
     <NightModeProvider>
       <div className="relative h-screen w-screen overflow-hidden bg-space-black">
@@ -77,8 +70,8 @@ export function HomePage() {
               transition={{ duration: 1.2, ease: "circIn" }}
               className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/80 backdrop-blur-md"
             >
-              <motion.div 
-                animate={{ rotate: 360 }} 
+              <motion.div
+                animate={{ rotate: 360 }}
                 transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
                 className="absolute inset-0 pointer-events-none"
               >
@@ -106,8 +99,8 @@ export function HomePage() {
                         DIN<span className="text-nebula">A</span>LEDI
                       </motion.h1>
                       <p className="text-lg sm:text-xl md:text-2xl text-starlight/60 font-light max-w-lg mx-auto leading-relaxed text-pretty px-4">
-                        A precision-calibrated viewport into ancestral skies.
-                        Professional data meets South African celestial lore.
+                        Precision-calibrated viewport into ancestral skies.
+                        Professional data meets South African lore.
                       </p>
                     </div>
                     <Button
@@ -117,34 +110,51 @@ export function HomePage() {
                       {isStandalone ? 'RESUME VOYAGE' : 'BEGIN OBSERVATION'}
                       <ArrowRight className="ml-3 w-6 h-6 sm:w-8 sm:h-8 group-hover:translate-x-2 transition-transform" />
                     </Button>
-                    <div className="pt-20 flex flex-col items-center gap-4 opacity-30">
-                      <div className="flex items-center gap-3 text-[9px] font-mono text-starlight uppercase tracking-[0.5em]">
-                        <Globe className="w-3 h-3" />
-                        {isStandalone ? 'NATIVE_APP_ACTIVE' : 'VALIDATED_VIA_EDGE'}
-                      </div>
-                    </div>
                   </div>
                 ) : (
                   <div className="space-y-12">
-                    <div className="flex flex-col items-center gap-8">
-                      <div className="relative flex items-center justify-center">
-                        <Loader2 className="w-32 h-32 text-nebula/20 animate-spin" strokeWidth={0.5} />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                           <StarPoint className="w-24 h-24 animate-pulse opacity-100" />
-                        </div>
-                      </div>
+                    <div className="flex flex-col items-center gap-8 min-h-[250px] justify-center">
+                      <AnimatePresence mode="wait">
+                        {showCalibrationHint ? (
+                          <motion.div 
+                            key="hint"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            className="flex flex-col items-center gap-6"
+                          >
+                            <CalibrationMotion opacity={1} />
+                            <div className="text-nebula text-xs font-mono font-bold uppercase tracking-[0.2em] max-w-[200px] leading-relaxed">
+                              Move phone in Figure-8 for compass bias correction
+                            </div>
+                          </motion.div>
+                        ) : (
+                          <motion.div 
+                            key="loading"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="relative flex items-center justify-center"
+                          >
+                            <Loader2 className="w-32 h-32 text-nebula/20 animate-spin" strokeWidth={0.5} />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                               <StarPoint className="w-24 h-24 animate-pulse opacity-100" />
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                       <div className="space-y-3">
                         <h2 className="text-3xl sm:text-4xl font-black text-starlight tracking-tight">
                           {isCalibrated ? "ALIGNMENT_COMPLETE" : "NEUTRALIZING_BIAS"}
                         </h2>
                         <p className="text-starlight/40 font-mono text-[10px] uppercase tracking-[0.4em]">
-                          {isCalibrated ? "Celestial sphere locked" : "Hold device steady • Sampling gravity"}
+                          {isCalibrated ? "Celestial sphere locked" : "Sampling Gravity • Solving Quaternions"}
                         </p>
                       </div>
                     </div>
                     <div className="max-w-xs mx-auto w-full space-y-4">
                       <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                        <motion.div 
+                        <motion.div
                           className="absolute inset-y-0 left-0 bg-nebula shadow-[0_0_15px_rgba(234,179,8,1)]"
                           animate={{ width: `${calibrationProgress}%` }}
                         />

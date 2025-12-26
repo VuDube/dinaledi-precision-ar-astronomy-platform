@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 interface PatternProps {
   className?: string;
   opacity?: number;
@@ -19,6 +20,36 @@ export function DiamondGrid({ className, opacity = 0.05 }: PatternProps) {
       </defs>
       <rect width="100%" height="100%" fill="url(#diamond-pattern)" />
     </svg>
+  );
+}
+export function CalibrationMotion({ className, opacity = 0.5 }: PatternProps) {
+  return (
+    <div className={cn("relative w-48 h-32 flex items-center justify-center", className)} style={{ opacity }}>
+      <svg width="180" height="100" viewBox="0 0 180 100" className="text-nebula">
+        <motion.path
+          d="M 45 50 C 45 20 90 20 90 50 C 90 80 135 80 135 50 C 135 20 90 20 90 50 C 90 80 45 80 45 50 Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.circle
+          r="4"
+          fill="currentColor"
+          animate={{
+            offsetDistance: ["0%", "100%"]
+          }}
+          style={{ offsetPath: "path('M 45 50 C 45 20 90 20 90 50 C 90 80 135 80 135 50 C 135 20 90 20 90 50 C 90 80 45 80 45 50 Z')" }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        />
+      </svg>
+      <div className="absolute inset-x-0 -bottom-8 text-center">
+        <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-nebula animate-pulse">Mag_Zero Calibration</span>
+      </div>
+    </div>
   );
 }
 export function ConstellationWeb({ className, opacity = 0.03 }: PatternProps) {

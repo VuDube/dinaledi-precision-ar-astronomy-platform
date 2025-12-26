@@ -53,6 +53,7 @@ interface AppState {
   longitude: number;
   searchQuery: string;
   isSearchOpen: boolean;
+  isVoiceTriggered: boolean;
   targetTelemetry: TargetTelemetry | null;
   fov: number;
   isRadialOpen: boolean;
@@ -64,18 +65,6 @@ interface AppState {
   setCalibrationProgress: (progress: number | ((prev: number) => number)) => void;
   setCatalogReady: (status: boolean) => void;
   setCatalogLoadingProgress: (progress: number) => void;
-  setPreferredLore: (lore: LorePreference) => void;
-  setObserving: (observing: boolean) => void;
-  toggleNightMode: () => void;
-  setSlewing: (slewing: boolean) => void;
-  setBortleScale: (scale: number) => void;
-  setAutoBortle: (auto: boolean) => void;
-  togglePlanets: () => void;
-  toggleISS: () => void;
-  toggleConstellations: () => void;
-  toggleBoundaries: () => void;
-  toggleConstellationLabels: () => void;
-  toggleGrid: () => void;
   setTarget: (target: string | null) => void;
   setSelectedStar: (star: StarRecord | null) => void;
   setSelectedDSO: (dso: DSORecord | null) => void;
@@ -84,21 +73,31 @@ interface AppState {
   setPermissionStatus: (status: PermissionStatus) => void;
   setGPSStatus: (status: GPSStatus) => void;
   setGPSEnabled: (enabled: boolean) => void;
-  setInstallable: (status: boolean) => void;
-  setDeferredPrompt: (prompt: any) => void;
-  setIsOnline: (online: boolean) => void;
-  setCalibrationOffset: (offset: number) => void;
+  setSearchOpen: (open: boolean, isVoice?: boolean) => void;
+  setDetailOpen: (open: boolean) => void;
   setSimulationTime: (time: Date) => void;
   setTimeSpeed: (timeSpeed: number) => void;
   setLocation: (lat: number, lon: number) => void;
-  setSearchQuery: (searchQuery: string) => void;
-  setSearchOpen: (open: boolean) => void;
+  setBortleScale: (scale: number) => void;
+  setAutoBortle: (auto: boolean) => void;
+  setCalibratedOffset: (offset: number) => void;
+  setCalibrationOffset: (offset: number) => void;
+  setIsOnline: (online: boolean) => void;
+  setDeferredPrompt: (prompt: any) => void;
+  setInstallable: (status: boolean) => void;
   setTargetTelemetry: (telemetry: TargetTelemetry | null) => void;
-  setFOV: (fov: number) => void;
   setRadialOpen: (open: boolean) => void;
-  setGesturingTime: (gesturing: boolean) => void;
-  setDetailOpen: (open: boolean) => void;
   setLastSyncTime: (time: Date | null) => void;
+  setSlewing: (slewing: boolean) => void;
+  setObserving: (observing: boolean) => void;
+  toggleNightMode: () => void;
+  togglePlanets: () => void;
+  toggleISS: () => void;
+  toggleConstellations: () => void;
+  toggleBoundaries: () => void;
+  toggleConstellationLabels: () => void;
+  toggleGrid: () => void;
+  setFOV: (fov: number) => void;
 }
 export const useAppStore = create<AppState>((set) => ({
   mode: 'intro',
@@ -137,6 +136,7 @@ export const useAppStore = create<AppState>((set) => ({
   longitude: 28.0,
   searchQuery: '',
   isSearchOpen: false,
+  isVoiceTriggered: false,
   targetTelemetry: null,
   fov: 55,
   isRadialOpen: false,
@@ -148,21 +148,6 @@ export const useAppStore = create<AppState>((set) => ({
   setCalibrationProgress: (progress) => set((state) => ({ calibrationProgress: typeof progress === 'function' ? progress(state.calibrationProgress) : progress })),
   setCatalogReady: (status) => set({ isCatalogReady: status }),
   setCatalogLoadingProgress: (progress) => set({ catalogLoadingProgress: progress }),
-  setPreferredLore: (lore) => set({ preferredLore: lore }),
-  setObserving: (isObserving) => set({ isObserving }),
-  toggleNightMode: () => set((state) => ({ nightMode: !state.nightMode })),
-  setSlewing: (isSlewing) => set({ isSlewing }),
-  setBortleScale: (scale) => {
-    const mag = Math.max(3.5, 7.5 - (scale * 0.4));
-    set({ bortleScale: scale, magnitudeLimit: mag });
-  },
-  setAutoBortle: (autoBortle) => set({ autoBortle }),
-  togglePlanets: () => set((state) => ({ showPlanets: !state.showPlanets })),
-  toggleISS: () => set((state) => ({ showISS: !state.showISS })),
-  toggleConstellations: () => set((state) => ({ showConstellations: !state.showConstellations })),
-  toggleBoundaries: () => set((state) => ({ showBoundaries: !state.showBoundaries })),
-  toggleConstellationLabels: () => set((state) => ({ showConstellationLabels: !state.showConstellationLabels })),
-  toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
   setTarget: (target) => set({ targetObject: target }),
   setSelectedStar: (star) => set((state) => ({
     selectedStar: star,
@@ -181,19 +166,32 @@ export const useAppStore = create<AppState>((set) => ({
   setPermissionStatus: (status) => set({ permissionStatus: status }),
   setGPSStatus: (gpsStatus) => set({ gpsStatus }),
   setGPSEnabled: (gpsEnabled) => set({ gpsEnabled }),
-  setInstallable: (isInstallable) => set({ isInstallable }),
-  setDeferredPrompt: (deferredPrompt) => set({ deferredPrompt, isInstallable: !!deferredPrompt }),
-  setIsOnline: (isOnline) => set({ isOnline }),
-  setCalibrationOffset: (offset) => set({ calibrationOffset: offset }),
+  setSearchOpen: (isSearchOpen, isVoice = false) => set({ isSearchOpen, isVoiceTriggered: isVoice }),
+  setDetailOpen: (isDetailOpen) => set({ isDetailOpen }),
   setSimulationTime: (simulationTime) => set({ simulationTime }),
   setTimeSpeed: (timeSpeed) => set({ timeSpeed }),
   setLocation: (latitude, longitude) => set({ latitude, longitude }),
-  setSearchQuery: (searchQuery) => set({ searchQuery }),
-  setSearchOpen: (isSearchOpen) => set({ isSearchOpen }),
+  setBortleScale: (scale) => {
+    const mag = Math.max(3.5, 7.5 - (scale * 0.4));
+    set({ bortleScale: scale, magnitudeLimit: mag });
+  },
+  setAutoBortle: (autoBortle) => set({ autoBortle }),
+  setCalibratedOffset: (offset) => set({ calibrationOffset: offset }),
+  setCalibrationOffset: (offset) => set({ calibrationOffset: offset }),
+  setIsOnline: (isOnline) => set({ isOnline }),
+  setDeferredPrompt: (deferredPrompt) => set({ deferredPrompt, isInstallable: !!deferredPrompt }),
+  setInstallable: (isInstallable) => set({ isInstallable }),
   setTargetTelemetry: (telemetry) => set({ targetTelemetry: telemetry }),
-  setFOV: (fov) => set({ fov: Math.max(10, Math.min(90, fov)) }),
   setRadialOpen: (isRadialOpen) => set({ isRadialOpen }),
-  setGesturingTime: (isGesturingTime) => set({ isGesturingTime }),
-  setDetailOpen: (isDetailOpen) => set({ isDetailOpen }),
   setLastSyncTime: (lastSyncTime) => set({ lastSyncTime }),
+  setSlewing: (isSlewing) => set({ isSlewing }),
+  setObserving: (isObserving) => set({ isObserving }),
+  toggleNightMode: () => set((state) => ({ nightMode: !state.nightMode })),
+  togglePlanets: () => set((state) => ({ showPlanets: !state.showPlanets })),
+  toggleISS: () => set((state) => ({ showISS: !state.showISS })),
+  toggleConstellations: () => set((state) => ({ showConstellations: !state.showConstellations })),
+  toggleBoundaries: () => set((state) => ({ showBoundaries: !state.showBoundaries })),
+  toggleConstellationLabels: () => set((state) => ({ showConstellationLabels: !state.showConstellationLabels })),
+  toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
+  setFOV: (fov) => set({ fov: Math.max(10, Math.min(90, fov)) }),
 }));

@@ -53,14 +53,16 @@ export function ARController() {
         }
       }
     }
-    // Stability: Only update store if selection changed
+    // Stability & Haptics: Only update store if selection changed
     if (objectType === 'star') {
       if (closestObject && closestObject.id !== currentSelectedStar?.id) {
+        if (window.navigator.vibrate) window.navigator.vibrate(40);
         setSelectedStar(closestObject as any);
       }
       if (currentSelectedDSO !== null) setSelectedDSO(null);
     } else if (objectType === 'dso') {
       if (closestObject && closestObject.id !== currentSelectedDSO?.id) {
+        if (window.navigator.vibrate) window.navigator.vibrate(60);
         setSelectedDSO(closestObject as any);
       }
       if (currentSelectedStar !== null) setSelectedStar(null);
