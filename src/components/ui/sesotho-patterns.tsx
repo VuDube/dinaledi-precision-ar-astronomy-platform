@@ -6,9 +6,9 @@ interface PatternProps {
 }
 export function DiamondGrid({ className, opacity = 0.05 }: PatternProps) {
   return (
-    <svg 
-      className={cn("absolute inset-0 w-full h-full pointer-events-none", className)} 
-      xmlns="http://www.w3.org/2000/svg" 
+    <svg
+      className={cn("absolute inset-0 w-full h-full pointer-events-none", className)}
+      xmlns="http://www.w3.org/2000/svg"
       style={{ opacity }}
     >
       <defs>
@@ -21,11 +21,32 @@ export function DiamondGrid({ className, opacity = 0.05 }: PatternProps) {
     </svg>
   );
 }
+export function ConstellationWeb({ className, opacity = 0.03 }: PatternProps) {
+  return (
+    <svg
+      className={cn("absolute inset-0 w-full h-full pointer-events-none", className)}
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ opacity }}
+    >
+      <defs>
+        <pattern id="web-pattern" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+          <path d="M 20 20 L 60 40 L 100 20 M 60 40 L 60 100 M 10 70 L 60 40" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 2" />
+          <circle cx="20" cy="20" r="1" fill="currentColor" />
+          <circle cx="60" cy="40" r="1.5" fill="currentColor" />
+          <circle cx="100" cy="20" r="1" fill="currentColor" />
+          <circle cx="60" cy="100" r="1" fill="currentColor" />
+          <circle cx="100" cy="70" r="1.5" fill="currentColor" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#web-pattern)" />
+    </svg>
+  );
+}
 export function ChevronFlow({ className, opacity = 0.03 }: PatternProps) {
   return (
-    <svg 
-      className={cn("absolute inset-0 w-full h-full pointer-events-none", className)} 
-      xmlns="http://www.w3.org/2000/svg" 
+    <svg
+      className={cn("absolute inset-0 w-full h-full pointer-events-none", className)}
+      xmlns="http://www.w3.org/2000/svg"
       style={{ opacity }}
     >
       <defs>

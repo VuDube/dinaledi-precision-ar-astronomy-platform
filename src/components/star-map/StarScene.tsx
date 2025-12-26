@@ -8,6 +8,7 @@ import { ConstellationLines } from './ConstellationLines';
 import { ConstellationBoundaries } from './ConstellationBoundaries';
 import { SolarSystem } from './SolarSystem';
 import { SlewController } from './SlewController';
+import { MilkyWay } from './MilkyWay';
 import { useAppStore } from '@/stores/app-store';
 import { getSunPosition, getSkyColor } from '@/lib/astronomy-math';
 import { useCatalogLoader } from '@/hooks/use-catalog-loader';
@@ -70,13 +71,14 @@ export function StarScene() {
         <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={55} far={3500} />
         <Suspense fallback={null}>
           <Atmosphere />
+          <MilkyWay />
           <StarField />
           <SolarSystem />
           <DeepSkyObjects />
           <ConstellationLines />
           <ConstellationBoundaries />
           <SlewController />
-          <Stars radius={600} depth={60} count={6000} factor={4} saturation={0.5} fade speed={0.4} />
+          <Stars radius={700} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} />
           <CelestialGrid />
           <Environment preset="night" />
         </Suspense>
@@ -87,13 +89,13 @@ export function StarScene() {
             enableZoom={false}
             enablePan={false}
             autoRotate={!isSensorActive && sunPos.altitude < -15}
-            autoRotateSpeed={0.08}
+            autoRotateSpeed={0.06}
             rotateSpeed={-0.2}
             enableDamping
             dampingFactor={0.05}
           />
         )}
-        <fog attach="fog" args={[skyColor, 900, 3000]} />
+        <fog attach="fog" args={[skyColor, 1200, 3000]} />
         <ambientLight intensity={ambientIntensity} />
       </Canvas>
     </div>
