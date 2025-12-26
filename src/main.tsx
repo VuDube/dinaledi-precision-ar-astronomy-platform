@@ -22,7 +22,6 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       });
   });
 }
-
 // Safe dark mode class addition for PWA
 if (typeof document !== 'undefined') {
   document.documentElement.classList.add('dark');
@@ -34,7 +33,6 @@ const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />,
   },
 ]);
-
 createRoot(document.getElementById('root')!).render(
   <ErrorBoundary>
     <RouterProvider router={router} />

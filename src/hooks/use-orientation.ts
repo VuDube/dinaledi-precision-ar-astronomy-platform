@@ -10,7 +10,7 @@ export function useOrientation() {
   const calibrationOffset = useAppStore((s) => s.calibrationOffset);
   const isSensorActive = useAppStore((s) => s.isSensorActive);
   const lastHeading = useRef<number>(0);
-  const filterAlpha = 0.12;
+  const filterAlpha = 0.15;
   const biasSamples = useRef<number[]>([]);
   const isCalibrating = useRef(false);
   const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
@@ -22,23 +22,29 @@ export function useOrientation() {
       biasSamples.current.push(a);
       return;
     }
-    // Apply the calibration offset to the raw alpha heading
     let heading = (a + calibrationOffset) % 360;
     if (heading < 0) heading += 360;
-    // Smooth heading using simple low-pass filter
     let diff = heading - lastHeading.current;
     if (diff > 180) diff -= 360;
     if (diff < -180) diff += 360;
     const smoothedHeading = (lastHeading.current + filterAlpha * diff + 360) % 360;
     lastHeading.current = smoothedHeading;
-    setOrientation({
-      alpha: a,
-      beta: b,
-      gamma: g,
-      heading: smoothedHeading
-    });
+    setOrientation({ alpha: a, beta: b, gamma: g, heading: smoothedHeading });
   }, [setOrientation, calibrationOffset]);
   const requestPermission = useCallback(async () => {
+    // Check for High Precision Generic Sensor API (Supported on Chrome/Android)
+    if ('AbsoluteOrientationSensor' in window) {
+      try {
+        const sensor = new (window as any).AbsoluteOrientationSensor({ frequency: 60 });
+        sensor.addEventListener('reading', () => {
+          // Drive orientation via high-precision quaternion if supported
+          // For simplicity in Phase 24, we continue with DeviceOrientation for consistency
+        });
+        sensor.start();
+      } catch (e) {
+        console.warn('AbsoluteOrientationSensor failed, falling back to DeviceOrientation');
+      }
+    }
     if (typeof DeviceOrientationEvent === 'undefined') {
       setPermissionStatus('unavailable');
       return false;
@@ -52,37 +58,33 @@ export function useOrientation() {
       if (status === 'granted') {
         setPermissionStatus('granted');
         setSensorActive(true);
-        // START Calibration sequence ONLY after permission is granted
         isCalibrating.current = true;
         biasSamples.current = [];
         setCalibrationProgress(0);
-        const calibrateDuration = 5000;
-        const intervalTime = 100;
+        const duration = 4000;
+        const interval = 100;
         let elapsed = 0;
-        const calibrateInterval = setInterval(() => {
-          elapsed += intervalTime;
-          const progress = Math.min(100, (elapsed / calibrateDuration) * 100);
+        const timer = setInterval(() => {
+          elapsed += interval;
+          const progress = Math.min(100, (elapsed / duration) * 100);
           setCalibrationProgress(progress);
-          if (elapsed >= calibrateDuration) {
-            clearInterval(calibrateInterval);
+          if (elapsed >= duration) {
+            clearInterval(timer);
             isCalibrating.current = false;
-            if (biasSamples.current.length > 0) {
-              const avg = biasSamples.current.reduce((a, b) => a + b, 0) / biasSamples.current.length;
-              setCalibrationOffset(-avg);
-              setCalibrated(true);
-            } else {
-              setCalibrationOffset(0);
-              setCalibrated(true);
-            }
+            const avg = biasSamples.current.length > 0 
+              ? biasSamples.current.reduce((a, b) => a + b, 0) / biasSamples.current.length 
+              : 0;
+            setCalibrationOffset(-avg);
+            setCalibrated(true);
           }
-        }, intervalTime);
+        }, interval);
         return true;
       } else {
         setPermissionStatus('denied');
         return false;
       }
     } catch (error) {
-      console.error('Orientation permission request failed:', error);
+      console.error('Orientation permission failed:', error);
       setPermissionStatus('denied');
       return false;
     }
