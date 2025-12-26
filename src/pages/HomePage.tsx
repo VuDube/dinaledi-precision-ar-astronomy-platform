@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useOrientation } from '@/hooks/use-orientation';
 import { usePWA } from '@/hooks/use-pwa';
 import { DiamondGrid, StarPoint } from '@/components/ui/sesotho-patterns';
+import { toast } from 'sonner';
 export function HomePage() {
   const mode = useAppStore(s => s.mode);
   const setMode = useAppStore(s => s.setMode);
@@ -19,6 +20,7 @@ export function HomePage() {
   const calibrationProgress = useAppStore(s => s.calibrationProgress);
   const { requestPermission } = useOrientation();
   const { isStandalone } = usePWA();
+  const isCatalogReady = useAppStore(s => s.isCatalogReady);
   const [isInitializing, setIsInitializing] = useState(false);
   const handleStart = useCallback(async () => {
     setIsInitializing(true);
@@ -40,6 +42,15 @@ export function HomePage() {
       return () => clearTimeout(timer);
     }
   }, [isStandalone, isInitializing, mode, handleStart]);
+
+  // Catalog loaded notification
+  const hasShownCatalogToast = React.useRef(false);
+  useEffect(() => {
+    if (isCatalogReady && !hasShownCatalogToast.current) {
+      toast.success('Celestial catalog loaded – commence observation');
+      hasShownCatalogToast.current = true;
+    }
+  }, [isCatalogReady]);
   return (
     <NightModeProvider>
       <div className="relative h-screen w-screen overflow-hidden bg-space-black">

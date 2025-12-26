@@ -17,8 +17,54 @@
     <!-- Splash Screens (Standard iOS fallback) -->
     <link rel="apple-touch-startup-image" href="https://img.icons8.com/ios-filled/512/EAB308/star.png" />
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="margin:0;padding:0;background:#020617;color:#ffffff;height:100dvh;width:100vw;overflow:hidden;">
+    <div id="root" style="height:100dvh;width:100vw;background:#020617;position:relative;">
+      <div id="loading-spinner" style="
+        position:fixed;top:0;left:0;right:0;bottom:0;
+        background:#020617;display:flex;align-items:center;justify-content:center;
+        z-index:9999;font-family:system-ui;font-size:1.2rem;
+      ">
+        <div style="
+          width:48px;height:48px;border:3px solid rgba(255,255,255,0.1);
+          border-top-color:#ffffff;border-radius:50%;
+          animation:spin 1s linear infinite;
+          margin-bottom:1rem;
+        "></div>
+        Dinaledi
+      </div>
+    </div>
+    <script>
+      // Wait for DOM ready
+      function initSpinnerHide() {
+        const root = document.getElementById('root');
+        const spinner = document.getElementById('loading-spinner');
+        if (!root || !spinner) return;
+        
+        const observer = new MutationObserver(() => {
+          if (root.children.length >= 2) {
+            spinner.style.display = 'none';
+            observer.disconnect();
+          }
+        });
+        observer.observe(root, { childList: true });
+
+        // Fallback hide after 10s
+        setTimeout(() => {
+          spinner.style.display = 'none';
+        }, 10000);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSpinnerHide);
+      } else {
+        initSpinnerHide();
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
+    <style>
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </body>
 </html>

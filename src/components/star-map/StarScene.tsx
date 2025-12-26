@@ -15,6 +15,32 @@ import { useAppStore } from '@/stores/app-store';
 import { getSunPosition, getSkyColor, radecToVector3 } from '@/lib/astronomy-math';
 import { useCatalogLoader } from '@/hooks/use-catalog-loader';
 import * as THREE from 'three';
+
+function LoadingIndicator() {
+  const groupRef = useRef<THREE.Group>(null);
+  useFrame((state, delta) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y += delta * 0.5;
+      groupRef.current.rotation.x += delta * 0.3;
+    }
+  });
+  return (
+    <group ref={groupRef}>
+      <mesh>
+        <torusGeometry args={[1.2, 0.1, 8, 32]} />
+        <meshStandardMaterial
+          color="#EAB308"
+          emissive="#EAB308"
+          emissiveIntensity={0.3}
+          transparent
+          opacity={0.8}
+          roughness={0.1}
+          metalness={0.8}
+        />
+      </mesh>
+    </group>
+  );
+}
 function CelestialGrid() {
   const showGrid = useAppStore(s => s.showGrid);
   const gridRef = useRef<THREE.GridHelper>(null);
@@ -57,9 +83,8 @@ function Atmosphere() {
 }
 
 function TargetTelemetry() {
-  const targetRef = useRef(null);
-  const setTargetTelemetryRef = useRef(useAppStore.getState().setTargetTelemetry);
-  const camera = useThree(state => state.camera);
+  const targetRef = useRef<any>(null);
+  const setTargetTelemetryRef = useRef<((data: any) => void) | null>(null);
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
 
@@ -70,12 +95,18 @@ function TargetTelemetry() {
     }
   }, [selectedStar, selectedDSO]);
 
-  useFrame(() => {
+  useFrame((state) => {
+    const camera = state.camera;
     const target = targetRef.current;
-    const setTargetTelemetry = setTargetTelemetryRef.current;
+    let setTargetTelemetry = setTargetTelemetryRef.current;
+
+    if (!setTargetTelemetry) {
+      setTargetTelemetry = useAppStore.getState().setTargetTelemetry;
+      setTargetTelemetryRef.current = setTargetTelemetry;
+    }
 
     if(!target || !camera) {
-      setTargetTelemetry?.(null);
+      setTargetTelemetry(null);
       return;
     }
     const targetPos = radecToVector3(target.ra, target.dec, 100).normalize();
@@ -109,7 +140,7 @@ export function StarScene() {
       >
         <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={fov} far={3500} />
         <color attach='background' args={['#020617']} />
-        <Suspense fallback={null}>
+        <Suspense fallback={<LoadingIndicator />}>
           <Atmosphere />
           <MilkyWay />
           <StarField />
