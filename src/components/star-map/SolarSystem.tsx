@@ -44,29 +44,26 @@ export function SolarSystem() {
         <meshBasicMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} />
       </instancedMesh>
       {showISS && (
-        <ISSMarker />
+        <ISSMailer time={simulationTime} />
       )}
     </group>
   );
 }
-function ISSMarker() {
+function ISSMailer({ time }: { time: Date }) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const simulationTime = useAppStore(s => s.simulationTime);
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
-    // Faster orbit for ISS to emphasize motion (approx 90 min real time, scaled here)
-    const t = clock.getElapsedTime() * 0.4;
-    const ra = (t * 12 + simulationTime.getMinutes() / 60) % 24;
-    const dec = Math.sin(t * 3.5) * 51.6; 
+    const t = clock.getElapsedTime() * 0.2;
+    // Circular path simulation for ISS
+    const ra = (t * 24) % 24;
+    const dec = Math.sin(t * 5) * 51; // ISS Inclination approx 51.6
     const pos = radecToVector3(ra, dec, 975);
     meshRef.current.position.copy(pos);
-    meshRef.current.rotation.y += 0.05;
-    meshRef.current.rotation.z += 0.02;
   });
   return (
     <mesh ref={meshRef}>
-      <octahedronGeometry args={[2.5, 0]} />
-      <meshBasicMaterial color="#ffffff" wireframe />
+      <boxGeometry args={[2, 2, 2]} />
+      <meshBasicMaterial color="#ffffff" />
     </mesh>
   );
 }

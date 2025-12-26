@@ -6,6 +6,7 @@ import { ARController } from './ARController';
 import { DeepSkyObjects } from './DeepSkyObjects';
 import { ConstellationLines } from './ConstellationLines';
 import { ConstellationBoundaries } from './ConstellationBoundaries';
+import { SolarSystem } from './SolarSystem';
 import { useAppStore } from '@/stores/app-store';
 import { getSunPosition, getSkyColor } from '@/lib/astronomy-math';
 import { useCatalogLoader } from '@/hooks/use-catalog-loader';
@@ -70,6 +71,7 @@ export function StarScene() {
         <Suspense fallback={null}>
           <Atmosphere />
           <StarField />
+          <SolarSystem />
           <DeepSkyObjects />
           <ConstellationLines />
           <ConstellationBoundaries />

@@ -22,6 +22,8 @@ interface AppState {
   magnitudeLimit: number;
   bortleScale: number;
   autoBortle: boolean;
+  showPlanets: boolean;
+  showISS: boolean;
   showConstellations: boolean;
   showBoundaries: boolean;
   showConstellationLabels: boolean;
@@ -51,6 +53,8 @@ interface AppState {
   setObserving: (observing: boolean) => void;
   setBortleScale: (scale: number) => void;
   setAutoBortle: (auto: boolean) => void;
+  togglePlanets: () => void;
+  toggleISS: () => void;
   toggleConstellations: () => void;
   toggleBoundaries: () => void;
   toggleConstellationLabels: () => void;
@@ -82,6 +86,8 @@ export const useAppStore = create<AppState>((set) => ({
   magnitudeLimit: 6.5,
   bortleScale: 4,
   autoBortle: true,
+  showPlanets: true,
+  showISS: true,
   showConstellations: true,
   showBoundaries: false,
   showConstellationLabels: true,
@@ -119,6 +125,8 @@ export const useAppStore = create<AppState>((set) => ({
     set({ bortleScale: scale, magnitudeLimit: mag });
   },
   setAutoBortle: (autoBortle) => set({ autoBortle }),
+  togglePlanets: () => set((state) => ({ showPlanets: !state.showPlanets })),
+  toggleISS: () => set((state) => ({ showISS: !state.showISS })),
   toggleConstellations: () => set((state) => ({ showConstellations: !state.showConstellations })),
   toggleBoundaries: () => set((state) => ({ showBoundaries: !state.showBoundaries })),
   toggleConstellationLabels: () => set((state) => ({ showConstellationLabels: !state.showConstellationLabels })),
