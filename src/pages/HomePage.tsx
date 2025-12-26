@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Sparkles, ArrowRight, Loader2, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOrientation } from '@/hooks/use-orientation';
+import { usePWA } from '@/hooks/use-pwa';
 import { cn } from '@/lib/utils';
 import { DiamondGrid } from '@/components/ui/sesotho-patterns';
 export function HomePage() {
@@ -18,6 +19,7 @@ export function HomePage() {
   const isCalibrated = useAppStore(s => s.isCalibrated);
   const calibrationProgress = useAppStore(s => s.calibrationProgress);
   const { requestPermission } = useOrientation();
+  const { isStandalone } = usePWA();
   const [isInitializing, setIsInitializing] = useState(false);
   useEffect(() => {
     if (isCalibrated && mode === 'intro') {
@@ -27,6 +29,15 @@ export function HomePage() {
       return () => clearTimeout(timer);
     }
   }, [isCalibrated, mode, setMode]);
+  // Auto-start for returning installed users
+  useEffect(() => {
+    if (isStandalone && !isInitializing && mode === 'intro') {
+      const timer = setTimeout(() => {
+        handleStart();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isStandalone, isInitializing, mode]);
   const handleStart = async () => {
     setIsInitializing(true);
     await requestPermission();
@@ -36,7 +47,7 @@ export function HomePage() {
       <div className="relative h-screen w-screen overflow-hidden bg-space-black">
         <motion.div
           className="absolute inset-0 z-0"
-          animate={{ 
+          animate={{
             opacity: mode === 'intro' ? 0.3 : 1,
             scale: mode === 'intro' ? 1.05 : 1,
             filter: mode === 'intro' ? 'blur(4px)' : 'blur(0px)'
@@ -88,16 +99,13 @@ export function HomePage() {
                       onClick={handleStart}
                       className="h-20 px-16 rounded-[2rem] bg-starlight text-space-black hover:bg-nebula hover:scale-105 transition-all duration-500 text-2xl font-bold group shadow-2xl"
                     >
-                      Begin Observation
+                      {isStandalone ? 'Resume Observation' : 'Begin Observation'}
                       <ArrowRight className="ml-3 w-8 h-8 group-hover:translate-x-2 transition-transform" />
                     </Button>
                     <div className="pt-20 flex flex-col items-center gap-4 opacity-30">
                       <div className="flex items-center gap-2 text-[10px] font-mono text-starlight uppercase tracking-[0.5em]">
                         <Globe className="w-3 h-3" />
-                        Validated via Cloudflare Edge
-                      </div>
-                      <div className="text-[9px] font-mono text-starlight uppercase tracking-widest">
-                        Sesotho Starpoint Visual System v1.8 • Final Build
+                        {isStandalone ? 'PWA NATIVE MODE' : 'VALIDATED VIA CLOUDFLARE EDGE'}
                       </div>
                     </div>
                   </div>

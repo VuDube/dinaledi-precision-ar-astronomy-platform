@@ -1,12 +1,12 @@
-const CACHE_NAME = 'dinaledi-pwa-v1';
+const CACHE_NAME = 'dinaledi-pwa-v1.2.0';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.ico',
 ];
-// Cache fonts and common static libraries aggressively
 const STATIC_RESOURCES = /\.(woff2|woff|ttf|css|js|png|jpg|jpeg|svg|webp)$/;
+const STAR_CATALOG_DATA = /star_catalog|dso_catalog/;
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -21,6 +21,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
+            console.log('SW: Cleaning old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -32,13 +33,15 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  // Stale-While-Revalidate for API and Dynamic data
+  // API Persistence: Stale-While-Revalidate
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
         return cache.match(request).then((cachedResponse) => {
           const fetchPromise = fetch(request).then((networkResponse) => {
-            cache.put(request, networkResponse.clone());
+            if (networkResponse.status === 200) {
+              cache.put(request, networkResponse.clone());
+            }
             return networkResponse;
           });
           return cachedResponse || fetchPromise;
@@ -47,7 +50,21 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-  // Cache-First for static assets
+  // Data Chunks: Cache-First (Heavy Celestial Data)
+  if (STAR_CATALOG_DATA.test(url.pathname)) {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        return cachedResponse || fetch(request).then((networkResponse) => {
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, networkResponse.clone());
+            return networkResponse;
+          });
+        });
+      })
+    );
+    return;
+  }
+  // Assets: Cache-First with Network Update
   if (STATIC_RESOURCES.test(url.pathname)) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
@@ -62,7 +79,7 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-  // Network-First with Cache fallback for navigation
+  // Navigation: Network-First with Fallback
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).catch(() => {

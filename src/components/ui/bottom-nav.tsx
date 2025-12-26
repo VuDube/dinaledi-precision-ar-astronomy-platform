@@ -1,10 +1,11 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Compass, Book, Sparkles, Search, Settings, Eye, EyeOff, Download } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
 import { cn } from '@/lib/utils';
 import { DiamondGrid } from '@/components/ui/sesotho-patterns';
 import { usePWA } from '@/hooks/use-pwa';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 type AppMode = 'intro' | 'skyview' | 'log' | 'settings' | 'highlights' | 'search' | 'pwa-install';
 interface NavItem {
   id: AppMode | 'night' | 'install' | 'search';
@@ -25,7 +26,8 @@ export function BottomNav() {
   const nightMode = useAppStore(s => s.nightMode);
   const toggleNightMode = useAppStore(s => s.toggleNightMode);
   const isInstallable = useAppStore(s => s.isInstallable);
-  const { installApp } = usePWA();
+  const isCalibrated = useAppStore(s => s.isCalibrated);
+  const { installApp, isStandalone } = usePWA();
   const handleNav = (id: string) => {
     if (id === 'night') {
       toggleNightMode();
@@ -41,6 +43,7 @@ export function BottomNav() {
     }
     setMode(id as any);
   };
+  const showInstall = isInstallable && !isStandalone && isCalibrated;
   return (
     <nav className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[96%] max-w-lg pointer-events-auto">
       <div className="flex gap-2 items-center">
@@ -48,7 +51,7 @@ export function BottomNav() {
           whileTap={{ scale: 0.9 }}
           onClick={() => handleNav('night')}
           className={cn(
-            "h-14 w-14 glass-dark border-starlight/10 rounded-2xl flex items-center justify-center transition-all shadow-2xl overflow-hidden relative",
+            "h-14 w-14 glass-dark border-starlight/10 rounded-2xl flex items-center justify-center transition-all shadow-2xl overflow-hidden relative shrink-0",
             nightMode ? "text-red-500 border-red-500/40" : "text-starlight/40"
           )}
         >
@@ -83,18 +86,28 @@ export function BottomNav() {
             );
           })}
         </div>
-        {isInstallable && (
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => handleNav('install')}
-            className="h-14 w-14 glass-dark border-nebula/40 rounded-2xl flex items-center justify-center transition-all shadow-2xl bg-nebula/10 text-nebula overflow-hidden relative"
-          >
-            <Download className="w-6 h-6 animate-bounce" />
-            <DiamondGrid opacity={0.05} />
-          </motion.button>
-        )}
+        <AnimatePresence>
+          {showInstall && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <motion.button
+                  initial={{ width: 0, opacity: 0, scale: 0.8 }}
+                  animate={{ width: '3.5rem', opacity: 1, scale: 1 }}
+                  exit={{ width: 0, opacity: 0, scale: 0.8 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleNav('install')}
+                  className="h-14 glass-dark border-nebula/40 rounded-2xl flex items-center justify-center transition-all shadow-2xl bg-nebula/10 text-nebula overflow-hidden relative shrink-0"
+                >
+                  <Download className="w-6 h-6 animate-bounce" />
+                  <DiamondGrid opacity={0.05} />
+                </motion.button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-nebula text-space-black font-bold border-none text-[10px] uppercase tracking-widest">
+                Offline Star Charts
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </AnimatePresence>
       </div>
     </nav>
   );
