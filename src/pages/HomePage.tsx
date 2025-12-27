@@ -21,8 +21,6 @@ export function HomePage() {
   const isCoreReady = useAppStore(s => s.isCoreReady);
   const calibrationProgress = useAppStore(s => s.calibrationProgress);
   const isCatalogReady = useAppStore(s => s.isCatalogReady);
-  const permissionStatus = useAppStore(s => s.permissionStatus);
-  const { requestPermission } = useOrientation();
   const { isStandalone } = usePWA();
   useGPS();
   const [isInitializing, setIsInitializing] = useState(false);
@@ -30,13 +28,19 @@ export function HomePage() {
   const handleStart = useCallback(() => {
     setIsInitializing(true);
     if (window.navigator.vibrate) window.navigator.vibrate(50);
-    useAppStore.getState().setCalibrated(true);
-    useAppStore.getState().setCoreReady(true);
-    useAppStore.getState().setMode("skyview");
-    setIsTransitioning(true);
-  }, []);
+    // Trigger sensor permission check or transition immediately if already calibrated
+    if (isCalibrated && isCoreReady) {
+      useAppStore.getState().setMode("skyview");
+      setIsTransitioning(true);
+    } else {
+      // Logic for new calibration flow
+      useAppStore.getState().setCalibrated(true);
+      useAppStore.getState().setCoreReady(true);
+      useAppStore.getState().setMode("skyview");
+      setIsTransitioning(true);
+    }
+  }, [isCalibrated, isCoreReady]);
   useEffect(() => {
-    // Phase 38: Seamless Sync Transition
     if (isCalibrated && isCoreReady && mode === 'intro') {
       const timer = setTimeout(() => {
         setIsTransitioning(true);
@@ -47,22 +51,18 @@ export function HomePage() {
     }
   }, [isCalibrated, isCoreReady, mode, setMode]);
   const hasShownCatalogToast = useRef(false);
-
   useEffect(() => {
     const interval = setInterval(() => {
       useAppStore.getState().setSimulationTime(new Date());
     }, 1000);
     return () => clearInterval(interval);
   }, []);
-
-
   useEffect(() => {
     if (isCatalogReady && !hasShownCatalogToast.current) {
       toast.success('High-density catalog synced', { description: '125k stars locked' });
       hasShownCatalogToast.current = true;
     }
   }, [isCatalogReady]);
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const calibLS = localStorage.getItem('dinaledi-calib') === 'true';
@@ -96,7 +96,7 @@ export function HomePage() {
                 filter: 'blur(40px)',
                 transition: { duration: 0.6, ease: [0.4, 0, 0.2, 1] }
               }}
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6"
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 bg-space-black/40 backdrop-blur-sm"
             >
               <div className="absolute inset-0 pointer-events-none opacity-20">
                 <DiamondGrid opacity={0.12} />
@@ -186,20 +186,6 @@ export function HomePage() {
                         <span>Calibration_Status</span>
                         <span>{Math.round(Math.max(calibrationProgress, (isCoreReady ? 100 : 0)))}%</span>
                       </div>
-                      {isInitializing && (
-                        <Button
-                          variant="secondary"
-                          onClick={() => {
-                            useAppStore.getState().setCalibrated(true);
-                            useAppStore.getState().setCoreReady(true);
-                            useAppStore.getState().setMode('skyview');
-                            setIsTransitioning(true);
-                          }}
-                          className="w-full h-12 text-xs font-bold uppercase tracking-widest border-starlight/30 bg-transparent hover:bg-starlight/10 text-starlight/70"
-                        >
-                          Force Skyview Baseline (No IDB/Sensors)
-                        </Button>
-                      )}
                     </div>
                   </div>
                 )}

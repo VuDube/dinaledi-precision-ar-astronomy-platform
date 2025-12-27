@@ -25,13 +25,9 @@ function Atmosphere() {
   const skyColorStr = useMemo(() => getSkyColor(sunAltitude), [sunAltitude]);
   const skyColorRef = useRef(new THREE.Color());
   skyColorRef.current.set(skyColorStr);
-  
   useEffect(() => {
     if (!scene) return;
     scene.background = skyColorRef.current.clone();
-    // FOREVER NO BLUE: Precise Horizon Guard
-    // Astronomical twilight (-12 to -18) is where the "blue line" usually appears.
-    // We ramp up density here to mask the geometry edge.
     const isTwilight = sunAltitude > -18 && sunAltitude < 0;
     const horizonGuardActive = sunAltitude > -18 && sunAltitude < -12;
     const fogDensity = horizonGuardActive ? 0.0022 : isTwilight ? 0.0015 : 0.00045;
@@ -62,7 +58,6 @@ function TargetTelemetry() {
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
   const setTargetTelemetry = useAppStore(s => s.setTargetTelemetry);
-  const lastTargetRef = useRef<any>(null);
   const lastTelemetryRef = useRef<any>(null);
   useFrame((state) => {
     const target = selectedStar || selectedDSO;
@@ -82,7 +77,7 @@ function TargetTelemetry() {
     const screenPos = targetPos.clone().multiplyScalar(100).project(state.camera);
     const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
     const newTelemetry = { angle, onScreen, azimuth };
-    if (!lastTelemetryRef.current || 
+    if (!lastTelemetryRef.current ||
         Math.abs(newTelemetry.angle - lastTelemetryRef.current.angle) > 0.1 ||
         newTelemetry.onScreen !== lastTelemetryRef.current.onScreen) {
       setTargetTelemetry(newTelemetry);
@@ -104,16 +99,16 @@ export function StarScene() {
         <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.1} far={200000} />
         <color attach='background' args={['#000000']} />
         <Atmosphere />
+        <MilkyWay />
+        <StarField />
+        <SolarSystem />
+        <DeepSkyObjects />
+        <SlewController />
+        <TargetTelemetry />
         {isCoreReady && (
           <>
-            <MilkyWay />
-            <StarField />
-            <SolarSystem />
-            <DeepSkyObjects />
             <ConstellationLines />
             <ConstellationBoundaries />
-            <SlewController />
-            <TargetTelemetry />
           </>
         )}
         <Environment preset="night" />
@@ -131,6 +126,6 @@ export function StarScene() {
           />
         )}
         <ambientLight intensity={0.1} />
-      </Canvas>
+    </Canvas>
   );
 }
