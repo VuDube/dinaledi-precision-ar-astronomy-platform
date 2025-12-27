@@ -14,15 +14,52 @@ export function StarField() {
   const [starsData, setStarsData] = useState<{ primary: any[], faint: any[] }>({ primary: [], faint: [] });
   const primaryScales = useRef<Float32Array>(new Float32Array(0));
   const frameCount = useRef(0);
+  const loadedRef = useRef<boolean>(false);
+
+  const generateProceduralStars = useCallback(() => {
+    const primary: any[] = [];
+    const faint: any[] = [];
+    for (let i = 0; i < 30000; i++) {
+      const star = {
+        id: `proc_${i}`,
+        ra: Math.random() * 24,
+        dec: Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90,
+        mag: 0.5 + Math.pow(Math.random(), 0.35) * 11.5,
+        bv: (Math.random() - 0.5) * 1.4
+      };
+      const data = {
+        pos: radecToVector3(star.ra, star.dec, 1000),
+        color: new THREE.Color(bvToColor(star.bv)),
+        baseScale: Math.max(0.5, (6.5 - star.mag) * 0.9),
+        mag: star.mag,
+        id: star.id
+      };
+      if (star.mag < 5.0) primary.push(data);
+      else faint.push(data);
+    }
+    primaryScales.current = new Float32Array(primary.length);
+    setStarsData({ primary, faint });
+    console.log(`StarField: Initialized ${primary.length + faint.length} procedural fallback stars.`);
+  }, []);
   // Load a fixed high-density range once to avoid IDB calls during Bortle changes
   const loadFromDB = useCallback(async () => {
+    if (loadedRef.current) return;
     try {
-      // 11.0 is the maximum visual baseline we support in Phase 1
-      const allStars = await getStarsByMagnitude(11.0);
-      const limitedStars = allStars.slice(0, 10000);
-      const primary = [];
-      const faint = [];
-      for (const star of limitedStars) {
+      const startTime = performance.now();
+      const allStars = await Promise.race([
+        getStarsByMagnitude(11.0, 30000),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_5s')), 5000))
+      ]);
+      const queryTime = (performance.now() - startTime).toFixed(1);
+      console.log(`StarField DB query: ${queryTime}ms, count ${allStars.length} stars <=11.0`);
+      if (allStars.length < 500) {
+        console.log('DB count too low <500, skip replacement with procedural fallback.');
+        loadedRef.current = true;
+        return;
+      }
+      const primary: any[] = [];
+      const faint: any[] = [];
+      for (const star of allStars) {
         const data = {
           pos: radecToVector3(star.ra, star.dec, 1000),
           color: new THREE.Color(bvToColor(star.bv)),
@@ -35,11 +72,21 @@ export function StarField() {
       }
       primaryScales.current = new Float32Array(primary.length);
       setStarsData({ primary, faint });
-      console.log(`StarField: Hydrated ${primary.length + faint.length} (limited to 10K) entities for real-time scaling.`);
+      loadedRef.current = true;
+      console.log(`StarField: Loaded ${primary.length + faint.length} real stars, replacing procedural.`);
     } catch (e) {
-      console.error('StarField: Hydration failed', e);
+      loadedRef.current = true;
+      if ((e as Error).message === 'TIMEOUT_5s') {
+        console.log('StarField: IDB timeout 5s exceeded, permanent procedural fallback, no hang.');
+      } else {
+        console.error('StarField DB load error:', e);
+      }
     }
   }, []);
+  useEffect(() => {
+    generateProceduralStars();
+  }, [generateProceduralStars]);
+
   useEffect(() => {
     if (isCoreReady || isCatalogReady) loadFromDB();
   }, [isCoreReady, isCatalogReady, loadFromDB]);

@@ -51,11 +51,11 @@ export async function saveStarChunk(stars: StarRecord[]): Promise<void> {
   }
   await tx.done;
 }
-export async function getStarsByMagnitude(maxMag: number): Promise<StarRecord[]> {
+export async function getStarsByMagnitude(maxMag: number, limit: number = 30000): Promise<StarRecord[]> {
   const db = await getDB();
   const index = db.transaction(STAR_CATALOG_STORE, 'readonly').objectStore(STAR_CATALOG_STORE).index('mag');
   const range = IDBKeyRange.upperBound(maxMag + 1e-6);
-  return index.getAll(range);
+  return index.getAll(range, limit);
 }
 export async function getCatalogCount(): Promise<number> {
   const db = await getDB();
