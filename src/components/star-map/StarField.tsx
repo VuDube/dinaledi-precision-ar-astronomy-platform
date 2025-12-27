@@ -10,6 +10,7 @@ export function StarField() {
   const baselineMeshRef = useRef<THREE.InstancedMesh>(null);
   const magnitudeLimit = useAppStore(s => s.magnitudeLimit);
   const isCoreReady = useAppStore(s => s.isCoreReady);
+  const nightMode = useAppStore(s => s.nightMode);
   const simulationTime = useAppStore(s => s.simulationTime);
   const lat = useAppStore(s => s.latitude);
   const lon = useAppStore(s => s.longitude);
@@ -69,15 +70,17 @@ export function StarField() {
   useEffect(() => {
     if (isCoreReady) loadCatalogFromDB();
   }, [isCoreReady, loadCatalogFromDB]);
-  useFrame(() => {
+  const visibilityFrame = useCallback(() => {
     if (!baselineMeshRef.current || !catalogMeshRef.current) return;
-    const visibilityFactor = THREE.MathUtils.clamp(
+    const visibilityFactor = nightMode ? 1.0 : THREE.MathUtils.clamp(
       THREE.MathUtils.mapLinear(sunAltitude, -12, 0, 1, 0),
       0, 1
     );
     (baselineMeshRef.current.material as THREE.MeshBasicMaterial).opacity = 0.8 * visibilityFactor;
     (catalogMeshRef.current.material as THREE.MeshBasicMaterial).opacity = 0.9 * visibilityFactor;
-  });
+  }, [nightMode, sunAltitude]);
+
+  useFrame(visibilityFrame);
   useEffect(() => {
     if (baselineMeshRef.current && baselineReady) {
       baselineData.current.forEach((star, i) => {
@@ -91,7 +94,7 @@ export function StarField() {
       baselineMeshRef.current.instanceMatrix.needsUpdate = true;
       if (baselineMeshRef.current.instanceColor) baselineMeshRef.current.instanceColor.needsUpdate = true;
     }
-  }, [magnitudeLimit, baselineReady, dummy]);
+  }, [magnitudeLimit, baselineReady, dummy, nightMode]);
   useEffect(() => {
     if (catalogMeshRef.current && catalogData.current.length > 0) {
       catalogData.current.forEach((star, i) => {
@@ -107,8 +110,8 @@ export function StarField() {
       catalogMeshRef.current.instanceMatrix.needsUpdate = true;
       if (catalogMeshRef.current.instanceColor) catalogMeshRef.current.instanceColor.needsUpdate = true;
     }
-  }, [magnitudeLimit, dummy, isCoreReady]);
-  useFrame(() => {
+  }, [magnitudeLimit, dummy, isCoreReady, nightMode]);
+  const lerpFrame = useCallback(() => {
     if (!catalogMeshRef.current || !catalogData.current.length) return;
     const EPSILON = 0.01;
     const LERP_FACTOR = 0.2;
@@ -132,7 +135,9 @@ export function StarField() {
     }
     lerpPointer.current = (endIdx >= catalogData.current.length) ? 0 : endIdx;
     if (changed) catalogMeshRef.current.instanceMatrix.needsUpdate = true;
-  });
+  }, [magnitudeLimit, dummy]);
+
+  useFrame(lerpFrame);
   return (
     <group>
       <instancedMesh ref={baselineMeshRef} args={[undefined, undefined, 40000]}>

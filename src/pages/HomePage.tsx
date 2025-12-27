@@ -28,33 +28,34 @@ export function HomePage() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const handleStart = useCallback(async () => {
     setIsInitializing(true);
-    useAppStore.getState().setCalibrationProgress(0);
+    useAppStore.setState({ calibrationProgress: 0 });
     const granted = await requestPermission();
     if (!granted) {
       setIsInitializing(false);
       return;
     }
-    if (isCalibrated && isCoreReady) {
+    const currentCalibrated = useAppStore.getState().isCalibrated;
+    const currentCoreReady = useAppStore.getState().isCoreReady;
+    if (currentCalibrated && currentCoreReady) {
       setIsTransitioning(true);
-      setTimeout(() => setMode('skyview'), 300);
+      setTimeout(() => useAppStore.setState({ mode: 'skyview' }), 300);
     }
-  }, [isCalibrated, isCoreReady, setMode, requestPermission]);
+  }, [requestPermission]);
   useEffect(() => {
     if (isCalibrated && isCoreReady && mode === 'intro' && isInitializing) {
       const timer = setTimeout(() => {
         setIsTransitioning(true);
-        setTimeout(() => setMode('skyview'), 600);
+        setTimeout(() => useAppStore.setState({ mode: 'skyview' }), 600);
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, [isCalibrated, isCoreReady, mode, setMode, isInitializing]);
+  }, [isCalibrated, isCoreReady, mode, isInitializing]);
   const hasShownCatalogToast = useRef(false);
   useEffect(() => {
-    const interval = setInterval(() => {
-      useAppStore.getState().setSimulationTime(new Date());
-    }, 1000);
+    if (mode !== 'skyview') return;
+    const interval = setInterval(() => useAppStore.setState({ simulationTime: new Date() }), 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [mode]);
   useEffect(() => {
     if (isCatalogReady && !hasShownCatalogToast.current) {
       toast.success('Starport Locked', { description: '50,000 celestial nodes synchronized.' });
@@ -68,6 +69,28 @@ export function HomePage() {
     const modeLS = localStorage.getItem('dinaledi-mode') as AppMode;
     if (calibLS && coreLS && modeLS === 'skyview') {
       useAppStore.setState({ isCalibrated: true, isCoreReady: true, mode: 'skyview' });
+    }
+
+    if (window.location.hostname.includes('workers.dev')) {
+      const midnight = new Date();
+      midnight.setHours(0,0,0,0);
+      useAppStore.setState({
+        simulationTime: midnight,
+        autoBortle: false,
+        bortleScale: 4,
+        nightMode: true,
+        magnitudeLimit: 6.5
+      });
+      if(useAppStore.getState().mode !== 'skyview') {
+        useAppStore.setState({
+          isCoreReady: true,
+          isCalibrated: true,
+          mode: 'skyview'
+        });
+        localStorage.setItem('dinaledi-coreReady','true');
+        localStorage.setItem('dinaledi-calib','true');
+        localStorage.setItem('dinaledi-mode','skyview');
+      }
     }
   }, []);
   const showCalibrationHint = calibrationProgress > 5 && calibrationProgress < 95;

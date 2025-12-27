@@ -21,13 +21,14 @@ function Atmosphere() {
   const bortleScale = useAppStore(s => s.bortleScale);
   const mode = useAppStore(s => s.mode);
   const { scene } = useThree();
+  const nightMode = useAppStore(s => s.nightMode);
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const sunAltitude = sunPos.altitude;
   // Enforce "No Blue" astronomical dark ramp
   const skyColorStr = useMemo(() => {
-    if (sunAltitude < -18) return "#000000";
+    if (nightMode || sunAltitude < -18) return "#000000";
     return getSkyColor(sunAltitude);
-  }, [sunAltitude]);
+  }, [sunAltitude, nightMode]);
   const skyColorRef = useRef(new THREE.Color());
   skyColorRef.current.set(skyColorStr);
   useEffect(() => {
@@ -36,14 +37,14 @@ function Atmosphere() {
     scene.background = color;
     const isTwilight = sunAltitude > -18 && sunAltitude < 0;
     // Higher density during viewport entry (intro mode) or twilight
-    const fogDensity = mode === 'intro' ? 0.003 : isTwilight ? 0.002 : 0.00045;
+    const fogDensity = nightMode ? 0.00025 : mode === 'intro' ? 0.003 : isTwilight ? 0.002 : 0.00045;
     if (!scene.fog) {
       scene.fog = new THREE.FogExp2(color, fogDensity);
     } else {
       (scene.fog as THREE.FogExp2).color.copy(color);
       (scene.fog as THREE.FogExp2).density = fogDensity;
     }
-  }, [scene, sunAltitude, mode]);
+  }, [scene, sunAltitude, mode, nightMode]);
   const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 10);
   const rayleigh = THREE.MathUtils.mapLinear(THREE.MathUtils.clamp(sunAltitude, -20, 20), -20, 20, 0, 4);
   return (

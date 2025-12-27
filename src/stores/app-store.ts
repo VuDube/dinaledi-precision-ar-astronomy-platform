@@ -91,6 +91,7 @@ interface AppState {
   setLastSyncTime: (time: Date | null) => void;
   setSlewing: (slewing: boolean) => void;
   setObserving: (observing: boolean) => void;
+  setNightMode: (enabled: boolean) => void;
   toggleNightMode: () => void;
   togglePlanets: () => void;
   toggleISS: () => void;
@@ -115,7 +116,7 @@ export const useAppStore = create<AppState>((set) => ({
   isSlewing: false,
   magnitudeLimit: 6.5,
   bortleScale: 4,
-  autoBortle: true,
+  autoBortle: false,
   showPlanets: true,
   showISS: true,
   showConstellations: true,
@@ -134,7 +135,10 @@ export const useAppStore = create<AppState>((set) => ({
   deferredPrompt: null,
   isOnline: true,
   calibrationOffset: 0,
-  simulationTime: new Date(),
+  simulationTime: (() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  })(),
   timeSpeed: 1,
   latitude: -26.2,
   longitude: 28.0,
@@ -192,7 +196,7 @@ export const useAppStore = create<AppState>((set) => ({
   setTimeSpeed: (timeSpeed) => set({ timeSpeed }),
   setLocation: (latitude, longitude) => set({ latitude, longitude }),
   setBortleScale: (scale) => {
-    const mag = Math.max(3.5, 7.5 - (scale * 0.4));
+    const mag = Math.max(3.5, 8.0 - (scale * 0.35));
     set({ bortleScale: scale, magnitudeLimit: mag });
   },
   setAutoBortle: (autoBortle) => set({ autoBortle }),
@@ -205,6 +209,7 @@ export const useAppStore = create<AppState>((set) => ({
   setLastSyncTime: (lastSyncTime) => set({ lastSyncTime }),
   setSlewing: (isSlewing) => set({ isSlewing }),
   setObserving: (isObserving) => set({ isObserving }),
+  setNightMode: (enabled) => set({ nightMode: enabled }),
   toggleNightMode: () => set((state) => ({ nightMode: !state.nightMode })),
   togglePlanets: () => set((state) => ({ showPlanets: !state.showPlanets })),
   toggleISS: () => set((state) => ({ showISS: !state.showISS })),
