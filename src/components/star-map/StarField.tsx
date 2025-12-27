@@ -58,6 +58,7 @@ export function StarField() {
       catalogScales.current = new Float32Array(stars.length);
       loadedRef.current = true;
     } catch (e) {
+      console.error('StarField: DB load failed', e);
       loadedRef.current = true;
     }
   }, []);
@@ -67,11 +68,8 @@ export function StarField() {
   useEffect(() => {
     if (isCoreReady) loadCatalogFromDB();
   }, [isCoreReady, loadCatalogFromDB]);
-  // Dynamic Visibility based on Sun Altitude
   useFrame(() => {
     if (!baselineMeshRef.current || !catalogMeshRef.current) return;
-    // Visibility factor ramps up as sun goes down
-    // -6 (Civil) -> 0.1, -12 (Nautical) -> 0.5, -18 (Astro) -> 1.0
     const visibilityFactor = THREE.MathUtils.clamp(
       THREE.MathUtils.mapLinear(sunAltitude, -12, 0, 1, 0),
       0, 1
@@ -100,7 +98,7 @@ export function StarField() {
         const isVisible = star.mag <= magnitudeLimit;
         const scale = isVisible ? star.baseScale : 0;
         dummy.scale.setScalar(scale);
-        if (i < catalogScales.current.length && i < catalogData.current.length) {
+        if (i < catalogScales.current.length) {
           catalogScales.current[i] = scale;
         }
         dummy.updateMatrix();
@@ -119,7 +117,7 @@ export function StarField() {
     const LERP_FACTOR = 0.2;
     let changed = false;
     for (let i = 0; i < catalogData.current.length; i++) {
-      if (i >= catalogScales.current.length) continue;
+      if (i >= catalogScales.current.length) break;
       const star = catalogData.current[i];
       const targetScale = (star.mag <= magnitudeLimit) ? star.baseScale : 0;
       const currentScale = catalogScales.current[i];
@@ -137,11 +135,11 @@ export function StarField() {
   });
   return (
     <group>
-      <instancedMesh ref={baselineMeshRef} args={[null as any, null as any, 25000]}>
+      <instancedMesh ref={baselineMeshRef} args={[undefined, undefined, 25000]}>
         <sphereGeometry args={[1.5, 4, 4]} />
         <meshBasicMaterial transparent opacity={0.25} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
       </instancedMesh>
-      <instancedMesh ref={catalogMeshRef} args={[null as any, null as any, 5000]}>
+      <instancedMesh ref={catalogMeshRef} args={[undefined, undefined, 5000]}>
         <sphereGeometry args={[3.2, 8, 8]} />
         <meshBasicMaterial transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
       </instancedMesh>

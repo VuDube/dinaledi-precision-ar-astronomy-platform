@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wifi, CloudOff, CloudUpload, RefreshCw, Loader2, Crosshair, Cloud } from 'lucide-react';
+import { Wifi, CloudOff, CloudUpload, RefreshCw, Cloud, Crosshair } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
 import { useObservationStore } from '@/stores/observation-store';
 import { BottomNav } from '@/components/ui/bottom-nav';
@@ -25,7 +25,6 @@ export function HUDOverlay() {
   const selectedDSO = useAppStore(s => s.selectedDSO);
   const isCatalogReady = useAppStore(s => s.isCatalogReady);
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
-  const isSlewing = useAppStore(s => s.isSlewing);
   const isOnline = useAppStore(s => s.isOnline);
   const isRadialOpen = useAppStore(s => s.isRadialOpen);
   const setRadialOpen = useAppStore(s => s.setRadialOpen);
@@ -41,9 +40,8 @@ export function HUDOverlay() {
   return (
     <TooltipProvider>
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 sm:p-6 pb-[env(safe-area-inset-bottom,24px)] pt-[env(safe-area-inset-top,16px)] z-20 overflow-hidden">
-        {/* Top Telemetry Bar */}
-        <div className="flex justify-between items-start relative z-10 w-full max-w-[calc(100vw-24px)] mx-auto">
-          <motion.div layout className="flex flex-col gap-2 min-w-0">
+        <div className="flex flex-wrap justify-between items-start relative z-10 w-full max-w-[calc(100vw-24px)] mx-auto gap-2">
+          <motion.div layout className="flex flex-col gap-2 min-w-0 max-w-[60%] sm:max-w-none">
             <AnimatePresence>
               {!isCatalogReady && (
                 <motion.div
@@ -61,14 +59,14 @@ export function HUDOverlay() {
               )}
             </AnimatePresence>
             <div className="glass px-2 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5 sm:gap-2 border-white/5 backdrop-blur-3xl shrink-0 backdrop-filter-none">
-              <div className={cn("h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full", isSensorActive ? "bg-green-500" : "bg-yellow-500")} />
-              <div className="flex gap-x-2 sm:gap-x-3 font-mono text-[8px] sm:text-[9px] uppercase tracking-wider font-bold tabular-nums text-starlight">
-                <span className="truncate">HDG {azimuthValue.toString().padStart(3, '0')}°</span>
-                <span className="truncate">ALT {altitudeValue.toString().padStart(3, '0')}°</span>
+              <div className={cn("h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full shrink-0", isSensorActive ? "bg-green-500" : "bg-yellow-500")} />
+              <div className="flex gap-x-2 sm:gap-x-3 font-mono text-[8px] sm:text-[9px] uppercase tracking-wider font-bold tabular-nums text-starlight overflow-hidden">
+                <span className="whitespace-nowrap">HDG {azimuthValue.toString().padStart(3, '0')}°</span>
+                <span className="whitespace-nowrap">ALT {altitudeValue.toString().padStart(3, '0')}°</span>
               </div>
             </div>
           </motion.div>
-          <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto ml-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
              <Tooltip>
                <TooltipTrigger asChild>
                  <div className="flex items-center gap-1.5">
@@ -99,23 +97,8 @@ export function HUDOverlay() {
              </Tooltip>
           </div>
         </div>
-        {/* Slewing Indicator */}
-        <AnimatePresence>
-          {isSlewing && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="absolute top-24 left-1/2 -translate-x-1/2 glass px-4 py-1.5 rounded-full border-nebula/30 flex items-center gap-2 shadow-2xl z-20 backdrop-filter-none"
-            >
-              <Loader2 className="w-3 h-3 text-nebula animate-spin" />
-              <span className="text-[10px] font-mono font-bold text-nebula uppercase tracking-widest">Slewing</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
         {!isRadialOpen && <TargetNavigator />}
         <HighlightsCarousel />
-        {/* Central Reticle */}
         <div className="flex-1 flex items-center justify-center relative">
            <StarPoint className="w-64 h-64 scale-150" opacity={0.015} />
            <div
@@ -134,11 +117,7 @@ export function HUDOverlay() {
       <TargetDetailsDrawer />
       <SearchPanel />
       <TemporalControls />
-      <PWAInstallModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
-        onInstall={triggerInstallPrompt}
-      />
+      <PWAInstallModal isOpen={isInstallModalOpen} onClose={() => setIsInstallModalOpen(false)} onInstall={triggerInstallPrompt} />
     </TooltipProvider>
   );
 }

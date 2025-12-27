@@ -1,7 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/stores/app-store';
 import { toast } from 'sonner';
-
 export function useOrientation() {
   const setOrientation = useAppStore((s) => s.setOrientation);
   const setPermissionStatus = useAppStore((s) => s.setPermissionStatus);
@@ -9,9 +8,7 @@ export function useOrientation() {
   const setCalibrationProgress = useAppStore((s) => s.setCalibrationProgress);
   const setCalibrated = useAppStore((s) => s.setCalibrated);
   const setCalibrationOffset = useAppStore((s) => s.setCalibrationOffset);
-  const calibrationOffset = useAppStore((s) => s.calibrationOffset);
   const isSensorActive = useAppStore((s) => s.isSensorActive);
-  
   const lastHeading = useRef<number>(0);
   const filterAlpha = 0.15;
   const biasSamples = useRef<number[]>([]);
@@ -19,21 +16,19 @@ export function useOrientation() {
   const mockMode = useRef(false);
   const rafRef = useRef<number>(0);
   const eventRef = useRef<any>(null);
+  const calibrationOffsetRef = useRef<number>(useAppStore.getState().calibrationOffset);
   const isPreview = typeof location !== 'undefined' && location.hostname.includes('.workers.dev');
-
   const handleOrientation = useCallback((event: DeviceOrientationEvent & {webkitCompassHeading?: number}) => {
     const alpha = event.webkitCompassHeading ?? (event.absolute ? event.alpha : event.alpha) ?? 0;
     const { beta, gamma } = event;
     const a = alpha;
     const b = beta ?? 0;
     const g = gamma ?? 0;
-    
     if (isCalibrating.current) {
       biasSamples.current.push(a);
       return;
     }
-    
-    let heading = (a + calibrationOffset) % 360;
+    let heading = (a + calibrationOffsetRef.current) % 360;
     if (heading < 0) heading += 360;
     let diff = heading - lastHeading.current;
     if (diff > 180) diff -= 360;
@@ -41,8 +36,7 @@ export function useOrientation() {
     const smoothedHeading = (lastHeading.current + filterAlpha * diff + 360) % 360;
     lastHeading.current = smoothedHeading;
     setOrientation({ alpha: a, beta: b, gamma: g, heading: smoothedHeading });
-  }, [setOrientation, calibrationOffset]);
-
+  }, [setOrientation]);
   const requestPermission = useCallback(async () => {
     if (isPreview) {
       mockMode.current = true;
@@ -52,17 +46,16 @@ export function useOrientation() {
       biasSamples.current = [];
       setCalibrationProgress(100);
       setCalibrationOffset(0);
+      calibrationOffsetRef.current = 0;
       setCalibrated(true);
       toast.info('Preview: Mock sensors enabled');
       return true;
     }
-
     if (typeof DeviceOrientationEvent === 'undefined') {
       setPermissionStatus('unavailable');
       toast.error('Sensors Unavailable', { description: 'Device Orientation API not supported.' });
       return false;
     }
-    
     const requestPermissionFn = (DeviceOrientationEvent as any).requestPermission;
     try {
       let status: PermissionState | 'granted' = 'granted';
@@ -88,7 +81,9 @@ export function useOrientation() {
             const avg = biasSamples.current.length > 0
               ? biasSamples.current.reduce((a, b) => a + b, 0) / biasSamples.current.length
               : 0;
-            setCalibrationOffset(-avg);
+            const finalOffset = -avg;
+            calibrationOffsetRef.current = finalOffset;
+            setCalibrationOffset(finalOffset);
             setCalibrated(true);
           }
         }, interval);
@@ -104,8 +99,6 @@ export function useOrientation() {
       return false;
     }
   }, [setPermissionStatus, setSensorActive, setCalibrationProgress, setCalibrated, setCalibrationOffset, isPreview]);
-
-  // Mock RAF loop effect
   useEffect(() => {
     if (mockMode.current) {
       const mockLoop = () => {
@@ -118,31 +111,20 @@ export function useOrientation() {
         handleOrientation(event);
         rafRef.current = requestAnimationFrame(mockLoop);
       };
-      
-      // Cancel existing RAF
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       mockLoop();
-      
       return () => {
-        if (rafRef.current) {
-          cancelAnimationFrame(rafRef.current);
-          rafRef.current = 0;
-        }
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
       };
     }
   }, [handleOrientation]);
-
-  // Real sensor event listener effect  
   useEffect(() => {
     if (isSensorActive && !mockMode.current) {
-      const eventName = 'ondeviceorientationabsolute' in window 
-        ? 'deviceorientationabsolute' 
+      const eventName = 'ondeviceorientationabsolute' in window
+        ? 'deviceorientationabsolute'
         : 'deviceorientation';
       eventRef.current = eventName;
       window.addEventListener(eventName as any, handleOrientation);
-      
       return () => {
         if (eventRef.current) {
           window.removeEventListener(eventRef.current as any, handleOrientation);
@@ -150,19 +132,5 @@ export function useOrientation() {
       };
     }
   }, [handleOrientation, isSensorActive]);
-
-  // Global cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
-      if (eventRef.current && !mockMode.current) {
-        window.removeEventListener(eventRef.current as any, handleOrientation);
-      }
-    };
-  }, [handleOrientation]);
-
   return { requestPermission };
 }
-//

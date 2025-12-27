@@ -26,22 +26,23 @@ export function ARController() {
   const lastTargetId = useRef<string | null>(null);
   useFrame((state) => {
     if (!isSensorActive) return;
-    // Direct physical tracking
+    // Physical sensor fusion tracking
     const alphaRad = THREE.MathUtils.degToRad(alpha);
     const betaRad = THREE.MathUtils.degToRad(beta);
     const gammaRad = THREE.MathUtils.degToRad(gamma);
     euler.current.set(betaRad, alphaRad, -gammaRad, 'YXZ');
     targetQuaternion.current.setFromEuler(euler.current);
-    camera.quaternion.slerp(targetQuaternion.current, 0.15);
-    // Block targeting if user is interacting with UI
+    camera.quaternion.slerp(targetQuaternion.current, 0.18); // Increased from 0.15 for better response
+    // Block targeting loop during UI interactions
     if (isObserving || isSlewing || isDetailOpen || isRadialOpen) return;
     const now = state.clock.getElapsedTime();
-    if (now - lastUpdate.current < 0.1) return;
+    if (now - lastUpdate.current < 0.08) return;
     lastUpdate.current = now;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     let closestObject = null;
     let objectType: 'star' | 'dso' | null = null;
-    let minDistance = 0.035;
+    // DSO prioritization with larger hit-box (0.045 rad)
+    let minDistance = 0.045; 
     for (const dso of DSO_CATALOG) {
       const dsoPos = radecToVector3(dso.ra, dso.dec, 1).normalize();
       const dist = forward.distanceTo(dsoPos);
@@ -51,7 +52,9 @@ export function ARController() {
         objectType = 'dso';
       }
     }
+    // Stars fallback with smaller precision hit-box (0.03 rad)
     if (!closestObject) {
+      minDistance = 0.03;
       for (const star of STAR_CATALOG) {
         const starPos = radecToVector3(star.ra, star.dec, 1).normalize();
         const dist = forward.distanceTo(starPos);
@@ -73,8 +76,7 @@ export function ARController() {
         if (window.navigator.vibrate) window.navigator.vibrate(30);
         lastTargetId.current = closestObject.id;
       }
-      // SNAPPIER: Decreased from 0.5 to 0.3 for faster response
-      hysteresisTimer.current = now + 0.3;
+      hysteresisTimer.current = now + 0.35;
     } else {
       if (now > hysteresisTimer.current) {
         if (selectedStar || selectedDSO) {

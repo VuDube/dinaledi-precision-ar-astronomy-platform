@@ -8,7 +8,6 @@ import { useAppStore } from '@/stores/app-store';
 import { Button } from '@/components/ui/button';
 import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useOrientation } from '@/hooks/use-orientation';
 import { usePWA } from '@/hooks/use-pwa';
 import { DiamondGrid, StarPoint, CalibrationMotion } from '@/components/ui/sesotho-patterns';
 import { toast } from 'sonner';
@@ -27,19 +26,18 @@ export function HomePage() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const handleStart = useCallback(() => {
     setIsInitializing(true);
+    useAppStore.getState().setCalibrationProgress(0);
     if (window.navigator.vibrate) window.navigator.vibrate(50);
-    // Trigger sensor permission check or transition immediately if already calibrated
     if (isCalibrated && isCoreReady) {
-      useAppStore.getState().setMode("skyview");
       setIsTransitioning(true);
+      setTimeout(() => setMode('skyview'), 300);
     } else {
-      // Logic for new calibration flow
       useAppStore.getState().setCalibrated(true);
       useAppStore.getState().setCoreReady(true);
-      useAppStore.getState().setMode("skyview");
       setIsTransitioning(true);
+      setTimeout(() => setMode('skyview'), 500);
     }
-  }, [isCalibrated, isCoreReady]);
+  }, [isCalibrated, isCoreReady, setMode]);
   useEffect(() => {
     if (isCalibrated && isCoreReady && mode === 'intro') {
       const timer = setTimeout(() => {
@@ -59,7 +57,7 @@ export function HomePage() {
   }, []);
   useEffect(() => {
     if (isCatalogReady && !hasShownCatalogToast.current) {
-      toast.success('High-density catalog synced', { description: '125k stars locked' });
+      toast.success('Celestial catalog synced', { description: '125k stars locked' });
       hasShownCatalogToast.current = true;
     }
   }, [isCatalogReady]);
@@ -86,17 +84,18 @@ export function HomePage() {
         <HUDOverlay />
         <ObservationLog />
         <ObservationForm />
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {mode === 'intro' && (
             <motion.div
+              layout
               initial={{ opacity: 1 }}
               exit={{
                 opacity: 0,
                 scale: 1.05,
-                filter: 'blur(40px)',
-                transition: { duration: 0.6, ease: [0.4, 0, 0.2, 1] }
+                filter: 'blur(20px)',
+                transition: { duration: 0.8, ease: [0.4, 0, 0.2, 1] }
               }}
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 bg-space-black/40 backdrop-blur-sm"
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/60 backdrop-blur-md"
             >
               <div className="absolute inset-0 pointer-events-none opacity-20">
                 <DiamondGrid opacity={0.12} />
