@@ -15,6 +15,7 @@ export function ARController() {
   const isObserving = useAppStore(s => s.isObserving);
   const isDetailOpen = useAppStore(s => s.isDetailOpen);
   const isRadialOpen = useAppStore(s => s.isRadialOpen);
+  const fov = useAppStore(s => s.fov);
   const setSelectedStar = useAppStore(s => s.setSelectedStar);
   const setSelectedDSO = useAppStore(s => s.setSelectedDSO);
   const selectedStar = useAppStore(s => s.selectedStar);
@@ -26,23 +27,22 @@ export function ARController() {
   const lastTargetId = useRef<string | null>(null);
   useFrame((state) => {
     if (!isSensorActive) return;
-    // Physical sensor fusion tracking
     const alphaRad = THREE.MathUtils.degToRad(alpha);
     const betaRad = THREE.MathUtils.degToRad(beta);
     const gammaRad = THREE.MathUtils.degToRad(gamma);
     euler.current.set(betaRad, alphaRad, -gammaRad, 'YXZ');
     targetQuaternion.current.setFromEuler(euler.current);
-    camera.quaternion.slerp(targetQuaternion.current, 0.18); // Increased from 0.15 for better response
-    // Block targeting loop during UI interactions
+    camera.quaternion.slerp(targetQuaternion.current, 0.22);
     if (isObserving || isSlewing || isDetailOpen || isRadialOpen) return;
     const now = state.clock.getElapsedTime();
-    if (now - lastUpdate.current < 0.08) return;
+    if (now - lastUpdate.current < 0.05) return; 
     lastUpdate.current = now;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     let closestObject = null;
     let objectType: 'star' | 'dso' | null = null;
-    // DSO prioritization with larger hit-box (0.045 rad)
-    let minDistance = 0.045; 
+    // Hit-box sensitivity adjusted by FOV
+    const fovScale = Math.max(0.4, fov / 55);
+    let minDistance = 0.05 * fovScale;
     for (const dso of DSO_CATALOG) {
       const dsoPos = radecToVector3(dso.ra, dso.dec, 1).normalize();
       const dist = forward.distanceTo(dsoPos);
@@ -52,9 +52,8 @@ export function ARController() {
         objectType = 'dso';
       }
     }
-    // Stars fallback with smaller precision hit-box (0.03 rad)
     if (!closestObject) {
-      minDistance = 0.03;
+      minDistance = 0.035 * fovScale;
       for (const star of STAR_CATALOG) {
         const starPos = radecToVector3(star.ra, star.dec, 1).normalize();
         const dist = forward.distanceTo(starPos);
@@ -68,15 +67,12 @@ export function ARController() {
     if (closestObject) {
       const isNewTarget = closestObject.id !== lastTargetId.current;
       if (isNewTarget) {
-        if (objectType === 'star') {
-          setSelectedStar(closestObject as any);
-        } else if (objectType === 'dso') {
-          setSelectedDSO(closestObject as any);
-        }
-        if (window.navigator.vibrate) window.navigator.vibrate(30);
+        if (objectType === 'star') setSelectedStar(closestObject as any);
+        else if (objectType === 'dso') setSelectedDSO(closestObject as any);
+        if (window.navigator.vibrate) window.navigator.vibrate(20);
         lastTargetId.current = closestObject.id;
       }
-      hysteresisTimer.current = now + 0.35;
+      hysteresisTimer.current = now + 0.5; // Increased hysteresis
     } else {
       if (now > hysteresisTimer.current) {
         if (selectedStar || selectedDSO) {

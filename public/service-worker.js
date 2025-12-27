@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dinaledi-pwa-v1.3.0-prod';
+const CACHE_NAME = 'dinaledi-pwa-v1.4.0-prod';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -9,9 +9,7 @@ const STATIC_RESOURCES = /\.(woff2|woff|ttf|css|js|png|jpg|jpeg|svg|webp)$/;
 const STAR_CATALOG_DATA = /star_catalog|dso_catalog/;
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
   );
   self.skipWaiting();
 });
@@ -33,36 +31,27 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  // API Persistence: Stale-While-Revalidate (Ensure observations are available offline)
-  if (url.pathname.startsWith('/api/')) {
+  // API Sync: Network-Only with graceful fallback for eventual consistency
+  if (url.pathname === '/api/obs/sync') {
     event.respondWith(
-      caches.open(CACHE_NAME).then((cache) => {
-        return cache.match(request).then((cachedResponse) => {
-          const fetchPromise = fetch(request).then((networkResponse) => {
-            if (networkResponse.status === 200) {
-              cache.put(request, networkResponse.clone());
-            }
-            return networkResponse;
-          }).catch(() => {
-             return cachedResponse || new Response(JSON.stringify({ success: false, error: 'Offline' }), {
-               headers: { 'Content-Type': 'application/json' }
-             });
-          });
-          return cachedResponse || fetchPromise;
+      fetch(request).catch(() => {
+        return new Response(JSON.stringify({ success: false, error: 'Offline - Sync Queued' }), {
+          headers: { 'Content-Type': 'application/json' }
         });
       })
     );
     return;
   }
-  // Heavy Celestial Data: Cache-First (Critical for high-density catalog)
-  if (STAR_CATALOG_DATA.test(url.pathname)) {
+  // Heavy Celestial Data & API GET: Cache-First with Stale-While-Revalidate
+  if (STAR_CATALOG_DATA.test(url.pathname) || url.pathname.startsWith('/api/')) {
     event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        return cachedResponse || fetch(request).then((networkResponse) => {
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, networkResponse.clone());
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(request).then((cachedResponse) => {
+          const fetchPromise = fetch(request).then((networkResponse) => {
+            if (networkResponse.ok) cache.put(request, networkResponse.clone());
             return networkResponse;
-          });
+          }).catch(() => cachedResponse);
+          return cachedResponse || fetchPromise;
         });
       })
     );
@@ -83,12 +72,10 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-  // Navigation: Network-First with Fallback
+  // Navigation: Network-First with Index Fallback
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => {
-        return caches.match('/index.html');
-      })
+      fetch(request).catch(() => caches.match('/index.html'))
     );
     return;
   }

@@ -15,10 +15,11 @@ export function useOrientation() {
   const isCalibrating = useRef(false);
   const mockMode = useRef(false);
   const rafRef = useRef<number>(0);
-  const eventRef = useRef<any>(null);
+  const activeEventName = useRef<string | null>(null);
+  const calibrationTimerRef = useRef<any>(null);
   const calibrationOffsetRef = useRef<number>(useAppStore.getState().calibrationOffset);
   const isPreview = typeof location !== 'undefined' && (
-    location.hostname.includes('.workers.dev') || 
+    location.hostname.includes('.workers.dev') ||
     location.hostname.includes('build-preview')
   );
   const handleOrientation = useCallback((event: DeviceOrientationEvent & {webkitCompassHeading?: number}) => {
@@ -45,16 +46,13 @@ export function useOrientation() {
       mockMode.current = true;
       setPermissionStatus('granted');
       setSensorActive(true);
-      isCalibrating.current = false;
       setCalibrationProgress(100);
-      setCalibrationOffset(0);
-      calibrationOffsetRef.current = 0;
       setCalibrated(true);
       return true;
     }
     if (typeof DeviceOrientationEvent === 'undefined') {
       setPermissionStatus('unavailable');
-      toast.error('Sensors Unavailable', { description: 'Device Orientation API not supported.' });
+      toast.error('Sensors Unsupported');
       return false;
     }
     const requestPermissionFn = (DeviceOrientationEvent as any).requestPermission;
@@ -70,19 +68,20 @@ export function useOrientation() {
         isCalibrating.current = true;
         biasSamples.current = [];
         setCalibrationProgress(0);
+        if (calibrationTimerRef.current) clearInterval(calibrationTimerRef.current);
         const duration = 4000;
         const interval = 100;
         let elapsed = 0;
-        const timer = setInterval(() => {
+        calibrationTimerRef.current = setInterval(() => {
           elapsed += interval;
           const progress = Math.min(100, (elapsed / duration) * 100);
           setCalibrationProgress(progress);
           if (elapsed >= duration) {
-            clearInterval(timer);
+            if (calibrationTimerRef.current) clearInterval(calibrationTimerRef.current);
             isCalibrating.current = false;
-            // Calculate bias
-            const avg = biasSamples.current.length > 5 
-              ? biasSamples.current.reduce((a, b) => a + b, 0) / biasSamples.current.length
+            const count = biasSamples.current.length;
+            const avg = count >= 20
+              ? biasSamples.current.reduce((a, b) => a + b, 0) / count
               : 0;
             const finalOffset = -avg;
             calibrationOffsetRef.current = finalOffset;
@@ -97,7 +96,6 @@ export function useOrientation() {
         return false;
       }
     } catch (error) {
-      console.error('Orientation permission failed:', error);
       setPermissionStatus('denied');
       return false;
     }
@@ -116,9 +114,7 @@ export function useOrientation() {
         rafRef.current = requestAnimationFrame(mockLoop);
       };
       mockLoop();
-      return () => {
-        if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      };
+      return () => cancelAnimationFrame(rafRef.current);
     }
   }, [handleOrientation]);
   useEffect(() => {
@@ -126,12 +122,14 @@ export function useOrientation() {
       const eventName = 'ondeviceorientationabsolute' in window
         ? 'deviceorientationabsolute'
         : 'deviceorientation';
-      eventRef.current = eventName;
+      activeEventName.current = eventName;
       window.addEventListener(eventName as any, handleOrientation);
       return () => {
-        if (eventRef.current) {
-          window.removeEventListener(eventRef.current as any, handleOrientation);
+        if (activeEventName.current) {
+          window.removeEventListener(activeEventName.current as any, handleOrientation);
+          activeEventName.current = null;
         }
+        if (calibrationTimerRef.current) clearInterval(calibrationTimerRef.current);
       };
     }
   }, [handleOrientation, isSensorActive]);

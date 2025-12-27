@@ -43,8 +43,8 @@ export function HomePage() {
     if (isCalibrated && isCoreReady && mode === 'intro' && isInitializing) {
       const timer = setTimeout(() => {
         setIsTransitioning(true);
-        setTimeout(() => setMode('skyview'), 400);
-      }, 500);
+        setTimeout(() => setMode('skyview'), 600);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, [isCalibrated, isCoreReady, mode, setMode, isInitializing]);
@@ -57,7 +57,7 @@ export function HomePage() {
   }, []);
   useEffect(() => {
     if (isCatalogReady && !hasShownCatalogToast.current) {
-      toast.success('Celestial catalog synced', { description: '125k stars locked' });
+      toast.success('Starport Locked', { description: '50,000 celestial nodes synchronized.' });
       hasShownCatalogToast.current = true;
     }
   }, [isCatalogReady]);
@@ -65,7 +65,7 @@ export function HomePage() {
     if (typeof window === 'undefined') return;
     const calibLS = localStorage.getItem('dinaledi-calib') === 'true';
     const coreLS = localStorage.getItem('dinaledi-coreReady') === 'true';
-    const modeLS = (localStorage.getItem('dinaledi-mode') as AppMode || 'intro') as AppMode;
+    const modeLS = localStorage.getItem('dinaledi-mode') as AppMode;
     if (calibLS && coreLS && modeLS === 'skyview') {
       useAppStore.setState({ isCalibrated: true, isCoreReady: true, mode: 'skyview' });
     }
@@ -86,13 +86,12 @@ export function HomePage() {
               initial={{ opacity: 1 }}
               exit={{
                 opacity: 0,
-                scale: 1.1,
-                filter: 'blur(40px)',
-                transition: { duration: 0.9, ease: [0.4, 0, 0.2, 1] }
+                scale: 1.05,
+                filter: 'blur(20px)',
+                transition: { duration: 0.8, ease: "circOut" }
               }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/40 backdrop-blur-xl"
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/60 backdrop-blur-2xl"
             >
-              {/* Central Sesotho Orb */}
               <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
                 <div className="w-[120vw] h-[120vw] max-w-[800px] max-h-[800px] rounded-full bg-gradient-radial from-nebula/20 via-nebula/5 to-transparent blur-[120px] opacity-40 animate-pulse" />
               </div>
@@ -120,8 +119,8 @@ export function HomePage() {
                       >
                         DIN<span className="text-nebula">A</span>LEDI
                       </motion.h1>
-                      <p className="text-lg sm:text-xl text-starlight/60 font-light max-w-lg mx-auto leading-relaxed text-pretty px-4">
-                        Precision AR planetarium at the edge. Visualizing ancestral and scientific skies.
+                      <p className="text-lg sm:text-xl text-starlight/60 font-light max-w-lg mx-auto leading-relaxed px-4">
+                        Precision AR planetarium at the edge. High-fidelity ancestral and scientific skies.
                       </p>
                     </div>
                     <Button
@@ -146,7 +145,7 @@ export function HomePage() {
                           >
                             <CalibrationMotion opacity={1} />
                             <div className="text-nebula text-[10px] font-mono font-bold uppercase tracking-[0.3em] max-w-[240px] leading-relaxed">
-                              Neutralizing magnetic bias via orientation sweep
+                              Aligning sensors to magnetic North
                             </div>
                           </motion.div>
                         ) : (
@@ -165,11 +164,11 @@ export function HomePage() {
                         )}
                       </AnimatePresence>
                       <div className="space-y-3">
-                        <h2 className="text-3xl sm:text-4xl font-black text-starlight tracking-tight">
-                          {isTransitioning ? "VIEWPORT_LOCKED" : "INITIALIZING_SKY"}
+                        <h2 className="text-3xl sm:text-4xl font-black text-starlight tracking-tight uppercase">
+                          {isTransitioning ? "Viewport Locked" : "Initializing Sky"}
                         </h2>
                         <p className="text-starlight/40 font-mono text-[10px] uppercase tracking-[0.4em]">
-                          {isTransitioning ? "Celestial matrices ready" : "Sampling Gravity • Aligning Stars"}
+                          {isTransitioning ? "Celestial matrices ready" : "Synchronizing 50,000 Celestial Nodes"}
                         </p>
                       </div>
                     </div>

@@ -1,10 +1,11 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { radecToVector3, bvToColor, getSunPosition } from '@/lib/astronomy-math';
 import { useAppStore } from '@/stores/app-store';
 import { getStarsByMagnitude } from '@/lib/db';
 export function StarField() {
+  const { camera } = useThree();
   const catalogMeshRef = useRef<THREE.InstancedMesh>(null);
   const baselineMeshRef = useRef<THREE.InstancedMesh>(null);
   const magnitudeLimit = useAppStore(s => s.magnitudeLimit);
@@ -16,14 +17,14 @@ export function StarField() {
   const catalogData = useRef<any[]>([]);
   const baselineData = useRef<any[]>([]);
   const catalogScales = useRef<Float32Array>(new Float32Array(0));
-  const frameCount = useRef(0);
+  const lerpPointer = useRef(0);
   const loadedRef = useRef<boolean>(false);
   const [baselineReady, setBaselineReady] = useState(false);
   const sunAltitude = useMemo(() => getSunPosition(simulationTime, lat, lon).altitude, [simulationTime, lat, lon]);
   const generateBaseline = useCallback(() => {
     if (baselineData.current.length > 0) return;
     const stars: any[] = [];
-    for (let i = 0; i < 25000; i++) {
+    for (let i = 0; i < 40000; i++) {
       const ra = Math.random() * 24;
       const dec = Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90;
       const mag = 5.5 + Math.pow(Math.random(), 0.5) * 6.5;
@@ -42,7 +43,7 @@ export function StarField() {
   const loadCatalogFromDB = useCallback(async () => {
     if (loadedRef.current) return;
     try {
-      const allStars = await getStarsByMagnitude(7.0, 5000);
+      const allStars = await getStarsByMagnitude(7.5, 10000);
       if (allStars.length < 50) {
         loadedRef.current = true;
         return;
@@ -98,9 +99,7 @@ export function StarField() {
         const isVisible = star.mag <= magnitudeLimit;
         const scale = isVisible ? star.baseScale : 0;
         dummy.scale.setScalar(scale);
-        if (i < catalogScales.current.length) {
-          catalogScales.current[i] = scale;
-        }
+        if (i < catalogScales.current.length) catalogScales.current[i] = scale;
         dummy.updateMatrix();
         catalogMeshRef.current!.setMatrixAt(i, dummy.matrix);
         catalogMeshRef.current!.setColorAt(i, star.color);
@@ -110,14 +109,14 @@ export function StarField() {
     }
   }, [magnitudeLimit, dummy, isCoreReady]);
   useFrame(() => {
-    frameCount.current++;
-    if (frameCount.current % 2 !== 0) return;
     if (!catalogMeshRef.current || !catalogData.current.length) return;
     const EPSILON = 0.01;
     const LERP_FACTOR = 0.2;
+    const BATCH_SIZE = 500;
     let changed = false;
-    for (let i = 0; i < catalogData.current.length; i++) {
-      if (i >= catalogScales.current.length) break;
+    const startIdx = lerpPointer.current;
+    const endIdx = Math.min(startIdx + BATCH_SIZE, catalogData.current.length);
+    for (let i = startIdx; i < endIdx; i++) {
       const star = catalogData.current[i];
       const targetScale = (star.mag <= magnitudeLimit) ? star.baseScale : 0;
       const currentScale = catalogScales.current[i];
@@ -131,15 +130,16 @@ export function StarField() {
         changed = true;
       }
     }
+    lerpPointer.current = (endIdx >= catalogData.current.length) ? 0 : endIdx;
     if (changed) catalogMeshRef.current.instanceMatrix.needsUpdate = true;
   });
   return (
     <group>
-      <instancedMesh ref={baselineMeshRef} args={[undefined, undefined, 25000]}>
+      <instancedMesh ref={baselineMeshRef} args={[undefined, undefined, 40000]}>
         <sphereGeometry args={[1.5, 4, 4]} />
         <meshBasicMaterial transparent opacity={0.25} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
       </instancedMesh>
-      <instancedMesh ref={catalogMeshRef} args={[undefined, undefined, 5000]}>
+      <instancedMesh ref={catalogMeshRef} args={[undefined, undefined, 10000]}>
         <sphereGeometry args={[3.2, 8, 8]} />
         <meshBasicMaterial transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
       </instancedMesh>

@@ -19,13 +19,14 @@ export function NightModeProvider({ children }: { children: React.ReactNode }) {
         .night-mode-active canvas {
           filter: sepia(100%) hue-rotate(-60deg) saturate(600%) brightness(0.45);
         }
-        /* Comprehensive UI Red-Filter Overrides */
         .night-mode-active .glass,
         .night-mode-active .glass-dark,
         .night-mode-active [role="dialog"],
-        .night-mode-active [data-state="open"] {
+        .night-mode-active [data-state="open"],
+        .night-mode-active .bg-card,
+        .night-mode-active .bg-popover {
           background-color: rgba(15, 0, 0, 0.98) !important;
-          border-color: rgba(255, 0, 0, 0.2) !important;
+          border-color: rgba(255, 0, 0, 0.3) !important;
           backdrop-filter: blur(32px) !important;
           color: #ee2222 !important;
         }
@@ -41,7 +42,7 @@ export function NightModeProvider({ children }: { children: React.ReactNode }) {
         }
         .night-mode-active .text-nebula {
           color: #ff0000 !important;
-          text-shadow: 0 0 12px rgba(255, 0, 0, 0.4) !important;
+          text-shadow: 0 0 12px rgba(255, 0, 0, 0.6) !important;
         }
         .night-mode-active svg,
         .night-mode-active lucide {
@@ -51,8 +52,15 @@ export function NightModeProvider({ children }: { children: React.ReactNode }) {
         .night-mode-active .bg-nebula,
         .night-mode-active .bg-starlight,
         .night-mode-active .bg-primary {
-          background-color: #880000 !important;
+          background-color: #990000 !important;
           color: #ffaaaa !important;
+          border-color: #aa0000 !important;
+        }
+        .night-mode-active .btn, .night-mode-active button:not(.bg-nebula) {
+          border-color: rgba(255, 0, 0, 0.2) !important;
+        }
+        .night-mode-active .bg-accent, .night-mode-active [aria-selected="true"] {
+          background-color: rgba(255, 0, 0, 0.2) !important;
         }
         .night-mode-active input,
         .night-mode-active textarea {
@@ -60,17 +68,14 @@ export function NightModeProvider({ children }: { children: React.ReactNode }) {
           border-color: #660000 !important;
           color: #ff4444 !important;
         }
-        /* Drawer Handle & Overlays */
+        .night-mode-active .badge {
+          background-color: rgba(255, 0, 0, 0.1) !important;
+          color: #ff3333 !important;
+          border: 1px solid rgba(255, 0, 0, 0.3) !important;
+        }
         .night-mode-active [data-vaul-drawer] {
           background-color: #0a0000 !important;
-          border-top-color: #440000 !important;
-        }
-        .night-mode-active [data-vaul-handle] {
-          background-color: #660000 !important;
-        }
-        /* Command Menu Item */
-        .night-mode-active [cmdk-item][aria-selected="true"] {
-          background-color: rgba(255, 0, 0, 0.1) !important;
+          border-top-color: #550000 !important;
         }
       `}</style>
     </div>
