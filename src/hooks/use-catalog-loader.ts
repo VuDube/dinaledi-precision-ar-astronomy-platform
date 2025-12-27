@@ -4,6 +4,7 @@ import { getCatalogCount, saveStarChunk } from '@/lib/db';
 import { STAR_CATALOG, StarRecord } from '@/data/star-catalog';
 export function useCatalogLoader() {
   const setCatalogReady = useAppStore(s => s.setCatalogReady);
+  const setCoreReady = useAppStore(s => s.setCoreReady);
   const setCatalogLoadingProgress = useAppStore(s => s.setCatalogLoadingProgress);
   const isInitialized = useRef(false);
   useEffect(() => {
@@ -13,45 +14,57 @@ export function useCatalogLoader() {
       try {
         const count = await getCatalogCount();
         const TARGET_DENSITY = 125000;
-        // If already seeded at high density, fast-track
+        const CORE_THRESHOLD = 10000;
         if (count >= TARGET_DENSITY) {
           setCatalogLoadingProgress(100);
+          setCoreReady(true);
           setTimeout(() => setCatalogReady(true), 800);
           return;
         }
         setCatalogLoadingProgress(0);
-        // Phase 1: Save core bright subset
+        // Phase 1: Core Stars (High-brightness + Subset)
         await saveStarChunk(STAR_CATALOG);
-        setCatalogLoadingProgress(10);
-        // Phase 2: Procedural Hydration to reach 125k stars
-        const remaining = TARGET_DENSITY - count;
+        // Phase 2: Procedural Core Hydration to reach 10k stars (Quick unlock)
+        const chunk: StarRecord[] = [];
+        for (let j = 0; j < CORE_THRESHOLD; j++) {
+          const id = `core_proc_${j}`;
+          const ra = Math.random() * 24;
+          const dec = Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90;
+          const mag = 2.0 + Math.random() * 4.5;
+          const bv = Math.random() * 2.0 - 0.4;
+          chunk.push({ id, ra, dec, mag, bv });
+        }
+        await saveStarChunk(chunk);
+        // Unlock SkyView as 10k stars are now ready
+        setCoreReady(true);
+        setCatalogLoadingProgress(15);
+        // Phase 3: Background Procedural Hydration to reach 125k stars
+        const remaining = TARGET_DENSITY - (count + CORE_THRESHOLD);
         const chunkSize = 5000;
         const totalChunks = Math.ceil(remaining / chunkSize);
         for (let i = 0; i < totalChunks; i++) {
-          const chunk: StarRecord[] = [];
+          const bgChunk: StarRecord[] = [];
           for (let j = 0; j < chunkSize; j++) {
-            const id = `proc_${i}_${j}`;
-            // Distribute across the sky
+            const id = `bg_proc_${i}_${j}`;
             const ra = Math.random() * 24;
             const dec = Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90;
-            // Mag 6.5 to 11.0 (fainter stars)
             const mag = 6.5 + Math.random() * 4.5;
             const bv = Math.random() * 2.0 - 0.4;
-            chunk.push({ id, ra, dec, mag, bv });
+            bgChunk.push({ id, ra, dec, mag, bv });
           }
-          await saveStarChunk(chunk);
-          const progress = 10 + Math.min(90, (i / totalChunks) * 90);
+          await saveStarChunk(bgChunk);
+          const progress = 15 + Math.min(85, (i / totalChunks) * 85);
           setCatalogLoadingProgress(progress);
-          // Yield to UI
+          // Yield to UI loop
           await new Promise(r => setTimeout(r, 0));
         }
         setCatalogLoadingProgress(100);
         setTimeout(() => setCatalogReady(true), 1200);
       } catch (error) {
-        console.error('PWA: Failed to initialize high-density star catalog:', error);
+        console.error('PWA: Failed to initialize celestial catalog:', error);
       }
     }
     initializeCatalog();
-  }, [setCatalogLoadingProgress, setCatalogReady]);
+  }, [setCatalogLoadingProgress, setCatalogReady, setCoreReady]);
   return null;
 }

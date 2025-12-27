@@ -19,6 +19,7 @@ interface TargetTelemetry {
 interface AppState {
   mode: AppMode;
   isCalibrated: boolean;
+  isCoreReady: boolean;
   calibrationProgress: number;
   isCatalogReady: boolean;
   catalogLoadingProgress: number;
@@ -62,6 +63,7 @@ interface AppState {
   lastSyncTime: Date | null;
   setMode: (mode: AppMode) => void;
   setCalibrated: (status: boolean) => void;
+  setCoreReady: (status: boolean) => void;
   setCalibrationProgress: (progress: number | ((prev: number) => number)) => void;
   setCatalogReady: (status: boolean) => void;
   setCatalogLoadingProgress: (progress: number) => void;
@@ -101,6 +103,7 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   mode: 'intro',
   isCalibrated: false,
+  isCoreReady: false,
   calibrationProgress: 0,
   isCatalogReady: false,
   catalogLoadingProgress: 0,
@@ -144,6 +147,7 @@ export const useAppStore = create<AppState>((set) => ({
   lastSyncTime: null,
   setMode: (mode) => set({ mode }),
   setCalibrated: (status) => set({ isCalibrated: status, calibrationProgress: status ? 100 : 0 }),
+  setCoreReady: (status) => set({ isCoreReady: status }),
   setCalibrationProgress: (progress) => set((state) => ({ calibrationProgress: typeof progress === 'function' ? progress(state.calibrationProgress) : progress })),
   setCatalogReady: (status) => set({ isCatalogReady: status }),
   setCatalogLoadingProgress: (progress) => set({ catalogLoadingProgress: progress }),
@@ -151,14 +155,14 @@ export const useAppStore = create<AppState>((set) => ({
   setSelectedStar: (star) => set((state) => ({
     selectedStar: star,
     selectedDSO: null,
-    isSlewing: star !== null && !state.isSensorActive,
-    isDetailOpen: star !== null && !state.isSensorActive
+    isSlewing: star !== null && !state.isSensorActive && state.isCoreReady,
+    isDetailOpen: star !== null && !state.isSensorActive && state.isCoreReady
   })),
   setSelectedDSO: (dso) => set((state) => ({
     selectedDSO: dso,
     selectedStar: null,
-    isSlewing: dso !== null && !state.isSensorActive,
-    isDetailOpen: dso !== null && !state.isSensorActive
+    isSlewing: dso !== null && !state.isSensorActive && state.isCoreReady,
+    isDetailOpen: dso !== null && !state.isSensorActive && state.isCoreReady
   })),
   setOrientation: (orientation) => set({ orientation }),
   setSensorActive: (active) => set({ isSensorActive: active }),

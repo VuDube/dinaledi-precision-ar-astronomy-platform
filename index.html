@@ -3,10 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="https://img.icons8.com/ios-filled/50/EAB308/star.png" />
+    <link rel="preconnect" href="https://img.icons8.com" crossorigin />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <!-- PWA Primary -->
     <title>Dinaledi Astronomy</title>
-    <meta name="description" content="Precision AR Astronomy Platform" />
+    <meta name="description" content="Precision AR Astronomy Platform - Offline-first planetarium with 125k+ stars." />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#020617" />
     <!-- iOS Compatibility -->
@@ -14,46 +15,40 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Dinaledi" />
     <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/180/EAB308/star.png" />
-    <!-- Splash Screens (Standard iOS fallback) -->
     <link rel="apple-touch-startup-image" href="https://img.icons8.com/ios-filled/512/EAB308/star.png" />
   </head>
   <body style="margin:0;padding:0;background:#020617;color:#ffffff;height:100dvh;width:100vw;overflow:hidden;">
     <div id="root" style="height:100dvh;width:100vw;background:#020617;position:relative;">
       <div id="loading-spinner" style="
         position:fixed;top:0;left:0;right:0;bottom:0;
-        background:#020617;display:flex;align-items:center;justify-content:center;
-        z-index:9999;font-family:system-ui;font-size:1.2rem;
+        background:#020617;display:flex;flex-direction:column;align-items:center;justify-content:center;
+        z-index:9999;font-family:system-ui, -apple-system, sans-serif;font-size:1.5rem;font-weight:900;
+        letter-spacing:-0.05em;color:#F8FAFC;gap:1.5rem;
       ">
         <div style="
-          width:48px;height:48px;border:3px solid rgba(255,255,255,0.1);
-          border-top-color:#ffffff;border-radius:50%;
-          animation:spin 1s linear infinite;
-          margin-bottom:1rem;
+          width:64px;height:64px;border:2px solid rgba(234,179,8,0.1);
+          border-top-color:#EAB308;border-radius:50%;
+          animation:spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         "></div>
-        Dinaledi
+        DINALEDI
       </div>
     </div>
     <script>
-      // Wait for DOM ready
       function initSpinnerHide() {
         const root = document.getElementById('root');
         const spinner = document.getElementById('loading-spinner');
         if (!root || !spinner) return;
-        
         const observer = new MutationObserver(() => {
+          // Hide once the main entry and skyview/intro containers are mounted
           if (root.children.length >= 2) {
-            spinner.style.display = 'none';
+            spinner.style.opacity = '0';
+            setTimeout(() => { spinner.style.display = 'none'; }, 500);
             observer.disconnect();
           }
         });
         observer.observe(root, { childList: true });
-
-        // Fallback hide after 10s
-        setTimeout(() => {
-          spinner.style.display = 'none';
-        }, 10000);
+        setTimeout(() => { spinner.style.display = 'none'; }, 10000);
       }
-
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initSpinnerHide);
       } else {
@@ -62,9 +57,8 @@
     </script>
     <script type="module" src="/src/main.tsx"></script>
     <style>
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      #loading-spinner { transition: opacity 0.5s ease-out; }
     </style>
   </body>
 </html>

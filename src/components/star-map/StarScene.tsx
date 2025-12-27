@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Canvas } from '@react-three/fiber';
+import { useFrame, Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars, PerspectiveCamera, Environment, Sky, Html } from '@react-three/drei';
 import { StarField } from './StarField';
 import { ARController } from './ARController';
@@ -42,9 +41,11 @@ function LoadingIndicator({ progress }: { progress: number }) {
         fontSize: '24px',
         fontWeight: 'bold',
         textShadow: '0 0 10px #EAB308',
-        animation: 'pulse 1.5s infinite'
+        animation: 'pulse 1.5s infinite',
+        width: '300px',
+        textAlign: 'center'
       }}>
-        Loading Stars... {Math.round(progress * 100)}%
+        Loading Skies... {Math.round(progress)}%
       </Html>
     </group>
   );
@@ -73,8 +74,8 @@ function Atmosphere() {
   const lon = useAppStore(s => s.longitude);
   const bortleScale = useAppStore(s => s.bortleScale);
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
-  const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 15);
-  const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -25, 15, 0.05, 6);
+  const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 12);
+  const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -25, 15, 0.05, 5);
   return (
     <Sky
       sunPosition={[
@@ -90,23 +91,14 @@ function Atmosphere() {
   );
 }
 function TargetTelemetry() {
-  const targetRef = useRef<any>(null);
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
   const setTargetTelemetry = useAppStore(s => s.setTargetTelemetry);
-  const telemetryRef = useRef<typeof setTargetTelemetry>();
-  
-  useEffect(() => {
-    telemetryRef.current = setTargetTelemetry;
-  }, [setTargetTelemetry]);
-  useEffect(() => {
-    targetRef.current = selectedStar || selectedDSO;
-  }, [selectedStar, selectedDSO]);
   useFrame((state) => {
     const camera = state.camera;
-    const target = targetRef.current;
-    if(!target || !camera || !telemetryRef.current) {
-      telemetryRef.current?.(null);
+    const target = selectedStar || selectedDSO;
+    if(!target || !camera) {
+      setTargetTelemetry(null);
       return;
     }
     const targetPos = radecToVector3(target.ra, target.dec, 100).normalize();
@@ -117,7 +109,7 @@ function TargetTelemetry() {
     const onScreen = frustum.containsPoint(targetPos.clone().multiplyScalar(100));
     const screenPos = targetPos.clone().multiplyScalar(100).project(camera);
     const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
-    telemetryRef.current({ angle, onScreen, azimuth });
+    setTargetTelemetry({ angle, onScreen, azimuth });
   });
   return null;
 }
@@ -127,7 +119,7 @@ export function StarScene() {
   const lat = useAppStore(s => s.latitude);
   const lon = useAppStore(s => s.longitude);
   const fov = useAppStore(s => s.fov);
-  const isCatalogReady = useAppStore(s => s.isCatalogReady);
+  const isCoreReady = useAppStore(s => s.isCoreReady);
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
   const rotateSpeed = useMemo(() => -0.2 * (fov / 55), [fov]);
   useCatalogLoader();
@@ -137,12 +129,12 @@ export function StarScene() {
   return (
     <div className="absolute inset-0 transition-colors duration-1000" style={{ backgroundColor: skyColor }}>
       <Canvas
-        gl={{ antialias: false, alpha: false, powerPreference: 'default', stencil: false, depth: true }}
-        dpr={1}
+        gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', stencil: false, depth: true }}
+        dpr={window.devicePixelRatio > 1 ? 1.5 : 1}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={fov} near={0.1} far={5000} />
+        <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={fov} near={0.1} far={4000} />
         <color attach='background' args={['#000000']} />
-        {!isCatalogReady ? (
+        {!isCoreReady ? (
           <LoadingIndicator progress={catalogLoadingProgress} />
         ) : (
           <>
@@ -156,9 +148,9 @@ export function StarScene() {
             <SlewController />
           </>
         )}
-        <Stars radius={700} depth={50} count={10000} factor={4} saturation={0} fade speed={0.5} />
+        <Stars radius={700} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} />
         <CelestialGrid />
-        {isCatalogReady && <TargetTelemetry />}
+        {isCoreReady && <TargetTelemetry />}
         <Environment preset="night" />
         <GestureController />
         {isSensorActive ? (
@@ -174,7 +166,7 @@ export function StarScene() {
             dampingFactor={0.05}
           />
         )}
-        {isCatalogReady && <fog attach="fog" args={['#000000', 1200, 4000]} />}
+        {isCoreReady && <fog attach="fog" args={[skyColor, 1200, 4000]} />}
         <ambientLight intensity={ambientIntensity} />
       </Canvas>
     </div>
