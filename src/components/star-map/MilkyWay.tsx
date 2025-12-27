@@ -4,8 +4,8 @@ import { useFrame } from '@react-three/fiber';
 export function MilkyWay() {
   const pointsRef = useRef<THREE.Points>(null);
   const { positions, colors, sizes } = useMemo(() => {
-    // Increased particle count for higher fidelity production visual
-    const count = 30000;
+    // Performance optimized particle count for sandbox
+    const count = 18000;
     const pos = new Float32Array(count * 3);
     const cols = new Float32Array(count * 3);
     const szs = new Float32Array(count);
@@ -59,12 +59,18 @@ export function MilkyWay() {
           array={colors}
           itemSize={3}
         />
+        <bufferAttribute
+          attach="attributes-size"
+          count={sizes.length}
+          array={sizes}
+          itemSize={1}
+        />
       </bufferGeometry>
       <pointsMaterial
-        size={1.8}
+        size={1.2}
         transparent
         vertexColors
-        opacity={0.1}
+        opacity={0.08}
         sizeAttenuation={true}
         blending={THREE.AdditiveBlending}
         depthWrite={false}

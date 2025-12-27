@@ -23,7 +23,7 @@ export function StarField() {
   const generateBaseline = useCallback(() => {
     if (baselineData.current.length > 0) return;
     const stars: any[] = [];
-    for (let i = 0; i < 40000; i++) {
+    for (let i = 0; i < 25000; i++) {
       const ra = Math.random() * 24;
       const dec = Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90;
       const mag = 5.5 + Math.pow(Math.random(), 0.5) * 6.5;
@@ -42,7 +42,7 @@ export function StarField() {
   const loadCatalogFromDB = useCallback(async () => {
     if (loadedRef.current) return;
     try {
-      const allStars = await getStarsByMagnitude(7.2, 8000);
+      const allStars = await getStarsByMagnitude(7.0, 5000);
       if (allStars.length < 50) {
         loadedRef.current = true;
         return;
@@ -73,10 +73,10 @@ export function StarField() {
     // Visibility factor ramps up as sun goes down
     // -6 (Civil) -> 0.1, -12 (Nautical) -> 0.5, -18 (Astro) -> 1.0
     const visibilityFactor = THREE.MathUtils.clamp(
-      THREE.MathUtils.mapLinear(sunAltitude, -18, -2, 1, 0),
+      THREE.MathUtils.mapLinear(sunAltitude, -12, 0, 1, 0),
       0, 1
     );
-    (baselineMeshRef.current.material as THREE.MeshBasicMaterial).opacity = 0.25 * visibilityFactor;
+    (baselineMeshRef.current.material as THREE.MeshBasicMaterial).opacity = 0.8 * visibilityFactor;
     (catalogMeshRef.current.material as THREE.MeshBasicMaterial).opacity = 0.9 * visibilityFactor;
   });
   useEffect(() => {
@@ -100,7 +100,9 @@ export function StarField() {
         const isVisible = star.mag <= magnitudeLimit;
         const scale = isVisible ? star.baseScale : 0;
         dummy.scale.setScalar(scale);
-        if (i < catalogScales.current.length) catalogScales.current[i] = scale;
+        if (i < catalogScales.current.length && i < catalogData.current.length) {
+          catalogScales.current[i] = scale;
+        }
         dummy.updateMatrix();
         catalogMeshRef.current!.setMatrixAt(i, dummy.matrix);
         catalogMeshRef.current!.setColorAt(i, star.color);
@@ -111,12 +113,13 @@ export function StarField() {
   }, [magnitudeLimit, dummy, isCoreReady]);
   useFrame(() => {
     frameCount.current++;
-    if (frameCount.current % 4 !== 0) return;
+    if (frameCount.current % 2 !== 0) return;
     if (!catalogMeshRef.current || !catalogData.current.length) return;
     const EPSILON = 0.01;
-    const LERP_FACTOR = 0.08;
+    const LERP_FACTOR = 0.2;
     let changed = false;
     for (let i = 0; i < catalogData.current.length; i++) {
+      if (i >= catalogScales.current.length) continue;
       const star = catalogData.current[i];
       const targetScale = (star.mag <= magnitudeLimit) ? star.baseScale : 0;
       const currentScale = catalogScales.current[i];
@@ -134,11 +137,11 @@ export function StarField() {
   });
   return (
     <group>
-      <instancedMesh ref={baselineMeshRef} args={[null as any, null as any, 40000]}>
+      <instancedMesh ref={baselineMeshRef} args={[null as any, null as any, 25000]}>
         <sphereGeometry args={[1.5, 4, 4]} />
         <meshBasicMaterial transparent opacity={0.25} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
       </instancedMesh>
-      <instancedMesh ref={catalogMeshRef} args={[null as any, null as any, 8000]}>
+      <instancedMesh ref={catalogMeshRef} args={[null as any, null as any, 5000]}>
         <sphereGeometry args={[3.2, 8, 8]} />
         <meshBasicMaterial transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
       </instancedMesh>

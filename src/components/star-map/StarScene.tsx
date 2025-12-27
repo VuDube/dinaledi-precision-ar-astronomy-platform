@@ -23,10 +23,12 @@ function Atmosphere() {
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const sunAltitude = sunPos.altitude;
   const skyColorStr = useMemo(() => getSkyColor(sunAltitude), [sunAltitude]);
-  const skyColor = useMemo(() => new THREE.Color(skyColorStr), [skyColorStr]);
+  const skyColorRef = useRef(new THREE.Color());
+  skyColorRef.current.set(skyColorStr);
+  
   useEffect(() => {
     if (!scene) return;
-    scene.background = skyColor;
+    scene.background = skyColorRef.current.clone();
     // FOREVER NO BLUE: Precise Horizon Guard
     // Astronomical twilight (-12 to -18) is where the "blue line" usually appears.
     // We ramp up density here to mask the geometry edge.
@@ -34,12 +36,12 @@ function Atmosphere() {
     const horizonGuardActive = sunAltitude > -18 && sunAltitude < -12;
     const fogDensity = horizonGuardActive ? 0.0022 : isTwilight ? 0.0015 : 0.00045;
     if (!scene.fog) {
-      scene.fog = new THREE.FogExp2(skyColor, fogDensity);
+      scene.fog = new THREE.FogExp2(skyColorRef.current.clone(), fogDensity);
     } else {
-      (scene.fog as THREE.FogExp2).color.copy(skyColor);
+      (scene.fog as THREE.FogExp2).color.copy(skyColorRef.current);
       (scene.fog as THREE.FogExp2).density = fogDensity;
     }
-  }, [scene, skyColor, sunAltitude]);
+  }, [scene, sunAltitude]);
   const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 10);
   const rayleigh = THREE.MathUtils.mapLinear(sunAltitude, -25, 20, 0.1, 4);
   return (
@@ -95,16 +97,15 @@ export function StarScene() {
   const isCoreReady = useAppStore(s => s.isCoreReady);
   useCatalogLoader();
   return (
-    <div className="absolute inset-0" style={{ backgroundColor: '#000000' }}>
-      <Canvas
-        gl={{ antialias: true, alpha: false, stencil: false, depth: true, powerPreference: 'high-performance' }}
-        dpr={[1, 2]}
-      >
+    <Canvas
+      gl={{ antialias: false, alpha: false, stencil: false, depth: true, powerPreference: 'high-performance' }}
+      dpr={1}
+    >
         <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.1} far={200000} />
         <color attach='background' args={['#000000']} />
+        <Atmosphere />
         {isCoreReady && (
           <>
-            <Atmosphere />
             <MilkyWay />
             <StarField />
             <SolarSystem />
@@ -116,7 +117,7 @@ export function StarScene() {
           </>
         )}
         <Environment preset="night" />
-        <Stars radius={2500} depth={300} count={30000} fade={true} />
+        <Stars radius={2500} depth={200} count={15000} fade={true} />
         <GestureController />
         {isSensorActive ? (
           <ARController />
@@ -131,6 +132,5 @@ export function StarScene() {
         )}
         <ambientLight intensity={0.1} />
       </Canvas>
-    </div>
   );
 }

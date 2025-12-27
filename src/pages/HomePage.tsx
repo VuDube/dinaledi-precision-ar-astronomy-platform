@@ -21,6 +21,7 @@ export function HomePage() {
   const isCatalogReady = useAppStore(s => s.isCatalogReady);
   const { requestPermission } = useOrientation();
   const { isStandalone } = usePWA();
+  useGPS();
   const [isInitializing, setIsInitializing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const handleStart = useCallback(async () => {
@@ -40,6 +41,15 @@ export function HomePage() {
     }
   }, [isCalibrated, isCoreReady, mode, setMode]);
   const hasShownCatalogToast = useRef(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      useAppStore.getState().setSimulationTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+
   useEffect(() => {
     if (isCatalogReady && !hasShownCatalogToast.current) {
       toast.success('High-density catalog synced', { description: '125k stars locked' });

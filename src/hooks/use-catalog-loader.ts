@@ -14,16 +14,16 @@ export function useCatalogLoader() {
     async function initializeCatalog() {
       // 10s PRODUCTION LOCK: Force readiness if DB is slow or stuck
       controllerRef.current.timeout = setTimeout(() => {
-        if (!useAppStore.getState().isCoreReady && !controllerRef.current.cancelled) {
+        if (!controllerRef.current.cancelled && !useAppStore.getState().isCoreReady) {
           console.warn('CatalogLoader: Safety timeout reached. Forcing CoreReady.');
-          setCoreReady(true);
-          setCatalogReady(true);
-          setCatalogLoadingProgress(100);
+          useAppStore.getState().setCoreReady(true);
+          useAppStore.getState().setCatalogReady(true);
+          useAppStore.getState().setCatalogLoadingProgress(100);
         }
       }, 10000);
       try {
         const count = await getCatalogCount();
-        const TARGET_DENSITY = 125000;
+        const TARGET_DENSITY = 30000;
         const CORE_THRESHOLD = 5000;
         if (count >= TARGET_DENSITY) {
           setCatalogLoadingProgress(100);
@@ -58,7 +58,8 @@ export function useCatalogLoader() {
         }
         // Core visual baseline achieved - Viewport unblocked
         setCoreReady(true);
-        setCatalogLoadingProgress(25);
+        setCatalogReady(true);
+        setCatalogLoadingProgress(100);
         // Phase 3: Background Deep-Hydration (Optimized Chunk Size)
         const remaining = TARGET_DENSITY - (await getCatalogCount());
         const chunkSize = 1500; 
@@ -83,15 +84,24 @@ export function useCatalogLoader() {
           }
           try {
             await saveStarChunk(bgChunk);
-            const progress = 25 + ((index + 1) / totalChunks) * 75;
-            setCatalogLoadingProgress(Math.floor(progress));
-            if (window.requestIdleCallback) {
-              window.requestIdleCallback(() => scheduleChunk(index + 1));
-            } else {
-              setTimeout(() => scheduleChunk(index + 1), 60);
+            if (!controllerRef.current.cancelled) {
+              // Progress already at 100% - Phase 3 is background only
+              if (useAppStore.getState().catalogLoadingProgress < 100) {
+                const progress = 25 + ((index + 1) / totalChunks) * 75;
+                setCatalogLoadingProgress(Math.floor(progress));
+              }
+            }
+            if (!controllerRef.current.cancelled) {
+              if (window.requestIdleCallback) {
+                window.requestIdleCallback(() => scheduleChunk(index + 1));
+              } else {
+                setTimeout(() => scheduleChunk(index + 1), 250);
+              }
             }
           } catch (e) {
-            setTimeout(() => scheduleChunk(index + 1), 1000);
+            if (!controllerRef.current.cancelled) {
+              setTimeout(() => scheduleChunk(index + 1), 1000);
+            }
           }
         };
         scheduleChunk(0);
