@@ -13,13 +13,23 @@ export function useGPS() {
   useEffect(() => {
     autoBortleRef.current = autoBortle;
   }, [autoBortle]);
+  const setLocationRef = useRef(setLocation);
+  const setBortleScaleRef = useRef(setBortleScale);
+  const setGPSStatusRef = useRef(setGPSStatus);
+
+  useEffect(() => {
+    setLocationRef.current = setLocation;
+    setBortleScaleRef.current = setBortleScale;
+    setGPSStatusRef.current = setGPSStatus;
+  }, [setLocation, setBortleScale, setGPSStatus]);
+
   const handlePositionUpdate = useCallback((latitude: number, longitude: number) => {
-    setLocation(latitude, longitude);
+    setLocationRef.current(latitude, longitude);
     if (autoBortleRef.current) {
       const predicted = predictBortleFromLocation(latitude, longitude);
-      setBortleScale(predicted);
+      setBortleScaleRef.current(predicted);
     }
-  }, [setLocation, setBortleScale]);
+  }, []);
   useEffect(() => {
     // Cleanup existing watch if disabled
     if (!gpsEnabled || !('geolocation' in navigator)) {
@@ -27,31 +37,44 @@ export function useGPS() {
         navigator.geolocation.clearWatch(watchId.current);
         watchId.current = null;
       }
-      setGPSStatus('idle');
+      setGPSStatusRef.current('idle');
       return;
     }
+
+    const MOCK_LAT = -26.2;
+    const MOCK_LON = 28.0;
+
     const opts: PositionOptions = {
       enableHighAccuracy: true,
       timeout: 10000,
       maximumAge: 60000
     };
+
     const onPos = (position: GeolocationPosition) => {
       const { latitude, longitude } = position.coords;
       handlePositionUpdate(latitude, longitude);
-      setGPSStatus('tracking');
+      setGPSStatusRef.current('tracking');
     };
+
     const onErr = (error: GeolocationPositionError) => {
-      if (error.code === 2) {
-        setGPSStatus('unavailable');
-      } else if (error.code === 1) {
-        setGPSStatus('denied');
+      if (error.code === 1 || error.code === 2) {
+        setGPSStatusRef.current('mock');
+        handlePositionUpdate(MOCK_LAT, MOCK_LON);
+        // Don't return - let watchPosition continue for potential permission change
       } else {
-        setGPSStatus('error');
+        setGPSStatusRef.current('error');
       }
     };
-    // Immediate update
+
+    // Check if we need mock immediately
+    if (!navigator.geolocation) {
+      handlePositionUpdate(MOCK_LAT, MOCK_LON);
+      setGPSStatusRef.current('mock');
+      return;
+    }
+
+    // Try real GPS first
     navigator.geolocation.getCurrentPosition(onPos, onErr, opts);
-    // Continuous tracking
     watchId.current = navigator.geolocation.watchPosition(onPos, onErr, opts);
     return () => {
       if (watchId.current !== null) {
@@ -59,6 +82,6 @@ export function useGPS() {
         watchId.current = null;
       }
     };
-  }, [gpsEnabled, handlePositionUpdate, setGPSStatus]);
+  }, [gpsEnabled]);
   return null;
 }

@@ -20,6 +20,7 @@ export function HomePage() {
   const isCoreReady = useAppStore(s => s.isCoreReady);
   const calibrationProgress = useAppStore(s => s.calibrationProgress);
   const isCatalogReady = useAppStore(s => s.isCatalogReady);
+  const permissionStatus = useAppStore(s => s.permissionStatus);
   const { requestPermission } = useOrientation();
   const { isStandalone } = usePWA();
   useGPS();
@@ -175,6 +176,19 @@ export function HomePage() {
                         <span>Calibration_Status</span>
                         <span>{Math.round(Math.max(calibrationProgress, (isCoreReady ? 100 : 0)))}%</span>
                       </div>
+                      {permissionStatus === 'denied' && isCoreReady && (
+                        <Button
+                          variant="secondary"
+                          onClick={() => {
+                            useAppStore.getState().setCalibrated(true);
+                            useAppStore.getState().setMode('skyview');
+                            setIsTransitioning(true);
+                          }}
+                          className="w-full h-12 text-xs font-bold uppercase tracking-widest border-starlight/30 bg-transparent hover:bg-starlight/10 text-starlight/70"
+                        >
+                          Force Enter Skyview (No Sensors)
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
