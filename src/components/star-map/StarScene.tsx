@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Stars, PerspectiveCamera, Environment, Sky } from '@react-three/drei';
+import { OrbitControls, Stars, PerspectiveCamera, Environment, Sky, Html } from '@react-three/drei';
 import { StarField } from './StarField';
 import { ARController } from './ARController';
 import { GestureController } from './GestureController';
@@ -16,7 +16,7 @@ import { getSunPosition, getSkyColor, radecToVector3 } from '@/lib/astronomy-mat
 import { useCatalogLoader } from '@/hooks/use-catalog-loader';
 import * as THREE from 'three';
 
-function LoadingIndicator() {
+function LoadingIndicator({ progress }: { progress: number }) {
   const groupRef = useRef<THREE.Group>(null);
   useFrame((state, delta) => {
     if (groupRef.current) {
@@ -26,7 +26,7 @@ function LoadingIndicator() {
   });
   return (
     <group ref={groupRef}>
-      <mesh>
+      <mesh position={[0, 0, 0]}>
         <torusGeometry args={[1.2, 0.1, 8, 32]} />
         <meshStandardMaterial
           color="#EAB308"
@@ -38,6 +38,15 @@ function LoadingIndicator() {
           metalness={0.8}
         />
       </mesh>
+      <Html center style={{
+        color: '#EAB308',
+        fontSize: '24px',
+        fontWeight: 'bold',
+        textShadow: '0 0 10px #EAB308',
+        animation: 'pulse 1.5s infinite'
+      }}>
+        Loading Stars... {Math.round(progress * 100)}%
+      </Html>
     </group>
   );
 }
@@ -129,6 +138,7 @@ export function StarScene() {
   const lon = useAppStore(s => s.longitude);
   const fov = useAppStore(s => s.fov);
   const isCatalogReady = useAppStore(s => s.isCatalogReady);
+  const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
   useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const ambientIntensity = Math.max(0.05, THREE.MathUtils.mapLinear(sunPos.altitude, -18, 10, 0.1, 1.2));
@@ -140,9 +150,9 @@ export function StarScene() {
         dpr={1}
       >
         <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={fov} far={3500} />
-        <color attach='background' args={['#020617']} />
+        <color attach='background' args={['#000011']} />
         {!isCatalogReady ? (
-          <LoadingIndicator />
+          <LoadingIndicator progress={catalogLoadingProgress} />
         ) : (
           <>
             <Atmosphere />
@@ -155,7 +165,7 @@ export function StarScene() {
             <SlewController />
           </>
         )}
-        <Stars radius={700} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} />
+        <Stars radius={700} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} fog={false} />
         <CelestialGrid />
         {isCatalogReady && <TargetTelemetry />}
         <Environment preset="night" />
@@ -173,7 +183,7 @@ export function StarScene() {
             dampingFactor={0.05}
           />
         )}
-        <fog attach="fog" args={[skyColor, 800, 3500]} />
+        <fog attach="fog" args={['#000000', 1200, 4000]} />
         <ambientLight intensity={ambientIntensity} />
       </Canvas>
     </div>
