@@ -6,11 +6,11 @@ export function usePWA() {
   const setIsOnline = useAppStore(s => s.setIsOnline);
   const deferredPrompt = useAppStore(s => s.deferredPrompt);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   useEffect(() => {
-    // Check if app is running in standalone mode
     const checkStandalone = () => {
-      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches 
-        || (window.navigator as any).standalone 
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
+        || (window.navigator as any).standalone
         || document.referrer.includes('android-app://');
       setIsStandalone(isStandaloneMode);
     };
@@ -18,12 +18,13 @@ export function usePWA() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      console.log('PWA: Install prompt deferred');
+      console.log('PWA: Install prompt available');
     };
     const handleAppInstalled = () => {
       setDeferredPrompt(null);
+      setIsInstallModalOpen(false);
       toast.success('Dinaledi is now in your Starport!', {
-        description: 'Launch from your home screen for the full experience.',
+        description: 'Launch from your home screen for the full immersive experience.',
         duration: 5000,
       });
     };
@@ -40,7 +41,7 @@ export function usePWA() {
       window.removeEventListener('offline', handleOffline);
     };
   }, [setDeferredPrompt, setIsOnline]);
-  const installApp = useCallback(async () => {
+  const triggerInstallPrompt = useCallback(async () => {
     if (!deferredPrompt) {
       toast.info('Installation Ready', {
         description: 'Use your browser menu to "Add to Home Screen" if the prompt does not appear.',
@@ -52,9 +53,16 @@ export function usePWA() {
       const { outcome } = await deferredPrompt.userChoice;
       console.log(`PWA: User response to install prompt: ${outcome}`);
       setDeferredPrompt(null);
+      setIsInstallModalOpen(false);
     } catch (err) {
       console.error('PWA: Installation failed', err);
+      setIsInstallModalOpen(false);
     }
   }, [deferredPrompt, setDeferredPrompt]);
-  return { installApp, isStandalone };
+  return { 
+    triggerInstallPrompt, 
+    isStandalone, 
+    isInstallModalOpen, 
+    setIsInstallModalOpen 
+  };
 }

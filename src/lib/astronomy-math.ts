@@ -46,15 +46,28 @@ export const getSunPosition = (date: Date, lat: number, lon: number) => {
   return { altitude: alt, azimuth: az };
 };
 export const predictBortleFromLocation = (lat: number, lon: number): number => {
-  const JHB = { lat: -26.2, lon: 28.0 };
-  const CPT = { lat: -33.9, lon: 18.4 };
-  const DUR = { lat: -29.8, lon: 31.0 };
-  const dist = (p1: any, p2: any) => Math.sqrt(Math.pow(p1.lat - p2.lat, 2) + Math.pow(p1.lon - p2.lon, 2));
-  const minCityDist = Math.min(dist({lat, lon}, JHB), dist({lat, lon}, CPT), dist({lat, lon}, DUR));
-  if (minCityDist < 0.1) return 8;
-  if (minCityDist < 0.5) return 6;
-  if (minCityDist < 1.5) return 4;
-  return 2;
+  const CITIES = [
+    { name: "Johannesburg", lat: -26.20, lon: 28.04, scale: 8 },
+    { name: "Cape Town", lat: -33.92, lon: 18.42, scale: 7 },
+    { name: "Durban", lat: -29.85, lon: 31.02, scale: 7 },
+    { name: "Pretoria", lat: -25.74, lon: 28.18, scale: 8 },
+    { name: "Bloemfontein", lat: -29.08, lon: 26.15, scale: 5 },
+    { name: "Port Elizabeth", lat: -33.96, lon: 25.60, scale: 6 },
+    { name: "Nelspruit", lat: -25.47, lon: 30.96, scale: 4 },
+    { name: "Sutherland", lat: -32.39, lon: 20.66, scale: 1 }
+  ];
+  const dist = (p1_lat: number, p1_lon: number, city: typeof CITIES[0]) => 
+    Math.sqrt(Math.pow(p1_lat - city.lat, 2) + Math.pow(p1_lon - city.lon, 2));
+  let totalWeight = 0;
+  let weightedBortle = 0;
+  for (const city of CITIES) {
+    const d = dist(lat, lon, city);
+    const weight = 1 / (Math.pow(d, 2) + 0.01);
+    totalWeight += weight;
+    weightedBortle += city.scale * weight;
+  }
+  const result = Math.round(weightedBortle / totalWeight);
+  return Math.max(1, Math.min(9, result));
 };
 export const getSkyColor = (sunAltitude: number): string => {
   if (sunAltitude > 0) return "#87ceeb";
@@ -79,10 +92,6 @@ export const getLunarPhase = (date: Date): { phase: number; name: string } => {
   else name = "Waning Crescent";
   return { phase: p, name };
 };
-/**
- * High-Precision Precession (Meeus formula)
- * Valid for +/- 100 years from J2000
- */
 export const applyPrecession = (ra: number, dec: number, years: number): { ra: number; dec: number } => {
   const t = years / 100.0;
   const m = 3.07496 + 0.00186 * t;
@@ -96,10 +105,6 @@ export const applyPrecession = (ra: number, dec: number, years: number): { ra: n
     dec: Math.max(-90, Math.min(90, dec + (ddec * years) / 3600))
   };
 };
-/**
- * Keplerian Planetary Elements (Simplified for Phase 13)
- * Reference: Jean Meeus 'Astronomical Algorithms'
- */
 const PLANET_ELEMENTS: Record<string, any> = {
   Mercury: { a: 0.387098, e: 0.205630, i: 7.0047, L: 252.2503, lp: 77.4577, ln: 48.3307, color: "#9ca3af" },
   Venus: { a: 0.723332, e: 0.006773, i: 3.3946, L: 181.9790, lp: 131.5702, ln: 76.6806, color: "#fef3c7" },
@@ -111,16 +116,13 @@ export const getPlanetaryPosition = (planet: string, date: Date) => {
   const el = PLANET_ELEMENTS[planet];
   if (!el) return { ra: 0, dec: 0 };
   const d = getJulianDate(date) - 2451545.0;
-  const T = d / 36525.0;
-  const M = (el.L - el.lp) + (0.9856 * d); // Simplified mean anomaly
+  const M = (el.L - el.lp) + (0.9856 * d);
   const e = el.e;
   const E = M + (180 / Math.PI) * e * Math.sin(degToRad(M)) * (1 + e * Math.cos(degToRad(M)));
   const xv = el.a * (Math.cos(degToRad(E)) - e);
   const yv = el.a * (Math.sqrt(1.0 - e * e) * Math.sin(degToRad(E)));
   const v = radToDeg(Math.atan2(yv, xv));
-  const r = Math.sqrt(xv * xv + yv * yv);
   const lon = (v + el.lp) % 360;
-  // Convert ecliptic to equatorial
   const epsilon = degToRad(23.439);
   const ra = radToDeg(Math.atan2(Math.sin(degToRad(lon)) * Math.cos(epsilon), Math.cos(degToRad(lon)))) / 15;
   const dec = radToDeg(Math.asin(Math.sin(degToRad(lon)) * Math.sin(epsilon)));

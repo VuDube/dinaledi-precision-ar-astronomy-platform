@@ -15,7 +15,6 @@ import { useAppStore } from '@/stores/app-store';
 import { getSunPosition, getSkyColor, radecToVector3 } from '@/lib/astronomy-math';
 import { useCatalogLoader } from '@/hooks/use-catalog-loader';
 import * as THREE from 'three';
-
 function LoadingIndicator({ progress }: { progress: number }) {
   const groupRef = useRef<THREE.Group>(null);
   useFrame((state, delta) => {
@@ -90,30 +89,17 @@ function Atmosphere() {
     />
   );
 }
-
 function TargetTelemetry() {
   const targetRef = useRef<any>(null);
-  const setTargetTelemetryRef = useRef<((data: any) => void) | null>(null);
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
-
+  const setTargetTelemetry = useAppStore(s => s.setTargetTelemetry);
   useEffect(() => {
-    const newTarget = selectedStar || selectedDSO;
-    if (targetRef.current !== newTarget) {
-      targetRef.current = newTarget;
-    }
+    targetRef.current = selectedStar || selectedDSO;
   }, [selectedStar, selectedDSO]);
-
   useFrame((state) => {
     const camera = state.camera;
     const target = targetRef.current;
-    let setTargetTelemetry = setTargetTelemetryRef.current;
-
-    if (!setTargetTelemetry) {
-      setTargetTelemetry = useAppStore.getState().setTargetTelemetry;
-      setTargetTelemetryRef.current = setTargetTelemetry;
-    }
-
     if(!target || !camera) {
       setTargetTelemetry(null);
       return;
@@ -128,7 +114,6 @@ function TargetTelemetry() {
     const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
     setTargetTelemetry({ angle, onScreen, azimuth });
   });
-
   return null;
 }
 export function StarScene() {
@@ -165,7 +150,7 @@ export function StarScene() {
             <SlewController />
           </>
         )}
-        <Stars radius={700} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} fog={false} />
+        <Stars radius={700} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} />
         <CelestialGrid />
         {isCatalogReady && <TargetTelemetry />}
         <Environment preset="night" />

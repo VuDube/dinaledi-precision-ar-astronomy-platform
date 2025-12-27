@@ -28,14 +28,14 @@ export function BottomNav() {
   const toggleNightMode = useAppStore(s => s.toggleNightMode);
   const isInstallable = useAppStore(s => s.isInstallable);
   const isCalibrated = useAppStore(s => s.isCalibrated);
-  const { installApp, isStandalone } = usePWA();
+  const { isStandalone, setIsInstallModalOpen } = usePWA();
   const handleNav = (id: string) => {
     if (id === 'night') {
       toggleNightMode();
       return;
     }
     if (id === 'install') {
-      installApp();
+      setIsInstallModalOpen(true);
       return;
     }
     if (id === 'search') {
@@ -66,7 +66,7 @@ export function BottomNav() {
             const Icon = item.icon;
             return (
               <motion.button
-                key={`${item.id}-${ITEMS.indexOf(item)}`}
+                key={item.id}
                 whileTap={{ scale: 0.92 }}
                 onClick={() => handleNav(item.id)}
                 className={cn(
@@ -106,7 +106,7 @@ export function BottomNav() {
                 </motion.button>
               </TooltipTrigger>
               <TooltipContent side="top" className="bg-nebula text-space-black font-bold border-none text-[10px] uppercase tracking-widest">
-                Install App
+                Install
               </TooltipContent>
             </Tooltip>
           )}

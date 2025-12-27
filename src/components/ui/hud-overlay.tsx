@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wifi, Crosshair, Loader2, CloudOff, CloudCheck, CloudUpload, RefreshCw } from 'lucide-react';
+import { Wifi, Crosshair, Loader2, CloudOff, CloudUpload, RefreshCw } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
 import { useObservationStore } from '@/stores/observation-store';
 import { BottomNav } from '@/components/ui/bottom-nav';
@@ -11,16 +11,17 @@ import { SearchPanel } from '@/components/ui/search-panel';
 import { TargetNavigator } from '@/components/ui/target-navigator';
 import { RadialSearchWheel } from '@/components/ui/radial-search-wheel';
 import { TargetDetailsDrawer } from '@/components/ui/target-details-drawer';
+import { PWAInstallModal } from '@/components/ui/pwa-install-modal';
 import { Progress } from '@/components/ui/progress';
 import { DiamondGrid, StarPoint } from '@/components/ui/sesotho-patterns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { usePWA } from '@/hooks/use-pwa';
 export function HUDOverlay() {
   const mode = useAppStore(s => s.mode);
   const orientation = useAppStore(s => s.orientation);
   const isSensorActive = useAppStore(s => s.isSensorActive);
-  const gpsStatus = useAppStore(s => s.gpsStatus);
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
   const isCatalogReady = useAppStore(s => s.isCatalogReady);
@@ -32,6 +33,7 @@ export function HUDOverlay() {
   const setDetailOpen = useAppStore(s => s.setDetailOpen);
   const isSyncing = useObservationStore(s => s.isSyncing);
   const pendingCount = useObservationStore(s => s.pendingCount);
+  const { isInstallModalOpen, setIsInstallModalOpen, triggerInstallPrompt } = usePWA();
   if (mode === 'intro') return null;
   const activeTarget = selectedStar || selectedDSO;
   const azimuth = Math.round(orientation.heading);
@@ -51,14 +53,13 @@ export function HUDOverlay() {
             <div className="glass px-4 py-2 rounded-full flex items-center gap-4 border-white/5 backdrop-blur-2xl relative overflow-hidden">
               <DiamondGrid opacity={0.05} />
               <div className={cn("h-1.5 w-1.5 rounded-full", isSensorActive ? "bg-green-500 shadow-glow" : "bg-yellow-500")} />
-              <div className="flex gap-4 font-mono text-[10px] uppercase tracking-widest font-bold tabular-nums">
-                <span className="text-starlight/40">HDG <span className="text-starlight">{azimuth.toString().padStart(3, '0')}°</span></span>
-                <span className="text-starlight/40">ALT <span className="text-starlight">{altitude.toString().padStart(3, '0')}°</span></span>
+              <div className="flex gap-4 font-mono text-[10px] uppercase tracking-widest font-bold tabular-nums text-starlight">
+                <span className="opacity-40">HDG <span className="opacity-100">{azimuth.toString().padStart(3, '0')}°</span></span>
+                <span className="opacity-40">ALT <span className="opacity-100">{altitude.toString().padStart(3, '0')}°</span></span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 pointer-events-auto">
-             {/* Sync Status Indicator */}
              <AnimatePresence mode="wait">
               {isSyncing ? (
                 <motion.div key="syncing" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-nebula/20 bg-nebula/10">
@@ -73,7 +74,7 @@ export function HUDOverlay() {
               ) : isOnline ? (
                 <motion.div key="synced" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-green-500/20 bg-green-500/10">
                   <Wifi className="w-3 h-3 text-green-500" />
-                  <span className="text-[9px] font-mono text-green-500 uppercase tracking-widest">Linked</span>
+                  <span className="text-[9px] font-mono text-green-500 uppercase tracking-widest text-starlight">Linked</span>
                 </motion.div>
               ) : (
                 <motion.div key="offline" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-red-500/20 bg-red-500/10">
@@ -104,8 +105,8 @@ export function HUDOverlay() {
         {/* Reticle Area */}
         <div className="flex-1 flex items-center justify-center relative">
            <StarPoint className="w-72 h-72 scale-150" opacity={0.015} />
-           <div 
-             className="relative pointer-events-auto" 
+           <div
+             className="relative pointer-events-auto"
              onClick={() => {
                if (activeTarget) setDetailOpen(true);
                else setRadialOpen(!isRadialOpen);
@@ -127,6 +128,11 @@ export function HUDOverlay() {
       <HighlightsPanel />
       <TemporalControls />
       <SearchPanel />
-    </TooltipProvider>
+      <PWAInstallModal 
+        isOpen={isInstallModalOpen} 
+        onClose={() => setIsInstallModalOpen(false)} 
+        onInstall={triggerInstallPrompt} 
+      />
+    </div>
   );
 }
