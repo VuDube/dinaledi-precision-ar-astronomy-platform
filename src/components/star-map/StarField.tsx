@@ -13,7 +13,7 @@ export function StarField() {
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const [starsData, setStarsData] = useState<{ primary: any[], faint: any[] }>({ primary: [], faint: [] });
   const primaryScales = useRef<Float32Array>(new Float32Array(0));
-  const lastMagLimit = useRef<number>(magnitudeLimit);
+  const lastMagLimit = useRef<number>(0);
   const isMounted = useRef(true);
   useEffect(() => {
     isMounted.current = true;
@@ -37,6 +37,7 @@ export function StarField() {
     }
     primaryScales.current = new Float32Array(primary.length);
     setStarsData({ primary, faint });
+    console.log('StarField: loaded primary=', primary.length, 'faint=', faint.length);
   }, []);
   useEffect(() => {
     if (isCoreReady) loadFromDB();
@@ -49,6 +50,7 @@ export function StarField() {
     if (faintMeshRef.current && starsData.faint.length > 0) {
       // Small threshold to skip redundant heavy updates
       if (Math.abs(magnitudeLimit - lastMagLimit.current) < 0.05 && lastMagLimit.current !== magnitudeLimit) {
+        lastMagLimit.current = magnitudeLimit;
         return;
       }
       const count = starsData.faint.length;
@@ -67,7 +69,7 @@ export function StarField() {
     }
   }, [dummy, starsData.faint, magnitudeLimit]);
   useEffect(() => {
-    if (meshRef.current && starsData.primary.length > 0) {
+    if (meshRef.current && starsData.primary.length > 0 && primaryScales.current.length === starsData.primary.length) {
       starsData.primary.forEach((star, i) => {
         dummy.position.copy(star.pos);
         dummy.scale.setScalar(star.baseScale);
@@ -81,7 +83,7 @@ export function StarField() {
     }
   }, [dummy, starsData.primary]);
   useFrame(() => {
-    if (!isCoreReady || !meshRef.current || starsData.primary.length === 0) return;
+    if (!isCoreReady || !meshRef.current || starsData.primary.length === 0 || primaryScales.current.length !== starsData.primary.length) return;
     const EPSILON = 0.005;
     let changed = false;
     starsData.primary.forEach((star, i) => {
@@ -119,7 +121,7 @@ export function StarField() {
           frustumCulled={true}
         >
           <sphereGeometry args={[1.0, 4, 4]} />
-          <meshBasicMaterial transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
+          <meshBasicMaterial transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
         </instancedMesh>
       )}
     </group>

@@ -122,6 +122,10 @@ export function StarScene() {
   const isCoreReady = useAppStore(s => s.isCoreReady);
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
   const rotateSpeed = useMemo(() => -0.2 * (fov / 55), [fov]);
+
+  useEffect(() => {
+    console.log('StarScene debug: isCoreReady=', isCoreReady, 'catalogProgress=', catalogLoadingProgress);
+  }, [isCoreReady, catalogLoadingProgress]);
   useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   // Refined ambient logic to boost visibility during twilight
@@ -130,16 +134,14 @@ export function StarScene() {
     if (sunPos.altitude > -18) return THREE.MathUtils.mapLinear(sunPos.altitude, -18, 0, 0.1, 0.8);
     return 0.08;
   }, [sunPos.altitude]);
-  const skyColor = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
-  const backgroundColor = useMemo(() => new THREE.Color(skyColor), [skyColor]);
   return (
-    <div className="absolute inset-0 transition-colors duration-1000" style={{ backgroundColor: skyColor }}>
+    <div className="absolute inset-0 transition-colors duration-1000" style={{ backgroundColor: '#000000' }}>
       <Canvas
         gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', stencil: false, depth: true }}
         dpr={window.devicePixelRatio > 1 ? 1.5 : 1}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={fov} near={0.1} far={4000} />
-        <color attach='background' args={[backgroundColor.r, backgroundColor.g, backgroundColor.b]} />
+        <PerspectiveCamera makeDefault position={[0, 0, 0]} fov={fov} near={0.01} far={6000} />
+        <color attach='background' args={['#000000']} />
         {!isCoreReady ? (
           <LoadingIndicator progress={catalogLoadingProgress} />
         ) : (
@@ -154,7 +156,7 @@ export function StarScene() {
             <SlewController />
           </>
         )}
-        <Stars radius={700} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} />
+        <Stars radius={1500} depth={80} count={20000} factor={4} saturation={0} fade speed={1} />
         <CelestialGrid />
         {isCoreReady && <TargetTelemetry />}
         <Environment preset="night" />
@@ -172,7 +174,7 @@ export function StarScene() {
             dampingFactor={0.05}
           />
         )}
-        {isCoreReady && <fog attach="fog" args={[skyColor, 1200, 4000]} />}
+
         <ambientLight intensity={ambientIntensity} />
       </Canvas>
     </div>

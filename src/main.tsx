@@ -1,6 +1,15 @@
 import '@/lib/errorReporter';
 import { enableMapSet } from "immer";
 enableMapSet();
+
+if (import.meta.env.PROD) {
+  const oldWarn = console.warn;
+  console.warn = (...args) => {
+    const msg = args[0];
+    if (typeof msg === 'string' && (msg.includes('vite') || msg.includes('WebSocket') || msg.includes('ws'))) return;
+    oldWarn(...args);
+  };
+}
 import { createRoot } from 'react-dom/client'
 import {
   createBrowserRouter,
