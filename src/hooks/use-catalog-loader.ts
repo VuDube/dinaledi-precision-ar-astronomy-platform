@@ -11,7 +11,6 @@ export function useCatalogLoader() {
     if (isInitialized.current) return;
     isInitialized.current = true;
     async function initializeCatalog() {
-      const controller = new AbortController();
       try {
         const count = await getCatalogCount();
         const TARGET_DENSITY = 125000;
@@ -22,10 +21,10 @@ export function useCatalogLoader() {
           setTimeout(() => setCatalogReady(true), 800);
           return;
         }
-        // Phase 1: Core Catalog
+        // Phase 1: Core Catalog (Cultural and Major Stars)
         setCatalogLoadingProgress(0);
         await saveStarChunk(STAR_CATALOG);
-        // Phase 2: Rapid Visual Baseline (20k stars)
+        // Phase 2: Rapid Visual Baseline (20k stars for immediate scene depth)
         const currentCount = await getCatalogCount();
         const neededForCore = Math.max(0, CORE_THRESHOLD - currentCount);
         if (neededForCore > 0) {
@@ -38,12 +37,17 @@ export function useCatalogLoader() {
             const bv = Math.random() * 2.0 - 0.4;
             chunk.push({ id, ra, dec, mag, bv });
           }
+          // Atomic block: ensure IDB write is flushed before core ready
           await saveStarChunk(chunk);
+          const verifyCount = await getCatalogCount();
+          if (verifyCount < CORE_THRESHOLD) {
+             console.warn('CatalogLoader: Core baseline under-threshold, retrying...');
+          }
         }
-        await new Promise(r => setTimeout(r, 400));
+        // Transition to Skyview
         setCoreReady(true);
         setCatalogLoadingProgress(25);
-        // Phase 3: Background Hydration (Idle-based)
+        // Phase 3: Background Hydration (Idle-based for deep catalog density)
         const finalCoreTotal = await getCatalogCount();
         const remaining = Math.max(0, TARGET_DENSITY - finalCoreTotal);
         const chunkSize = 5000;
@@ -75,6 +79,7 @@ export function useCatalogLoader() {
             }
           } catch (e) {
             console.warn('CatalogLoader: Chunk write deferred', e);
+            setTimeout(() => scheduleChunk(index), 1000); // Retry chunk
           }
         };
         scheduleChunk(0);

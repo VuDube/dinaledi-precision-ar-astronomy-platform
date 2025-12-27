@@ -1,5 +1,5 @@
 import React, { useRef, useMemo, useEffect } from 'react';
-import { useFrame, Canvas } from '@react-three/fiber';
+import { useFrame, Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars, PerspectiveCamera, Environment, Sky, Html } from '@react-three/drei';
 import { StarField } from './StarField';
 import { ARController } from './ARController';
@@ -40,7 +40,15 @@ function Atmosphere() {
   const lat = useAppStore(s => s.latitude);
   const lon = useAppStore(s => s.longitude);
   const bortleScale = useAppStore(s => s.bortleScale);
+  const { scene } = useThree();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
+  const skyColor = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
+  useEffect(() => {
+    if (scene) {
+      const color = new THREE.Color(skyColor);
+      scene.fog = new THREE.Fog(color, 2000, 8000);
+    }
+  }, [scene, skyColor]);
   const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 10);
   const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -25, 15, 0.1, 4);
   return (
@@ -61,8 +69,8 @@ function TargetTelemetry() {
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
   const setTargetTelemetry = useAppStore(s => s.setTargetTelemetry);
-  const lastTargetRef = useRef(null);
-  const lastTelemetryRef = useRef(null);
+  const lastTargetRef = useRef<any>(null);
+  const lastTelemetryRef = useRef<any>(null);
   useFrame((state) => {
     const target = selectedStar || selectedDSO;
     if (!target) {
@@ -98,7 +106,6 @@ export function StarScene() {
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
   useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
-  const skyColor = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
   const ambientIntensity = useMemo(() => {
     if (sunPos.altitude > 0) return 1.0;
     if (sunPos.altitude > -18) return THREE.MathUtils.mapLinear(sunPos.altitude, -18, 0, 0.05, 0.6);
@@ -109,9 +116,6 @@ export function StarScene() {
       <Canvas
         gl={{ antialias: true, alpha: false, stencil: false, depth: true }}
         dpr={window.devicePixelRatio > 1 ? 2 : 1}
-        onCreated={({ scene }) => {
-          scene.fog = new THREE.Fog(skyColor, 2000, 8000);
-        }}
       >
         <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.01} far={10000} rotation={[0,0,0]} />
         <color attach='background' args={['#000000']} />

@@ -14,9 +14,11 @@ export function StarField() {
   const [starsData, setStarsData] = useState<{ primary: any[], faint: any[] }>({ primary: [], faint: [] });
   const primaryScales = useRef<Float32Array>(new Float32Array(0));
   const frameCount = useRef(0);
+  // Load a fixed high-density range once to avoid IDB calls during Bortle changes
   const loadFromDB = useCallback(async () => {
     try {
-      const allStars = await getStarsByMagnitude(10.5);
+      // 11.0 is the maximum visual baseline we support in Phase 1
+      const allStars = await getStarsByMagnitude(11.0);
       const primary = [];
       const faint = [];
       for (const star of allStars) {
@@ -32,15 +34,15 @@ export function StarField() {
       }
       primaryScales.current = new Float32Array(primary.length);
       setStarsData({ primary, faint });
-      console.log(`StarField: Hydrated ${primary.length + faint.length} entities. Limit: ${magnitudeLimit}`);
+      console.log(`StarField: Hydrated ${primary.length + faint.length} entities for real-time scaling.`);
     } catch (e) {
       console.error('StarField: Hydration failed', e);
     }
-  }, [magnitudeLimit]);
+  }, []);
   useEffect(() => {
     if (isCoreReady || isCatalogReady) loadFromDB();
   }, [isCoreReady, isCatalogReady, loadFromDB]);
-  // Initial Sync for faint stars
+  // Initial Sync for faint stars on magnitudeLimit change
   useEffect(() => {
     if (faintMeshRef.current && starsData.faint.length > 0) {
       starsData.faint.forEach((star, i) => {
@@ -55,7 +57,7 @@ export function StarField() {
       if (faintMeshRef.current.instanceColor) faintMeshRef.current.instanceColor.needsUpdate = true;
     }
   }, [starsData.faint, magnitudeLimit, dummy]);
-  // Initial Sync for primary stars
+  // Initial Sync for primary stars on magnitudeLimit change
   useEffect(() => {
     if (meshRef.current && starsData.primary.length > 0) {
       starsData.primary.forEach((star, i) => {

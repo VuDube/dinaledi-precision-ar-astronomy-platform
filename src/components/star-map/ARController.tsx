@@ -13,6 +13,8 @@ export function ARController() {
   const isSensorActive = useAppStore(s => s.isSensorActive);
   const isSlewing = useAppStore(s => s.isSlewing);
   const isObserving = useAppStore(s => s.isObserving);
+  const isDetailOpen = useAppStore(s => s.isDetailOpen);
+  const isRadialOpen = useAppStore(s => s.isRadialOpen);
   const setSelectedStar = useAppStore(s => s.setSelectedStar);
   const setSelectedDSO = useAppStore(s => s.setSelectedDSO);
   const selectedStar = useAppStore(s => s.selectedStar);
@@ -24,21 +26,22 @@ export function ARController() {
   const lastTargetId = useRef<string | null>(null);
   useFrame((state) => {
     if (!isSensorActive) return;
-    // Tighter camera slerp for direct physical tracking (0.15)
+    // Direct physical tracking
     const alphaRad = THREE.MathUtils.degToRad(alpha);
     const betaRad = THREE.MathUtils.degToRad(beta);
     const gammaRad = THREE.MathUtils.degToRad(gamma);
     euler.current.set(betaRad, alphaRad, -gammaRad, 'YXZ');
     targetQuaternion.current.setFromEuler(euler.current);
     camera.quaternion.slerp(targetQuaternion.current, 0.15);
-    if (isObserving || isSlewing) return;
+    // Block targeting if user is interacting with UI or already performing an action
+    if (isObserving || isSlewing || isDetailOpen || isRadialOpen) return;
     const now = state.clock.getElapsedTime();
     if (now - lastUpdate.current < 0.1) return;
     lastUpdate.current = now;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     let closestObject = null;
     let objectType: 'star' | 'dso' | null = null;
-    let minDistance = 0.035; // Tightened threshold for precision selection
+    let minDistance = 0.035;
     for (const dso of DSO_CATALOG) {
       const dsoPos = radecToVector3(dso.ra, dso.dec, 1).normalize();
       const dist = forward.distanceTo(dsoPos);
@@ -67,7 +70,6 @@ export function ARController() {
         } else if (objectType === 'dso') {
           setSelectedDSO(closestObject as any);
         }
-        // Only vibrate on actual transition
         if (window.navigator.vibrate) window.navigator.vibrate(30);
         lastTargetId.current = closestObject.id;
       }

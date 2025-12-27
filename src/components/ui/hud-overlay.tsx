@@ -1,9 +1,8 @@
 import React from 'react';
-import { Wifi, Crosshair, Loader2, CloudOff, CloudUpload, RefreshCw } from 'lucide-react';
+import { Wifi, CloudOff, CloudUpload, RefreshCw, Loader2, Crosshair } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
 import { useObservationStore } from '@/stores/observation-store';
 import { BottomNav } from '@/components/ui/bottom-nav';
-import { SettingsPanel } from '@/components/ui/settings-panel';
 import { HighlightsCarousel } from '@/components/ui/highlights-carousel';
 import { TemporalControls } from '@/components/ui/temporal-controls';
 import { SearchPanel } from '@/components/ui/search-panel';
@@ -101,7 +100,7 @@ export function HUDOverlay() {
             </motion.div>
           )}
         </AnimatePresence>
-        <TargetNavigator />
+        {!isRadialOpen && <TargetNavigator />}
         <HighlightsCarousel />
         {/* Central Reticle */}
         <div className="flex-1 flex items-center justify-center relative">
