@@ -29,20 +29,20 @@ export function HomePage() {
     await requestPermission();
   }, [requestPermission]);
   useEffect(() => {
-    // Phase 36: Synchronized transition once the visual core is confirmed ready
+    // Phase 38: Seamless Sync Transition
     if (isCalibrated && isCoreReady && mode === 'intro') {
       const timer = setTimeout(() => {
         setIsTransitioning(true);
         if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
-        setTimeout(() => setMode('skyview'), 1500);
-      }, 1000);
+        setTimeout(() => setMode('skyview'), 1200);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, [isCalibrated, isCoreReady, mode, setMode]);
   const hasShownCatalogToast = useRef(false);
   useEffect(() => {
     if (isCatalogReady && !hasShownCatalogToast.current) {
-      toast.success('High-density catalog synced �� 125k stars locked');
+      toast.success('High-density catalog synced', { description: '125k stars locked' });
       hasShownCatalogToast.current = true;
     }
   }, [isCatalogReady]);
@@ -50,14 +50,14 @@ export function HomePage() {
   return (
     <NightModeProvider>
       <div className="relative h-screen w-screen overflow-hidden bg-space-black">
-        <motion.div 
+        <motion.div
           className="absolute inset-0 z-0"
-          animate={{ 
-            opacity: mode === 'intro' ? 0.3 : 1,
-            scale: mode === 'intro' ? 1.05 : 1,
-            filter: mode === 'intro' ? 'blur(10px)' : 'blur(0px)'
+          animate={{
+            opacity: mode === 'intro' ? 0.35 : 1,
+            scale: mode === 'intro' ? 1.02 : 1,
+            filter: mode === 'intro' ? 'blur(12px)' : 'blur(0px)'
           }}
-          transition={{ duration: 2.5, ease: "easeInOut" }}
+          transition={{ duration: 1.8, ease: "easeInOut" }}
         >
           <StarScene />
         </motion.div>
@@ -68,16 +68,16 @@ export function HomePage() {
           {mode === 'intro' && (
             <motion.div
               initial={{ opacity: 1 }}
-              exit={{ 
-                opacity: 0, 
-                scale: 1.1,
-                filter: 'blur(30px)',
-                transition: { duration: 1.5, ease: [0.4, 0, 0.2, 1] }
+              exit={{
+                opacity: 0,
+                scale: 1.05,
+                filter: 'blur(40px)',
+                transition: { duration: 1.2, ease: [0.4, 0, 0.2, 1] }
               }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-transparent"
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6"
             >
               <div className="absolute inset-0 pointer-events-none opacity-20">
-                <DiamondGrid opacity={0.1} />
+                <DiamondGrid opacity={0.12} />
               </div>
               <div className="max-w-2xl w-full py-12 text-center space-y-12 relative z-10">
                 <div className="flex justify-center">
@@ -93,7 +93,7 @@ export function HomePage() {
                 {!isInitializing ? (
                   <div className="space-y-10">
                     <div className="space-y-6">
-                      <motion.h1 
+                      <motion.h1
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         className="text-6xl sm:text-7xl md:text-9xl font-display font-black text-starlight tracking-tighter"
@@ -104,7 +104,7 @@ export function HomePage() {
                         Precision AR planetarium at the edge. Visualizing ancestral and scientific skies.
                       </p>
                     </div>
-                    <Button 
+                    <Button
                       onClick={handleStart}
                       className="h-20 px-12 sm:px-16 rounded-[2rem] bg-starlight text-space-black hover:bg-nebula hover:scale-105 transition-all duration-500 text-xl font-black group shadow-primary active:scale-95"
                     >
@@ -117,7 +117,7 @@ export function HomePage() {
                     <div className="flex flex-col items-center gap-8 min-h-[250px] justify-center">
                       <AnimatePresence mode="wait">
                         {showCalibrationHint ? (
-                          <motion.div 
+                          <motion.div
                             key="hint"
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -130,7 +130,7 @@ export function HomePage() {
                             </div>
                           </motion.div>
                         ) : (
-                          <motion.div 
+                          <motion.div
                             key="loading"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -154,9 +154,9 @@ export function HomePage() {
                       </div>
                     </div>
                     <div className="max-w-xs mx-auto w-full space-y-4">
-                      <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                        <motion.div 
-                          className="absolute inset-y-0 left-0 bg-nebula shadow-[0_0_15px_rgba(234,179,8,1)]"
+                      <div className="relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                        <motion.div
+                          className="absolute inset-y-0 left-0 bg-nebula shadow-[0_0_20px_rgba(234,179,8,1)]"
                           animate={{ width: `${Math.max(calibrationProgress, (isCoreReady ? 100 : 0))}%` }}
                         />
                       </div>

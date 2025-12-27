@@ -1,6 +1,6 @@
 import React, { useRef, useMemo, useEffect } from 'react';
 import { useFrame, Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, Stars, PerspectiveCamera, Environment, Sky, Html } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Environment, Sky, Stars } from '@react-three/drei';
 import { StarField } from './StarField';
 import { ARController } from './ARController';
 import { GestureController } from './GestureController';
@@ -14,27 +14,6 @@ import { useAppStore } from '@/stores/app-store';
 import { getSunPosition, getSkyColor, radecToVector3 } from '@/lib/astronomy-math';
 import { useCatalogLoader } from '@/hooks/use-catalog-loader';
 import * as THREE from 'three';
-function LoadingIndicator({ progress }: { progress: number }) {
-  const groupRef = useRef<THREE.Group>(null);
-  useFrame((state, delta) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.5;
-    }
-  });
-  return (
-    <group ref={groupRef}>
-      <mesh>
-        <torusGeometry args={[1.2, 0.05, 16, 64]} />
-        <meshStandardMaterial color="#EAB308" emissive="#EAB308" emissiveIntensity={0.5} transparent opacity={0.8} />
-      </mesh>
-      <Html center>
-        <div className="text-nebula text-xl font-black uppercase tracking-widest animate-pulse whitespace-nowrap">
-          Hydrating Sky {Math.round(progress)}%
-        </div>
-      </Html>
-    </group>
-  );
-}
 function Atmosphere() {
   const simulationTime = useAppStore(s => s.simulationTime);
   const lat = useAppStore(s => s.latitude);
@@ -48,10 +27,12 @@ function Atmosphere() {
   useEffect(() => {
     if (!scene) return;
     scene.background = skyColor;
-    // Eliminate 'Blue Kill' artifact by synchronizing fog with sky background
-    // Higher density at horizon/twilight to blend the celestial sphere edge
+    // FOREVER NO BLUE: Precise Horizon Guard
+    // Astronomical twilight (-12 to -18) is where the "blue line" usually appears.
+    // We ramp up density here to mask the geometry edge.
     const isTwilight = sunAltitude > -18 && sunAltitude < 0;
-    const fogDensity = isTwilight ? 0.0015 : 0.0004;
+    const horizonGuardActive = sunAltitude > -18 && sunAltitude < -12;
+    const fogDensity = horizonGuardActive ? 0.0022 : isTwilight ? 0.0015 : 0.00045;
     if (!scene.fog) {
       scene.fog = new THREE.FogExp2(skyColor, fogDensity);
     } else {
@@ -60,7 +41,7 @@ function Atmosphere() {
     }
   }, [scene, skyColor, sunAltitude]);
   const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 10);
-  const rayleigh = THREE.MathUtils.mapLinear(sunAltitude, -25, 15, 0.1, 4);
+  const rayleigh = THREE.MathUtils.mapLinear(sunAltitude, -25, 20, 0.1, 4);
   return (
     <Sky
       sunPosition={[
@@ -90,7 +71,6 @@ function TargetTelemetry() {
       }
       return;
     }
-    if (target === lastTargetRef.current && lastTelemetryRef.current) return;
     const targetPos = radecToVector3(target.ra, target.dec, 100).normalize();
     const cameraForward = new THREE.Vector3(0, 0, -1).applyQuaternion(state.camera.quaternion).normalize();
     const angle = cameraForward.angleTo(targetPos) * (180 / Math.PI);
@@ -100,45 +80,29 @@ function TargetTelemetry() {
     const screenPos = targetPos.clone().multiplyScalar(100).project(state.camera);
     const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
     const newTelemetry = { angle, onScreen, azimuth };
-    const lastTel = lastTelemetryRef.current;
-    if (!lastTel || 
-        Math.abs(newTelemetry.angle - lastTel.angle) > 0.1 || 
-        newTelemetry.onScreen !== lastTel.onScreen || 
-        Math.abs(newTelemetry.azimuth - lastTel.azimuth) > 1) {
+    if (!lastTelemetryRef.current || 
+        Math.abs(newTelemetry.angle - lastTelemetryRef.current.angle) > 0.1 ||
+        newTelemetry.onScreen !== lastTelemetryRef.current.onScreen) {
       setTargetTelemetry(newTelemetry);
       lastTelemetryRef.current = newTelemetry;
     }
-    lastTargetRef.current = target;
   });
   return null;
 }
 export function StarScene() {
   const isSensorActive = useAppStore(s => s.isSensorActive);
-  const simulationTime = useAppStore(s => s.simulationTime);
-  const lat = useAppStore(s => s.latitude);
-  const lon = useAppStore(s => s.longitude);
   const fov = useAppStore(s => s.fov);
   const isCoreReady = useAppStore(s => s.isCoreReady);
-  const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
-  const catalogLoader = useCatalogLoader();
-  const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
-  const sunAltitude = sunPos.altitude;
-  const ambientIntensity = useMemo(() => {
-    if (sunAltitude > 0) return 1.0;
-    if (sunAltitude > -18) return THREE.MathUtils.mapLinear(sunAltitude, -18, 0, 0.05, 0.6);
-    return 0.05;
-  }, [sunAltitude]);
+  useCatalogLoader();
   return (
     <div className="absolute inset-0" style={{ backgroundColor: '#000000' }}>
       <Canvas
         gl={{ antialias: true, alpha: false, stencil: false, depth: true, powerPreference: 'high-performance' }}
-        dpr={window.devicePixelRatio > 1 ? 2 : 1}
+        dpr={[1, 2]}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.001} far={100000} rotation={[0,0,0]} />
+        <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.1} far={200000} />
         <color attach='background' args={['#000000']} />
-        {!isCoreReady ? (
-          <LoadingIndicator progress={catalogLoadingProgress} />
-        ) : (
+        {isCoreReady && (
           <>
             <Atmosphere />
             <MilkyWay />
@@ -152,21 +116,20 @@ export function StarScene() {
           </>
         )}
         <Environment preset="night" />
-        <Stars radius={2000} depth={200} count={40000} fade={false} />
+        <Stars radius={2500} depth={300} count={30000} fade={true} />
         <GestureController />
         {isSensorActive ? (
           <ARController />
         ) : (
-          <OrbitControls 
-            enableZoom={false} 
-            enablePan={false} 
-            autoRotate={!isSensorActive}
-            autoRotateSpeed={0.05}
+          <OrbitControls
+            enableZoom={false}
+            enablePan={false}
+            autoRotate={false}
             enableDamping
             dampingFactor={0.05}
           />
         )}
-        <ambientLight intensity={ambientIntensity} />
+        <ambientLight intensity={0.1} />
       </Canvas>
     </div>
   );

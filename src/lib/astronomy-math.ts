@@ -56,7 +56,7 @@ export const predictBortleFromLocation = (lat: number, lon: number): number => {
     { name: "Nelspruit", lat: -25.47, lon: 30.96, scale: 4 },
     { name: "Sutherland", lat: -32.39, lon: 20.66, scale: 1 }
   ];
-  const dist = (p1_lat: number, p1_lon: number, city: typeof CITIES[0]) => 
+  const dist = (p1_lat: number, p1_lon: number, city: typeof CITIES[0]) =>
     Math.sqrt(Math.pow(p1_lat - city.lat, 2) + Math.pow(p1_lon - city.lon, 2));
   let totalWeight = 0;
   let weightedBortle = 0;
@@ -67,13 +67,16 @@ export const predictBortleFromLocation = (lat: number, lon: number): number => {
     weightedBortle += city.scale * weight;
   }
   const result = Math.round(weightedBortle / totalWeight);
-  return Math.max(1, Math.min(9, result));
+  return Math.max(1, Math.min(9, result || 4));
 };
 export const getSkyColor = (sunAltitude: number): string => {
-  if (sunAltitude > 0) return "#87ceeb";
-  if (sunAltitude > -6) return "#1e3a8a";
-  if (sunAltitude > -12) return "#1e1b4b";
-  return "#020617";
+  // Production High Precision Hex values for No-Banding transition
+  if (sunAltitude > 5) return "#87ceeb"; // Day
+  if (sunAltitude > 0) return "#4a90e2"; // Golden Hour
+  if (sunAltitude > -6) return "#1e3a8a"; // Civil Twilight
+  if (sunAltitude > -12) return "#0f172a"; // Nautical Twilight
+  if (sunAltitude > -18) return "#020617"; // Astronomical Twilight
+  return "#000000"; // Deep Space
 };
 export const getLunarPhase = (date: Date): { phase: number; name: string } => {
   const jd = getJulianDate(date);
