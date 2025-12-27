@@ -11,13 +11,14 @@ export function useOrientation() {
   const calibrationOffset = useAppStore((s) => s.calibrationOffset);
   const isSensorActive = useAppStore((s) => s.isSensorActive);
   const lastHeading = useRef<number>(0);
-  const filterAlpha = 0.1; // More cinematic smoothing
+  const filterAlpha = 0.15; // Increased for more responsive updates
   const biasSamples = useRef<number[]>([]);
   const isCalibrating = useRef(false);
   const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
     // Priority: webkitCompassHeading (iOS) > absolute (Chrome/Android) > alpha (Fallback)
     const alpha = (event as any).webkitCompassHeading ?? (event.absolute ? event.alpha : event.alpha);
     const { beta, gamma } = event;
+    // Safety check for null/undefined alpha
     const a = alpha ?? 0;
     const b = beta ?? 0;
     const g = gamma ?? 0;
@@ -62,10 +63,10 @@ export function useOrientation() {
           if (elapsed >= duration) {
             clearInterval(timer);
             isCalibrating.current = false;
+            // Safety Check: Avoid NaN if no samples were collected
             const avg = biasSamples.current.length > 0
               ? biasSamples.current.reduce((a, b) => a + b, 0) / biasSamples.current.length
               : 0;
-            // Only apply bias if we're not using absolute orientation already
             setCalibrationOffset(-avg);
             setCalibrated(true);
           }
@@ -84,7 +85,6 @@ export function useOrientation() {
   }, [setPermissionStatus, setSensorActive, setCalibrationProgress, setCalibrated, setCalibrationOffset]);
   useEffect(() => {
     if (isSensorActive) {
-      // Use absolute event if available for drift-free operation on Android
       const eventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
       window.addEventListener(eventName as any, handleOrientation);
       return () => window.removeEventListener(eventName as any, handleOrientation);

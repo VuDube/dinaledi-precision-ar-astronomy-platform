@@ -13,35 +13,24 @@ export function StarField() {
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const [starsData, setStarsData] = useState<{ primary: any[], faint: any[] }>({ primary: [], faint: [] });
   const primaryScales = useRef<Float32Array>(new Float32Array(0));
-  const lastMagLimit = useRef<number>(0);
-  const isMounted = useRef(true);
-  useEffect(() => {
-    isMounted.current = true;
-    return () => { isMounted.current = false; };
-  }, []);
+  const frameCount = useRef(0);
   const loadFromDB = useCallback(async () => {
-    // Increased magnitude to ensure 20k+ stars in baseline
-    const allStars = await getStarsByMagnitude(11.0);
-    if (!isMounted.current) return;
+    const allStars = await getStarsByMagnitude(10.5);
     const primary = [];
     const faint = [];
-    // Adjusted threshold to ensure 'primary' captures 20,000 baseline stars
-    // mag < 6.0 is roughly 5,000-9,000 stars, mag < 7.5 is ~30,000
-    // We use 5.5 as a high-fidelity threshold for the interactive primary mesh
     for (const star of allStars) {
       const data = {
         pos: radecToVector3(star.ra, star.dec, 1000),
         color: new THREE.Color(bvToColor(star.bv)),
-        baseScale: Math.max(0.4, (7.0 - star.mag) * 0.8),
+        baseScale: Math.max(0.5, (6.5 - star.mag) * 0.9),
         mag: star.mag,
         id: star.id
       };
-      if (star.mag < 5.5) primary.push(data);
+      if (star.mag < 5.0) primary.push(data);
       else faint.push(data);
     }
     primaryScales.current = new Float32Array(primary.length);
     setStarsData({ primary, faint });
-    console.log('StarField: Core Baseline Ready (Primary count:', primary.length, ')');
   }, []);
   useEffect(() => {
     if (isCoreReady) loadFromDB();
@@ -49,33 +38,30 @@ export function StarField() {
   useEffect(() => {
     if (isCatalogReady) loadFromDB();
   }, [isCatalogReady, loadFromDB]);
+  // Initial Sync for faint stars
   useEffect(() => {
     if (faintMeshRef.current && starsData.faint.length > 0) {
-      if (Math.abs(magnitudeLimit - lastMagLimit.current) < 0.05 && lastMagLimit.current !== magnitudeLimit) {
-        lastMagLimit.current = magnitudeLimit;
-        return;
-      }
-      const count = starsData.faint.length;
-      for (let i = 0; i < count; i++) {
-        const star = starsData.faint[i];
+      starsData.faint.forEach((star, i) => {
         dummy.position.copy(star.pos);
         const visible = star.mag <= magnitudeLimit;
         dummy.scale.setScalar(visible ? star.baseScale : 0);
         dummy.updateMatrix();
         faintMeshRef.current!.setMatrixAt(i, dummy.matrix);
         faintMeshRef.current!.setColorAt(i, star.color);
-      }
+      });
       faintMeshRef.current.instanceMatrix.needsUpdate = true;
       if (faintMeshRef.current.instanceColor) faintMeshRef.current.instanceColor.needsUpdate = true;
-      lastMagLimit.current = magnitudeLimit;
     }
-  }, [dummy, starsData.faint, magnitudeLimit]);
+  }, [starsData.faint, magnitudeLimit, dummy]);
+  // Initial Sync for primary stars
   useEffect(() => {
-    if (meshRef.current && starsData.primary.length > 0 && primaryScales.current.length === starsData.primary.length) {
+    if (meshRef.current && starsData.primary.length > 0) {
       starsData.primary.forEach((star, i) => {
         dummy.position.copy(star.pos);
-        dummy.scale.setScalar(star.baseScale);
-        primaryScales.current[i] = star.baseScale;
+        const visible = star.mag <= magnitudeLimit;
+        const scale = visible ? star.baseScale : 0;
+        dummy.scale.setScalar(scale);
+        primaryScales.current[i] = scale;
         dummy.updateMatrix();
         meshRef.current!.setMatrixAt(i, dummy.matrix);
         meshRef.current!.setColorAt(i, star.color);
@@ -83,9 +69,12 @@ export function StarField() {
       meshRef.current.instanceMatrix.needsUpdate = true;
       if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
     }
-  }, [dummy, starsData.primary]);
+  }, [starsData.primary, magnitudeLimit, dummy]);
   useFrame(() => {
-    if (!isCoreReady || !meshRef.current || starsData.primary.length === 0 || primaryScales.current.length !== starsData.primary.length) return;
+    // Throttle Primary instance updates for 30fps transition logic on 60fps loop
+    frameCount.current++;
+    if (frameCount.current % 2 !== 0) return;
+    if (!meshRef.current || starsData.primary.length === 0) return;
     const EPSILON = 0.005;
     let changed = false;
     starsData.primary.forEach((star, i) => {
@@ -107,34 +96,15 @@ export function StarField() {
   return (
     <group>
       {starsData.primary.length > 0 && (
-        <instancedMesh
-          ref={meshRef}
-          args={[undefined, undefined, starsData.primary.length]}
-          frustumCulled={true}
-        >
+        <instancedMesh ref={meshRef} args={[undefined, undefined, starsData.primary.length]}>
           <sphereGeometry args={[2.5, 8, 8]} />
-          <meshBasicMaterial 
-            transparent 
-            blending={THREE.AdditiveBlending} 
-            depthWrite={false} 
-            fog={true} 
-          />
+          <meshBasicMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
         </instancedMesh>
       )}
       {starsData.faint.length > 0 && (
-        <instancedMesh
-          ref={faintMeshRef}
-          args={[undefined, undefined, starsData.faint.length]}
-          frustumCulled={true}
-        >
-          <sphereGeometry args={[1.0, 4, 4]} />
-          <meshBasicMaterial 
-            transparent 
-            opacity={0.5} 
-            blending={THREE.AdditiveBlending} 
-            depthWrite={false} 
-            fog={true} 
-          />
+        <instancedMesh ref={faintMeshRef} args={[undefined, undefined, starsData.faint.length]}>
+          <sphereGeometry args={[1.2, 4, 4]} />
+          <meshBasicMaterial transparent opacity={0.4} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
         </instancedMesh>
       )}
     </group>

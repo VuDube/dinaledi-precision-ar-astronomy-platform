@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useFrame, Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars, PerspectiveCamera, Environment, Sky, Html } from '@react-three/drei';
 import { StarField } from './StarField';
@@ -19,52 +19,19 @@ function LoadingIndicator({ progress }: { progress: number }) {
   useFrame((state, delta) => {
     if (groupRef.current) {
       groupRef.current.rotation.y += delta * 0.5;
-      groupRef.current.rotation.x += delta * 0.3;
     }
   });
   return (
     <group ref={groupRef}>
-      <mesh position={[0, 0, 0]}>
-        <torusGeometry args={[1.2, 0.1, 8, 32]} />
-        <meshStandardMaterial
-          color="#EAB308"
-          emissive="#EAB308"
-          emissiveIntensity={0.3}
-          transparent
-          opacity={0.8}
-          roughness={0.1}
-          metalness={0.8}
-        />
+      <mesh>
+        <torusGeometry args={[1.2, 0.05, 16, 64]} />
+        <meshStandardMaterial color="#EAB308" emissive="#EAB308" emissiveIntensity={0.5} transparent opacity={0.8} />
       </mesh>
-      <Html center style={{
-        color: '#EAB308',
-        fontSize: '24px',
-        fontWeight: 'bold',
-        textShadow: '0 0 10px #EAB308',
-        animation: 'pulse 1.5s infinite',
-        width: '300px',
-        textAlign: 'center'
-      }}>
-        Loading Skies... {Math.round(progress)}%
+      <Html center>
+        <div className="text-nebula text-xl font-black uppercase tracking-widest animate-pulse whitespace-nowrap">
+          Hydrating Sky {Math.round(progress)}%
+        </div>
       </Html>
-    </group>
-  );
-}
-function CelestialGrid() {
-  const showGrid = useAppStore(s => s.showGrid);
-  const gridRef = useRef<THREE.GridHelper>(null);
-  useEffect(() => {
-    if (gridRef.current) {
-      const material = gridRef.current.material as THREE.LineBasicMaterial;
-      material.transparent = true;
-      material.opacity = 0.05;
-      material.depthWrite = false;
-    }
-  }, [showGrid]);
-  if (!showGrid) return null;
-  return (
-    <group rotation={[Math.PI / 2, 0, 0]}>
-      <gridHelper ref={gridRef} args={[2000, 24, '#F8FAFC', '#F8FAFC']} />
     </group>
   );
 }
@@ -74,8 +41,8 @@ function Atmosphere() {
   const lon = useAppStore(s => s.longitude);
   const bortleScale = useAppStore(s => s.bortleScale);
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
-  const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 12);
-  const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -25, 15, 0.05, 5);
+  const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 10);
+  const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -25, 15, 0.1, 4);
   return (
     <Sky
       sunPosition={[
@@ -95,19 +62,18 @@ function TargetTelemetry() {
   const selectedDSO = useAppStore(s => s.selectedDSO);
   const setTargetTelemetry = useAppStore(s => s.setTargetTelemetry);
   useFrame((state) => {
-    const camera = state.camera;
     const target = selectedStar || selectedDSO;
-    if(!target || !camera) {
+    if(!target) {
       setTargetTelemetry(null);
       return;
     }
     const targetPos = radecToVector3(target.ra, target.dec, 100).normalize();
-    const cameraForward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+    const cameraForward = new THREE.Vector3(0, 0, -1).applyQuaternion(state.camera.quaternion).normalize();
     const angle = cameraForward.angleTo(targetPos) * (180 / Math.PI);
     const frustum = new THREE.Frustum();
-    frustum.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    frustum.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse));
     const onScreen = frustum.containsPoint(targetPos.clone().multiplyScalar(100));
-    const screenPos = targetPos.clone().multiplyScalar(100).project(camera);
+    const screenPos = targetPos.clone().multiplyScalar(100).project(state.camera);
     const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
     setTargetTelemetry({ angle, onScreen, azimuth });
   });
@@ -121,24 +87,23 @@ export function StarScene() {
   const fov = useAppStore(s => s.fov);
   const isCoreReady = useAppStore(s => s.isCoreReady);
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
-  const rotateSpeed = useMemo(() => -0.2 * (fov / 55), [fov]);
   useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const skyColor = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
   const ambientIntensity = useMemo(() => {
-    if (sunPos.altitude > 0) return 1.2;
-    if (sunPos.altitude > -18) return THREE.MathUtils.mapLinear(sunPos.altitude, -18, 0, 0.1, 0.8);
-    return 0.08;
+    if (sunPos.altitude > 0) return 1.0;
+    if (sunPos.altitude > -18) return THREE.MathUtils.mapLinear(sunPos.altitude, -18, 0, 0.05, 0.6);
+    return 0.05; // Lowered for better MW contrast
   }, [sunPos.altitude]);
   return (
-    <div className="absolute inset-0 transition-colors duration-1000" style={{ backgroundColor: skyColor }}>
+    <div className="absolute inset-0" style={{ backgroundColor: skyColor }}>
       <Canvas
-        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', stencil: false, depth: true }}
+        gl={{ antialias: true, alpha: false, stencil: false, depth: true }}
         dpr={window.devicePixelRatio > 1 ? 2 : 1}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 0]} fov={fov} near={0.1} far={10000} />
+        <PerspectiveCamera makeDefault position={[0, 0, 0]} fov={fov} near={0.1} far={8000} />
         <color attach='background' args={[skyColor]} />
-        <fog attach="fog" args={[skyColor, 1000, 5000]} />
+        <fog attach="fog" args={[skyColor, 1500, 6000]} />
         {!isCoreReady ? (
           <LoadingIndicator progress={catalogLoadingProgress} />
         ) : (
@@ -151,11 +116,10 @@ export function StarScene() {
             <ConstellationLines />
             <ConstellationBoundaries />
             <SlewController />
+            <TargetTelemetry />
           </>
         )}
-        <Stars radius={1500} depth={80} count={20000} factor={4} saturation={0} fade speed={1} />
-        <CelestialGrid />
-        {isCoreReady && <TargetTelemetry />}
+        <Stars radius={1500} depth={50} count={10000} factor={4} saturation={0} fade speed={1} />
         <Environment preset="night" />
         <GestureController />
         {isSensorActive ? (
@@ -165,8 +129,7 @@ export function StarScene() {
             enableZoom={false}
             enablePan={false}
             autoRotate={!isSensorActive}
-            autoRotateSpeed={0.06}
-            rotateSpeed={rotateSpeed}
+            autoRotateSpeed={0.05}
             enableDamping
             dampingFactor={0.05}
           />

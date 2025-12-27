@@ -7,7 +7,9 @@ import { DSO_CATALOG } from '@/data/dso-catalog';
 import { radecToVector3 } from '@/lib/astronomy-math';
 export function ARController() {
   const { camera } = useThree();
-  const orientation = useAppStore(s => s.orientation);
+  const alpha = useAppStore(s => s.orientation.alpha);
+  const beta = useAppStore(s => s.orientation.beta);
+  const gamma = useAppStore(s => s.orientation.gamma);
   const isSensorActive = useAppStore(s => s.isSensorActive);
   const isSlewing = useAppStore(s => s.isSlewing);
   const isObserving = useAppStore(s => s.isObserving);
@@ -22,24 +24,21 @@ export function ARController() {
   const lastTargetId = useRef<string | null>(null);
   useFrame((state) => {
     if (!isSensorActive) return;
-    // Smooth camera rotation
-    const alphaRad = THREE.MathUtils.degToRad(orientation.alpha);
-    const betaRad = THREE.MathUtils.degToRad(orientation.beta);
-    const gammaRad = THREE.MathUtils.degToRad(orientation.gamma);
+    // Tighter camera slerp for direct physical tracking (0.15)
+    const alphaRad = THREE.MathUtils.degToRad(alpha);
+    const betaRad = THREE.MathUtils.degToRad(beta);
+    const gammaRad = THREE.MathUtils.degToRad(gamma);
     euler.current.set(betaRad, alphaRad, -gammaRad, 'YXZ');
     targetQuaternion.current.setFromEuler(euler.current);
-    camera.quaternion.slerp(targetQuaternion.current, 0.1);
-    // Skip targeting during automated UI states
+    camera.quaternion.slerp(targetQuaternion.current, 0.15);
     if (isObserving || isSlewing) return;
-    // Throttle targeting to 10fps
     const now = state.clock.getElapsedTime();
     if (now - lastUpdate.current < 0.1) return;
     lastUpdate.current = now;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     let closestObject = null;
     let objectType: 'star' | 'dso' | null = null;
-    let minDistance = 0.04; // Targeting threshold approx 2.3 degrees
-    // 1. DSOs priority check
+    let minDistance = 0.035; // Tightened threshold for precision selection
     for (const dso of DSO_CATALOG) {
       const dsoPos = radecToVector3(dso.ra, dso.dec, 1).normalize();
       const dist = forward.distanceTo(dsoPos);
@@ -49,7 +48,6 @@ export function ARController() {
         objectType = 'dso';
       }
     }
-    // 2. Bright Stars fallback check
     if (!closestObject) {
       for (const star of STAR_CATALOG) {
         const starPos = radecToVector3(star.ra, star.dec, 1).normalize();
@@ -61,28 +59,26 @@ export function ARController() {
         }
       }
     }
-    // Selection management with hysteresis
     if (closestObject) {
       const isNewTarget = closestObject.id !== lastTargetId.current;
       if (isNewTarget) {
         if (objectType === 'star') {
           setSelectedStar(closestObject as any);
-          if (selectedDSO) setSelectedDSO(null);
         } else if (objectType === 'dso') {
           setSelectedDSO(closestObject as any);
-          if (selectedStar) setSelectedStar(null);
         }
-        // Haptic feedback only on primary acquisition
+        // Only vibrate on actual transition
         if (window.navigator.vibrate) window.navigator.vibrate(30);
         lastTargetId.current = closestObject.id;
       }
-      hysteresisTimer.current = now + 0.5; // Lock target for 500ms
+      hysteresisTimer.current = now + 0.5;
     } else {
-      // Only clear if hysteresis has expired
       if (now > hysteresisTimer.current) {
-        if (selectedStar) setSelectedStar(null);
-        if (selectedDSO) setSelectedDSO(null);
-        lastTargetId.current = null;
+        if (selectedStar || selectedDSO) {
+          setSelectedStar(null);
+          setSelectedDSO(null);
+          lastTargetId.current = null;
+        }
       }
     }
   });

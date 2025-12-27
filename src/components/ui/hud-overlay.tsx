@@ -19,7 +19,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { usePWA } from '@/hooks/use-pwa';
 export function HUDOverlay() {
   const mode = useAppStore(s => s.mode);
-  const orientation = useAppStore(s => s.orientation);
+  const heading = useAppStore(s => s.orientation.heading);
+  const beta = useAppStore(s => s.orientation.beta);
   const isSensorActive = useAppStore(s => s.isSensorActive);
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
@@ -27,69 +28,60 @@ export function HUDOverlay() {
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
   const isSlewing = useAppStore(s => s.isSlewing);
   const isOnline = useAppStore(s => s.isOnline);
-  const setRadialOpen = useAppStore(s => s.setRadialOpen);
   const isRadialOpen = useAppStore(s => s.isRadialOpen);
+  const setRadialOpen = useAppStore(s => s.setRadialOpen);
   const setDetailOpen = useAppStore(s => s.setDetailOpen);
   const isSyncing = useObservationStore(s => s.isSyncing);
   const pendingCount = useObservationStore(s => s.pendingCount);
   const { isInstallModalOpen, setIsInstallModalOpen, triggerInstallPrompt } = usePWA();
   if (mode === 'intro') return null;
   const activeTarget = selectedStar || selectedDSO;
-  const azimuth = Math.round(orientation.heading);
-  const altitude = Math.round(orientation.beta);
+  const azimuthValue = Math.round(heading);
+  const altitudeValue = Math.round(beta);
   return (
     <TooltipProvider>
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 sm:p-6 z-20 overflow-hidden">
-        {/* Top Telemetry Bar with max-w constraint for layout stability */}
-        <div className="flex justify-between items-start relative z-10 w-full max-w-7xl mx-auto">
+        {/* Top Telemetry Bar */}
+        <div className="flex justify-between items-start relative z-10 w-full max-w-[calc(100vw-32px)] mx-auto">
           <motion.div layout className="flex flex-col gap-2 min-w-0">
             <AnimatePresence>
               {!isCatalogReady && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginBottom: 8 }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  className="glass px-3 py-2 rounded-lg w-36 sm:w-48 relative overflow-hidden shrink-0"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="glass px-3 py-2 rounded-lg w-36 sm:w-48 overflow-hidden shrink-0"
                 >
-                  <DiamondGrid opacity={0.03} />
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[7px] sm:text-[8px] font-mono text-starlight/40 uppercase tracking-widest truncate">Catalog_Sync</span>
-                    <span className="text-[7px] sm:text-[8px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress)}%</span>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[7px] font-mono text-starlight/40 uppercase tracking-widest">CAT_SYNC</span>
+                    <span className="text-[7px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress)}%</span>
                   </div>
                   <Progress value={catalogLoadingProgress} className="h-0.5 bg-starlight/10" />
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className="glass px-3 sm:px-4 py-2 rounded-full flex items-center gap-3 sm:gap-4 border-white/5 backdrop-blur-3xl relative overflow-hidden shrink-0">
-              <DiamondGrid opacity={0.05} />
-              <div className={cn("h-1.5 w-1.5 rounded-full", isSensorActive ? "bg-green-500 shadow-glow" : "bg-yellow-500")} />
-              <div className="flex gap-3 sm:gap-4 font-mono text-[9px] sm:text-[10px] uppercase tracking-widest font-bold tabular-nums text-starlight">
-                <span className="opacity-40 whitespace-nowrap">HDG <span className="opacity-100">{azimuth.toString().padStart(3, '0')}°</span></span>
-                <span className="opacity-40 whitespace-nowrap">ALT <span className="opacity-100">{altitude.toString().padStart(3, '0')}°</span></span>
+            <div className="glass px-3 py-1.5 rounded-full flex items-center gap-2 border-white/5 backdrop-blur-3xl shrink-0">
+              <div className={cn("h-1.5 w-1.5 rounded-full", isSensorActive ? "bg-green-500" : "bg-yellow-500")} />
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[9px] uppercase tracking-wider font-bold tabular-nums text-starlight">
+                <span>HDG {azimuthValue.toString().padStart(3, '0')}°</span>
+                <span>ALT {altitudeValue.toString().padStart(3, '0')}°</span>
               </div>
             </div>
           </motion.div>
-          <div className="flex items-center gap-2 pointer-events-auto ml-2">
+          <div className="flex items-center gap-2 pointer-events-auto ml-2 shrink-0">
              <AnimatePresence mode="wait">
               {isSyncing ? (
-                <motion.div key="syncing" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-nebula/20 bg-nebula/10">
+                <motion.div key="syncing" className="glass px-2 py-1 rounded-full flex items-center gap-2 border-nebula/20">
                   <RefreshCw className="w-3 h-3 text-nebula animate-spin" />
-                  <span className="hidden xs:inline text-[9px] font-mono text-nebula uppercase tracking-widest">Edge_Sync</span>
                 </motion.div>
               ) : pendingCount > 0 ? (
-                <motion.div key="pending" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-yellow-500/20 bg-yellow-500/10">
+                <motion.div key="pending" className="glass px-2 py-1 rounded-full flex items-center gap-2 border-yellow-500/20 bg-yellow-500/10">
                   <CloudUpload className="w-3 h-3 text-yellow-500" />
-                  <span className="hidden xs:inline text-[9px] font-mono text-yellow-500 uppercase tracking-widest">{pendingCount} PND</span>
-                </motion.div>
-              ) : isOnline ? (
-                <motion.div key="synced" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-green-500/20 bg-green-500/10">
-                  <Wifi className="w-3 h-3 text-green-500" />
-                  <span className="hidden xs:inline text-[9px] font-mono text-green-500 uppercase tracking-widest text-starlight">Linked</span>
+                  <span className="hidden xs:inline text-[8px] font-mono text-yellow-500">{pendingCount} PND</span>
                 </motion.div>
               ) : (
-                <motion.div key="offline" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-red-500/20 bg-red-500/10">
-                  <CloudOff className="w-3 h-3 text-red-500" />
-                  <span className="hidden xs:inline text-[9px] font-mono text-red-500 uppercase tracking-widest">Offline</span>
+                <motion.div key="status" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 border-white/5">
+                  {isOnline ? <Wifi className="w-3 h-3 text-green-500" /> : <CloudOff className="w-3 h-3 text-red-500" />}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -99,35 +91,29 @@ export function HUDOverlay() {
         <AnimatePresence>
           {isSlewing && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="absolute top-28 left-1/2 -translate-x-1/2 glass px-6 py-2 rounded-full border-nebula/30 flex items-center gap-2 overflow-hidden shadow-2xl z-20"
+              className="absolute top-24 left-1/2 -translate-x-1/2 glass px-4 py-1.5 rounded-full border-nebula/30 flex items-center gap-2 shadow-2xl z-20"
             >
-              <DiamondGrid opacity={0.1} />
-              <Loader2 className="w-4 h-4 text-nebula animate-spin" />
-              <span className="text-[11px] font-mono font-bold text-nebula uppercase tracking-[0.2em]">Slewing Target</span>
+              <Loader2 className="w-3 h-3 text-nebula animate-spin" />
+              <span className="text-[10px] font-mono font-bold text-nebula uppercase tracking-widest">Slewing</span>
             </motion.div>
           )}
         </AnimatePresence>
         <TargetNavigator />
         <HighlightsCarousel />
-        {/* Reticle Area with enhanced backdrop blur */}
+        {/* Central Reticle */}
         <div className="flex-1 flex items-center justify-center relative">
-           <StarPoint className="w-72 h-72 scale-150" opacity={0.015} />
+           <StarPoint className="w-64 h-64 scale-150" opacity={0.015} />
            <div
-             className="relative pointer-events-auto p-12 rounded-full backdrop-blur-[2px]"
+             className="relative pointer-events-auto p-16 rounded-full"
              onClick={() => {
                if (activeTarget) setDetailOpen(true);
                else setRadialOpen(!isRadialOpen);
              }}
            >
-              <Crosshair className={cn("w-16 h-16 transition-all duration-700 cursor-pointer active:scale-90", activeTarget ? "text-nebula scale-110 rotate-45 opacity-60" : "text-starlight/20")} strokeWidth={0.2} />
-              {activeTarget && (
-                <motion.div initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 bg-nebula rounded-full shadow-[0_0_15px_rgba(234,179,8,1)]" />
-                </motion.div>
-              )}
+              <Crosshair className={cn("w-14 h-14 transition-all cursor-pointer", activeTarget ? "text-nebula opacity-60" : "text-starlight/10")} strokeWidth={0.2} />
            </div>
            <RadialSearchWheel />
         </div>
