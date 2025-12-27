@@ -12,6 +12,7 @@ import { usePWA } from '@/hooks/use-pwa';
 import { DiamondGrid, StarPoint, CalibrationMotion } from '@/components/ui/sesotho-patterns';
 import { toast } from 'sonner';
 import { useGPS } from '@/hooks/use-gps';
+import { useOrientation } from '@/hooks/use-orientation';
 import type { AppMode } from '@/stores/app-store';
 export function HomePage() {
   const mode = useAppStore(s => s.mode);
@@ -21,33 +22,32 @@ export function HomePage() {
   const calibrationProgress = useAppStore(s => s.calibrationProgress);
   const isCatalogReady = useAppStore(s => s.isCatalogReady);
   const { isStandalone } = usePWA();
+  const { requestPermission } = useOrientation();
   useGPS();
   const [isInitializing, setIsInitializing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const handleStart = useCallback(() => {
+  const handleStart = useCallback(async () => {
     setIsInitializing(true);
     useAppStore.getState().setCalibrationProgress(0);
-    if (window.navigator.vibrate) window.navigator.vibrate(50);
+    const granted = await requestPermission();
+    if (!granted) {
+      setIsInitializing(false);
+      return;
+    }
     if (isCalibrated && isCoreReady) {
       setIsTransitioning(true);
       setTimeout(() => setMode('skyview'), 300);
-    } else {
-      useAppStore.getState().setCalibrated(true);
-      useAppStore.getState().setCoreReady(true);
-      setIsTransitioning(true);
-      setTimeout(() => setMode('skyview'), 500);
     }
-  }, [isCalibrated, isCoreReady, setMode]);
+  }, [isCalibrated, isCoreReady, setMode, requestPermission]);
   useEffect(() => {
-    if (isCalibrated && isCoreReady && mode === 'intro') {
+    if (isCalibrated && isCoreReady && mode === 'intro' && isInitializing) {
       const timer = setTimeout(() => {
         setIsTransitioning(true);
-        if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
         setTimeout(() => setMode('skyview'), 400);
-      }, 200);
+      }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isCalibrated, isCoreReady, mode, setMode]);
+  }, [isCalibrated, isCoreReady, mode, setMode, isInitializing]);
   const hasShownCatalogToast = useRef(false);
   useEffect(() => {
     const interval = setInterval(() => {
@@ -66,15 +66,11 @@ export function HomePage() {
     const calibLS = localStorage.getItem('dinaledi-calib') === 'true';
     const coreLS = localStorage.getItem('dinaledi-coreReady') === 'true';
     const modeLS = (localStorage.getItem('dinaledi-mode') as AppMode || 'intro') as AppMode;
-    useAppStore.setState({ isCalibrated: calibLS, isCoreReady: coreLS, mode: modeLS });
-    const hostname = window.location.hostname;
-    if ((hostname.includes('.workers.dev') || hostname.includes('build-preview')) && modeLS === 'intro') {
-      useAppStore.getState().setCalibrated(true);
-      useAppStore.getState().setCoreReady(true);
-      useAppStore.getState().setMode('skyview');
+    if (calibLS && coreLS && modeLS === 'skyview') {
+      useAppStore.setState({ isCalibrated: true, isCoreReady: true, mode: 'skyview' });
     }
   }, []);
-  const showCalibrationHint = calibrationProgress > 15 && calibrationProgress < 85;
+  const showCalibrationHint = calibrationProgress > 5 && calibrationProgress < 95;
   return (
     <NightModeProvider>
       <div className="relative h-screen w-screen overflow-hidden bg-space-black">
@@ -87,16 +83,19 @@ export function HomePage() {
         <AnimatePresence mode="wait">
           {mode === 'intro' && (
             <motion.div
-              layout
               initial={{ opacity: 1 }}
               exit={{
                 opacity: 0,
-                scale: 1.05,
-                filter: 'blur(20px)',
-                transition: { duration: 0.8, ease: [0.4, 0, 0.2, 1] }
+                scale: 1.1,
+                filter: 'blur(40px)',
+                transition: { duration: 0.9, ease: [0.4, 0, 0.2, 1] }
               }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/60 backdrop-blur-md"
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/40 backdrop-blur-xl"
             >
+              {/* Central Sesotho Orb */}
+              <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                <div className="w-[120vw] h-[120vw] max-w-[800px] max-h-[800px] rounded-full bg-gradient-radial from-nebula/20 via-nebula/5 to-transparent blur-[120px] opacity-40 animate-pulse" />
+              </div>
               <div className="absolute inset-0 pointer-events-none opacity-20">
                 <DiamondGrid opacity={0.12} />
               </div>
@@ -129,7 +128,7 @@ export function HomePage() {
                       onClick={handleStart}
                       className="h-20 px-12 sm:px-16 rounded-[2rem] bg-starlight text-space-black hover:bg-nebula hover:scale-105 transition-all duration-500 text-xl font-black group shadow-primary active:scale-95"
                     >
-                      {isStandalone ? 'RESUME VOYAGE' : 'BEGIN OBSERVATION'}
+                      {isCalibrated && isCoreReady ? 'RESUME VOYAGE' : 'BEGIN OBSERVATION'}
                       <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-2 transition-transform" />
                     </Button>
                   </div>
@@ -146,7 +145,7 @@ export function HomePage() {
                             className="flex flex-col items-center gap-6"
                           >
                             <CalibrationMotion opacity={1} />
-                            <div className="text-nebula text-xs font-mono font-bold uppercase tracking-[0.2em] max-w-[200px] leading-relaxed">
+                            <div className="text-nebula text-[10px] font-mono font-bold uppercase tracking-[0.3em] max-w-[240px] leading-relaxed">
                               Neutralizing magnetic bias via orientation sweep
                             </div>
                           </motion.div>
@@ -175,7 +174,7 @@ export function HomePage() {
                       </div>
                     </div>
                     <div className="max-w-xs mx-auto w-full space-y-4">
-                      <div className="relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden">
                         <motion.div
                           className="absolute inset-y-0 left-0 bg-nebula shadow-[0_0_20px_rgba(234,179,8,1)]"
                           animate={{ width: `${Math.max(calibrationProgress, (isCoreReady ? 100 : 0))}%` }}

@@ -24,30 +24,30 @@ export function DiamondGrid({ className, opacity = 0.05 }: PatternProps) {
 }
 export function CalibrationMotion({ className, opacity = 0.5 }: PatternProps) {
   return (
-    <div className={cn("relative w-48 h-32 flex items-center justify-center", className)} style={{ opacity }}>
-      <svg width="180" height="100" viewBox="0 0 180 100" className="text-nebula">
+    <div className={cn("relative w-64 h-40 flex items-center justify-center", className)} style={{ opacity }}>
+      <svg width="220" height="120" viewBox="0 0 180 100" className="text-nebula filter drop-shadow-[0_0_8px_rgba(234,179,8,0.4)]">
         <motion.path
           d="M 45 50 C 45 20 90 20 90 50 C 90 80 135 80 135 50 C 135 20 90 20 90 50 C 90 80 45 80 45 50 Z"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="1.5"
           strokeLinecap="round"
           initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
+          animate={{ pathLength: 1, opacity: [0.2, 0.4, 0.2] }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
         />
         <motion.circle
-          r="4"
+          r="5"
           fill="currentColor"
           animate={{
             offsetDistance: ["0%", "100%"]
           }}
           style={{ offsetPath: "path('M 45 50 C 45 20 90 20 90 50 C 90 80 135 80 135 50 C 135 20 90 20 90 50 C 90 80 45 80 45 50 Z')" }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
         />
       </svg>
-      <div className="absolute inset-x-0 -bottom-8 text-center">
-        <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-nebula animate-pulse">Mag_Zero Calibration</span>
+      <div className="absolute inset-x-0 -bottom-6 text-center">
+        <span className="text-[9px] font-mono uppercase tracking-[0.4em] text-nebula/60 animate-pulse">Mag_Zero Calibration</span>
       </div>
     </div>
   );
@@ -91,7 +91,7 @@ export function ChevronFlow({ className, opacity = 0.03 }: PatternProps) {
 }
 export function StarPoint({ className, opacity = 0.08 }: PatternProps) {
   return (
-    <div className={cn("absolute flex items-center justify-center opacity-10", className)}>
+    <div className={cn("absolute flex items-center justify-center pointer-events-none", className)} style={{ opacity }}>
       <svg width="200" height="200" viewBox="0 0 100 100" className="text-nebula">
         <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.1" strokeDasharray="2 2" />
         <path d="M 50 0 L 55 45 L 100 50 L 55 55 L 50 100 L 45 55 L 0 50 L 45 45 Z" fill="currentColor" />

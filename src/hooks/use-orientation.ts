@@ -17,7 +17,10 @@ export function useOrientation() {
   const rafRef = useRef<number>(0);
   const eventRef = useRef<any>(null);
   const calibrationOffsetRef = useRef<number>(useAppStore.getState().calibrationOffset);
-  const isPreview = typeof location !== 'undefined' && location.hostname.includes('.workers.dev');
+  const isPreview = typeof location !== 'undefined' && (
+    location.hostname.includes('.workers.dev') || 
+    location.hostname.includes('build-preview')
+  );
   const handleOrientation = useCallback((event: DeviceOrientationEvent & {webkitCompassHeading?: number}) => {
     const alpha = event.webkitCompassHeading ?? (event.absolute ? event.alpha : event.alpha) ?? 0;
     const { beta, gamma } = event;
@@ -43,12 +46,10 @@ export function useOrientation() {
       setPermissionStatus('granted');
       setSensorActive(true);
       isCalibrating.current = false;
-      biasSamples.current = [];
       setCalibrationProgress(100);
       setCalibrationOffset(0);
       calibrationOffsetRef.current = 0;
       setCalibrated(true);
-      toast.info('Preview: Mock sensors enabled');
       return true;
     }
     if (typeof DeviceOrientationEvent === 'undefined') {
@@ -63,6 +64,7 @@ export function useOrientation() {
         status = await requestPermissionFn();
       }
       if (status === 'granted') {
+        if (window.navigator.vibrate) window.navigator.vibrate(50);
         setPermissionStatus('granted');
         setSensorActive(true);
         isCalibrating.current = true;
@@ -78,19 +80,20 @@ export function useOrientation() {
           if (elapsed >= duration) {
             clearInterval(timer);
             isCalibrating.current = false;
-            const avg = biasSamples.current.length > 0
+            // Calculate bias
+            const avg = biasSamples.current.length > 5 
               ? biasSamples.current.reduce((a, b) => a + b, 0) / biasSamples.current.length
               : 0;
             const finalOffset = -avg;
             calibrationOffsetRef.current = finalOffset;
             setCalibrationOffset(finalOffset);
             setCalibrated(true);
+            if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
           }
         }, interval);
         return true;
       } else {
         setPermissionStatus('denied');
-        toast.error('Access Denied', { description: 'Enable motion sensors in browser settings.' });
         return false;
       }
     } catch (error) {
@@ -102,16 +105,16 @@ export function useOrientation() {
   useEffect(() => {
     if (mockMode.current) {
       const mockLoop = () => {
+        const now = Date.now();
         const event = new DeviceOrientationEvent('deviceorientation', {
-          alpha: (Date.now() / 100 % 360),
-          beta: 0 + (Math.sin(Date.now() / 1000) * 5),
-          gamma: 0,
+          alpha: (now / 100 % 360),
+          beta: -25 + (Math.sin(now / 1000) * 15),
+          gamma: (Math.cos(now / 800) * 5),
           absolute: true
         });
         handleOrientation(event);
         rafRef.current = requestAnimationFrame(mockLoop);
       };
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       mockLoop();
       return () => {
         if (rafRef.current) cancelAnimationFrame(rafRef.current);

@@ -19,27 +19,33 @@ function Atmosphere() {
   const lat = useAppStore(s => s.latitude);
   const lon = useAppStore(s => s.longitude);
   const bortleScale = useAppStore(s => s.bortleScale);
+  const mode = useAppStore(s => s.mode);
   const { scene } = useThree();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const sunAltitude = sunPos.altitude;
-  const skyColorStr = useMemo(() => getSkyColor(sunAltitude), [sunAltitude]);
+  // Enforce "No Blue" astronomical dark ramp
+  const skyColorStr = useMemo(() => {
+    if (sunAltitude < -18) return "#000000";
+    return getSkyColor(sunAltitude);
+  }, [sunAltitude]);
   const skyColorRef = useRef(new THREE.Color());
   skyColorRef.current.set(skyColorStr);
   useEffect(() => {
     if (!scene) return;
-    scene.background = skyColorRef.current.clone();
+    const color = skyColorRef.current.clone();
+    scene.background = color;
     const isTwilight = sunAltitude > -18 && sunAltitude < 0;
-    const horizonGuardActive = sunAltitude > -18 && sunAltitude < -12;
-    const fogDensity = horizonGuardActive ? 0.0022 : isTwilight ? 0.0015 : 0.00045;
+    // Higher density during viewport entry (intro mode) or twilight
+    const fogDensity = mode === 'intro' ? 0.003 : isTwilight ? 0.002 : 0.00045;
     if (!scene.fog) {
-      scene.fog = new THREE.FogExp2(skyColorRef.current.clone(), fogDensity);
+      scene.fog = new THREE.FogExp2(color, fogDensity);
     } else {
-      (scene.fog as THREE.FogExp2).color.copy(skyColorRef.current);
+      (scene.fog as THREE.FogExp2).color.copy(color);
       (scene.fog as THREE.FogExp2).density = fogDensity;
     }
-  }, [scene, sunAltitude]);
+  }, [scene, sunAltitude, mode]);
   const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 10);
-  const rayleigh = THREE.MathUtils.mapLinear(sunAltitude, -25, 20, 0.1, 4);
+  const rayleigh = THREE.MathUtils.mapLinear(THREE.MathUtils.clamp(sunAltitude, -20, 20), -20, 20, 0, 4);
   return (
     <Sky
       sunPosition={[
@@ -77,8 +83,8 @@ function TargetTelemetry() {
     const screenPos = targetPos.clone().multiplyScalar(100).project(state.camera);
     const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
     const newTelemetry = { angle, onScreen, azimuth };
-    if (!lastTelemetryRef.current ||
-        Math.abs(newTelemetry.angle - lastTelemetryRef.current.angle) > 0.1 ||
+    if (!lastTelemetryRef.current || 
+        Math.abs(newTelemetry.angle - lastTelemetryRef.current.angle) > 0.1 || 
         newTelemetry.onScreen !== lastTelemetryRef.current.onScreen) {
       setTargetTelemetry(newTelemetry);
       lastTelemetryRef.current = newTelemetry;
@@ -94,9 +100,9 @@ export function StarScene() {
   return (
     <Canvas
       gl={{ antialias: false, alpha: false, stencil: false, depth: true, powerPreference: 'high-performance' }}
-      dpr={1}
+      dpr={[1, 2]}
     >
-        <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.1} far={200000} />
+        <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.1} far={20000} />
         <color attach='background' args={['#000000']} />
         <Atmosphere />
         <MilkyWay />
@@ -112,17 +118,17 @@ export function StarScene() {
           </>
         )}
         <Environment preset="night" />
-        <Stars radius={2500} depth={200} count={15000} fade={true} />
+        <Stars radius={2000} depth={50} count={10000} fade={true} />
         <GestureController />
         {isSensorActive ? (
           <ARController />
         ) : (
-          <OrbitControls
-            enableZoom={false}
-            enablePan={false}
-            autoRotate={false}
-            enableDamping
-            dampingFactor={0.05}
+          <OrbitControls 
+            enableZoom={false} 
+            enablePan={false} 
+            autoRotate={false} 
+            enableDamping 
+            dampingFactor={0.05} 
           />
         )}
         <ambientLight intensity={0.1} />

@@ -39,34 +39,34 @@ export function HUDOverlay() {
   const altitudeValue = Math.round(orientation.beta);
   return (
     <TooltipProvider>
-      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 sm:p-6 pb-[env(safe-area-inset-bottom,24px)] pt-[env(safe-area-inset-top,16px)] z-20 overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 sm:p-6 pb-[env(safe-area-inset-bottom,24px)] pt-[env(safe-area-inset-top,16px)] z-30 overflow-hidden">
         <div className="flex flex-wrap justify-between items-start relative z-10 w-full max-w-[calc(100vw-24px)] mx-auto gap-2">
-          <motion.div layout className="flex flex-col gap-2 min-w-0 max-w-[60%] sm:max-w-none">
+          <motion.div layout className="flex flex-col gap-2 min-w-0">
             <AnimatePresence>
               {!isCatalogReady && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="glass px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg w-32 sm:w-48 overflow-hidden shrink-0 backdrop-filter-none"
+                  className="glass px-2 py-1.5 rounded-lg w-32 sm:w-40 overflow-hidden shrink-0 backdrop-filter-none"
                 >
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[6px] sm:text-[7px] font-mono text-starlight/40 uppercase tracking-widest">CAT_SYNC</span>
-                    <span className="text-[6px] sm:text-[7px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress)}%</span>
+                    <span className="text-[6px] font-mono text-starlight/40 uppercase tracking-widest">CAT_SYNC</span>
+                    <span className="text-[6px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress)}%</span>
                   </div>
                   <Progress value={catalogLoadingProgress} className="h-0.5 bg-starlight/10" />
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className="glass px-2 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5 sm:gap-2 border-white/5 backdrop-blur-3xl shrink-0 backdrop-filter-none">
-              <div className={cn("h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full shrink-0", isSensorActive ? "bg-green-500" : "bg-yellow-500")} />
-              <div className="flex gap-x-2 sm:gap-x-3 font-mono text-[8px] sm:text-[9px] uppercase tracking-wider font-bold tabular-nums text-starlight overflow-hidden">
+            <div className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-white/5 backdrop-blur-3xl shrink-0 backdrop-filter-none">
+              <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", isSensorActive ? "bg-green-500" : "bg-yellow-500")} />
+              <div className="flex gap-x-2.5 font-mono text-[9px] uppercase tracking-widest font-bold tabular-nums text-starlight overflow-hidden">
                 <span className="whitespace-nowrap">HDG {azimuthValue.toString().padStart(3, '0')}°</span>
                 <span className="whitespace-nowrap">ALT {altitudeValue.toString().padStart(3, '0')}°</span>
               </div>
             </div>
           </motion.div>
-          <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
+          <div className="flex items-center gap-2 pointer-events-auto shrink-0">
              <Tooltip>
                <TooltipTrigger asChild>
                  <div className="flex items-center gap-1.5">
@@ -76,7 +76,7 @@ export function HUDOverlay() {
                           <RefreshCw className="w-3 h-3 text-nebula animate-spin" />
                         </motion.div>
                       ) : pendingCount > 0 ? (
-                        <motion.div key="pending" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 sm:gap-2 border-yellow-500/20 bg-yellow-500/10 backdrop-filter-none">
+                        <motion.div key="pending" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 border-yellow-500/20 bg-yellow-500/10 backdrop-filter-none">
                           <CloudUpload className="w-3 h-3 text-yellow-500" />
                           <span className="hidden xs:inline text-[8px] font-mono text-yellow-500">{pendingCount} PND</span>
                         </motion.div>
@@ -102,13 +102,13 @@ export function HUDOverlay() {
         <div className="flex-1 flex items-center justify-center relative">
            <StarPoint className="w-64 h-64 scale-150" opacity={0.015} />
            <div
-             className="relative pointer-events-auto p-12 sm:p-16 rounded-full"
+             className="relative pointer-events-auto p-12 sm:p-16 rounded-full cursor-pointer group"
              onClick={() => {
                if (activeTarget) setDetailOpen(true);
                else setRadialOpen(!isRadialOpen);
              }}
            >
-              <Crosshair className={cn("w-10 h-10 sm:w-14 sm:h-14 transition-all cursor-pointer", activeTarget ? "text-nebula opacity-60" : "text-starlight/10")} strokeWidth={0.2} />
+              <Crosshair className={cn("w-12 h-12 sm:w-16 sm:h-16 transition-all", activeTarget ? "text-nebula scale-110" : "text-starlight/5 group-hover:text-starlight/10")} strokeWidth={0.2} />
            </div>
            <RadialSearchWheel />
         </div>
