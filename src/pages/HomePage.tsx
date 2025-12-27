@@ -12,6 +12,7 @@ import { useOrientation } from '@/hooks/use-orientation';
 import { usePWA } from '@/hooks/use-pwa';
 import { DiamondGrid, StarPoint, CalibrationMotion } from '@/components/ui/sesotho-patterns';
 import { toast } from 'sonner';
+import { useGPS } from '@/hooks/use-gps';
 export function HomePage() {
   const mode = useAppStore(s => s.mode);
   const setMode = useAppStore(s => s.setMode);

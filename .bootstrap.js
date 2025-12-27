@@ -93,7 +93,8 @@ function runSetupCommands() {
     "bun add -d @types/three",
     "bun add date-fns@latest --force",
     "bun remove date-fns",
-    "bun add date-fns@^3.6.0"
+    "bun add date-fns@^3.6.0",
+    "bun add date-fns"
 ];
     
     if (commands.length === 0) {
