@@ -89,7 +89,8 @@ function runSetupCommands() {
     "bun add embla-carousel-react",
     "bun add three @react-three/fiber @react-three/drei",
     "bun add react-use",
-    "bun add framer-motion lucide-react clsx tailwind-merge"
+    "bun add framer-motion lucide-react clsx tailwind-merge",
+    "bun add -d @types/three"
 ];
     
     if (commands.length === 0) {
