@@ -31,6 +31,7 @@ export function StarField() {
     }
     primaryScales.current = new Float32Array(primary.length);
     setStarsData({ primary, faint });
+    console.log(`StarField: primary ${primary.length} (mag<5) faint ${faint.length} total ${primary.length + faint.length} magLimit=${magnitudeLimit}`);
   }, []);
   useEffect(() => {
     if (isCoreReady) loadFromDB();
@@ -61,7 +62,7 @@ export function StarField() {
         const visible = star.mag <= magnitudeLimit;
         const scale = visible ? star.baseScale : 0;
         dummy.scale.setScalar(scale);
-        primaryScales.current[i] = scale;
+        if (i < primaryScales.current.length) primaryScales.current[i] = scale;
         dummy.updateMatrix();
         meshRef.current!.setMatrixAt(i, dummy.matrix);
         meshRef.current!.setColorAt(i, star.color);
@@ -74,10 +75,11 @@ export function StarField() {
     // Throttle Primary instance updates for 30fps transition logic on 60fps loop
     frameCount.current++;
     if (frameCount.current % 2 !== 0) return;
-    if (!meshRef.current || starsData.primary.length === 0) return;
+    if (!meshRef.current || !starsData.primary.length) return;
     const EPSILON = 0.005;
     let changed = false;
-    starsData.primary.forEach((star, i) => {
+    for (let i = 0; i < starsData.primary.length && i < primaryScales.current.length; i++) {
+      const star = starsData.primary[i];
       const isVisible = star.mag <= magnitudeLimit;
       const targetScale = isVisible ? star.baseScale : 0;
       const currentScale = primaryScales.current[i];
@@ -90,7 +92,7 @@ export function StarField() {
         meshRef.current!.setMatrixAt(i, dummy.matrix);
         changed = true;
       }
-    });
+    }
     if (changed) meshRef.current.instanceMatrix.needsUpdate = true;
   });
   return (
@@ -98,13 +100,13 @@ export function StarField() {
       {starsData.primary.length > 0 && (
         <instancedMesh ref={meshRef} args={[undefined, undefined, starsData.primary.length]}>
           <sphereGeometry args={[2.5, 8, 8]} />
-          <meshBasicMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
+          <meshBasicMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
         </instancedMesh>
       )}
       {starsData.faint.length > 0 && (
         <instancedMesh ref={faintMeshRef} args={[undefined, undefined, starsData.faint.length]}>
           <sphereGeometry args={[1.2, 4, 4]} />
-          <meshBasicMaterial transparent opacity={0.4} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
+          <meshBasicMaterial transparent opacity={0.4} blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
         </instancedMesh>
       )}
     </group>
