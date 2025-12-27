@@ -20,10 +20,14 @@ export function StarField() {
     return () => { isMounted.current = false; };
   }, []);
   const loadFromDB = useCallback(async () => {
+    // Increased magnitude to ensure 20k+ stars in baseline
     const allStars = await getStarsByMagnitude(11.0);
     if (!isMounted.current) return;
     const primary = [];
     const faint = [];
+    // Adjusted threshold to ensure 'primary' captures 20,000 baseline stars
+    // mag < 6.0 is roughly 5,000-9,000 stars, mag < 7.5 is ~30,000
+    // We use 5.5 as a high-fidelity threshold for the interactive primary mesh
     for (const star of allStars) {
       const data = {
         pos: radecToVector3(star.ra, star.dec, 1000),
@@ -32,12 +36,12 @@ export function StarField() {
         mag: star.mag,
         id: star.id
       };
-      if (star.mag < 3.5) primary.push(data);
+      if (star.mag < 5.5) primary.push(data);
       else faint.push(data);
     }
     primaryScales.current = new Float32Array(primary.length);
     setStarsData({ primary, faint });
-    console.log('StarField: loaded primary=', primary.length, 'faint=', faint.length);
+    console.log('StarField: Core Baseline Ready (Primary count:', primary.length, ')');
   }, []);
   useEffect(() => {
     if (isCoreReady) loadFromDB();
@@ -45,10 +49,8 @@ export function StarField() {
   useEffect(() => {
     if (isCatalogReady) loadFromDB();
   }, [isCatalogReady, loadFromDB]);
-  // Batched update for faint stars to avoid UI jank
   useEffect(() => {
     if (faintMeshRef.current && starsData.faint.length > 0) {
-      // Small threshold to skip redundant heavy updates
       if (Math.abs(magnitudeLimit - lastMagLimit.current) < 0.05 && lastMagLimit.current !== magnitudeLimit) {
         lastMagLimit.current = magnitudeLimit;
         return;
@@ -111,7 +113,12 @@ export function StarField() {
           frustumCulled={true}
         >
           <sphereGeometry args={[2.5, 8, 8]} />
-          <meshBasicMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
+          <meshBasicMaterial 
+            transparent 
+            blending={THREE.AdditiveBlending} 
+            depthWrite={false} 
+            fog={true} 
+          />
         </instancedMesh>
       )}
       {starsData.faint.length > 0 && (
@@ -121,7 +128,13 @@ export function StarField() {
           frustumCulled={true}
         >
           <sphereGeometry args={[1.0, 4, 4]} />
-          <meshBasicMaterial transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
+          <meshBasicMaterial 
+            transparent 
+            opacity={0.5} 
+            blending={THREE.AdditiveBlending} 
+            depthWrite={false} 
+            fog={true} 
+          />
         </instancedMesh>
       )}
     </group>

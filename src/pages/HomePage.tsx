@@ -22,17 +22,19 @@ export function HomePage() {
   const { requestPermission } = useOrientation();
   const { isStandalone } = usePWA();
   const [isInitializing, setIsInitializing] = useState(false);
+  const [isCanvasSettled, setIsCanvasSettled] = useState(false);
   const handleStart = useCallback(async () => {
     setIsInitializing(true);
     if (window.navigator.vibrate) window.navigator.vibrate(50);
     await requestPermission();
   }, [requestPermission]);
   useEffect(() => {
-    // Only transition if both sensor alignment AND core catalog are locked
+    // Audit: Wait for core data + orientation + 800ms "settle" buffer for smooth fade
     if (isCalibrated && isCoreReady && mode === 'intro') {
-      if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
       const timer = setTimeout(() => {
-        setMode('skyview');
+        setIsCanvasSettled(true);
+        if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
+        setTimeout(() => setMode('skyview'), 1200);
       }, 1500);
       return () => clearTimeout(timer);
     }
@@ -51,9 +53,9 @@ export function HomePage() {
         <motion.div
           className="absolute inset-0 z-0"
           animate={{
-            opacity: mode === 'intro' ? 0.2 : 1,
-            scale: mode === 'intro' ? 1.02 : 1,
-            filter: mode === 'intro' ? 'blur(8px)' : 'blur(0px)'
+            opacity: mode === 'intro' ? 0.3 : 1,
+            scale: mode === 'intro' ? 1.05 : 1,
+            filter: mode === 'intro' ? 'blur(10px)' : 'blur(0px)'
           }}
           transition={{ duration: 2.5, ease: "easeInOut" }}
         >
@@ -65,23 +67,18 @@ export function HomePage() {
         <AnimatePresence>
           {mode === 'intro' && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ 
-                opacity: 0, 
-                scale: 1.1, 
+              initial={{ opacity: 1 }}
+              exit={{
+                opacity: 0,
+                scale: 1.1,
                 filter: 'blur(40px)',
-                transition: { duration: 1.5, ease: [0.4, 0, 0.2, 1] } 
+                transition: { duration: 1.5, ease: [0.4, 0, 0.2, 1] }
               }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black/90 backdrop-blur-xl"
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-space-black"
             >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 180, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-0 pointer-events-none"
-              >
-                <DiamondGrid opacity={0.03} />
-              </motion.div>
+              <div className="absolute inset-0 pointer-events-none opacity-20">
+                <DiamondGrid opacity={0.1} />
+              </div>
               <div className="max-w-2xl w-full py-12 text-center space-y-12 relative z-10">
                 <div className="flex justify-center">
                   <motion.div
@@ -105,11 +102,12 @@ export function HomePage() {
                       </motion.h1>
                       <p className="text-lg sm:text-xl text-starlight/60 font-light max-w-lg mx-auto leading-relaxed text-pretty px-4">
                         Precision-calibrated viewport into ancestral and scientific skies.
-                        Designed for production stability and visual accuracy.
+                        Production-grade AR planetarium at the edge.
                       </p>
                     </div>
                     <Button
                       onClick={handleStart}
+                      aria-label="Begin Observation and request sensor permissions"
                       className="h-20 px-12 sm:px-16 rounded-[2rem] bg-starlight text-space-black hover:bg-nebula hover:scale-105 transition-all duration-500 text-xl font-black group shadow-primary active:scale-95"
                     >
                       {isStandalone ? 'RESUME VOYAGE' : 'BEGIN OBSERVATION'}
@@ -130,7 +128,7 @@ export function HomePage() {
                           >
                             <CalibrationMotion opacity={1} />
                             <div className="text-nebula text-xs font-mono font-bold uppercase tracking-[0.2em] max-w-[200px] leading-relaxed">
-                              Move phone in Figure-8 for compass bias correction
+                              Neutralizing magnetic bias via orientation sweep
                             </div>
                           </motion.div>
                         ) : (
@@ -150,10 +148,10 @@ export function HomePage() {
                       </AnimatePresence>
                       <div className="space-y-3">
                         <h2 className="text-3xl sm:text-4xl font-black text-starlight tracking-tight">
-                          {(isCalibrated && isCoreReady) ? "ALIGNMENT_COMPLETE" : "NEUTRALIZING_BIAS"}
+                          {(isCalibrated && isCoreReady && isCanvasSettled) ? "READY_FOR_FLIGHT" : "HYDRATING_CATALOG"}
                         </h2>
                         <p className="text-starlight/40 font-mono text-[10px] uppercase tracking-[0.4em]">
-                          {(isCalibrated && isCoreReady) ? "Celestial sphere locked" : "Sampling Gravity ��� Hydrating Catalog"}
+                          {(isCalibrated && isCoreReady) ? "Celestial matrices locked" : "Sampling Gravity • Aligning Stars"}
                         </p>
                       </div>
                     </div>
@@ -165,7 +163,7 @@ export function HomePage() {
                         />
                       </div>
                       <div className="flex justify-between font-mono text-[9px] text-starlight/20 tabular-nums uppercase tracking-widest">
-                        <span>Calibration_Sync</span>
+                        <span>Initialization_Sync</span>
                         <span>{Math.round(Math.max(calibrationProgress, (isCoreReady ? 100 : 0)))}%</span>
                       </div>
                     </div>

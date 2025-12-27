@@ -4,7 +4,8 @@ import { useFrame } from '@react-three/fiber';
 export function MilkyWay() {
   const pointsRef = useRef<THREE.Points>(null);
   const { positions, colors, sizes } = useMemo(() => {
-    const count = 25000;
+    // Increased particle count for higher fidelity production visual
+    const count = 30000;
     const pos = new Float32Array(count * 3);
     const cols = new Float32Array(count * 3);
     const szs = new Float32Array(count);
@@ -17,11 +18,8 @@ export function MilkyWay() {
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
       const angle = Math.random() * Math.PI * 2;
-      // Central bulge logic: more stars closer to the center (radius 0)
-      const distFactor = Math.pow(Math.random(), 2);
       const radius = 950 + (Math.random() - 0.5) * 60;
-      // Thickness increases at center for the bulge
-      const centerProximity = Math.exp(-Math.pow(angle - Math.PI, 2) * 0.5); 
+      const centerProximity = Math.exp(-Math.pow(angle - Math.PI, 2) * 0.5);
       const thickness = (Math.random() - 0.5) * (140 + 100 * centerProximity) * Math.exp(-Math.pow(Math.random() * 2.5, 2));
       const v = new THREE.Vector3(
         radius * Math.cos(angle),
@@ -33,9 +31,9 @@ export function MilkyWay() {
       pos[i3 + 1] = v.y;
       pos[i3 + 2] = v.z;
       const mix = Math.random();
-      cols[i3] = 0.5 + mix * 0.5;      // R
-      cols[i3 + 1] = 0.6 + mix * 0.4;  // G
-      cols[i3 + 2] = 0.8 + mix * 0.2;  // B
+      cols[i3] = 0.5 + mix * 0.5;
+      cols[i3 + 1] = 0.6 + mix * 0.4;
+      cols[i3 + 2] = 0.8 + mix * 0.2;
       szs[i] = Math.random() * 3.0 + 0.5;
     }
     return { positions: pos, colors: cols, sizes: szs };
@@ -63,13 +61,14 @@ export function MilkyWay() {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={1.5}
+        size={1.8}
         transparent
         vertexColors
-        opacity={0.12}
+        opacity={0.1}
         sizeAttenuation={true}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
+        fog={true}
       />
     </points>
   );

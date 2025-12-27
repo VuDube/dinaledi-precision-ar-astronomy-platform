@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo } from 'react';
-import { useFrame, Canvas, useThree } from '@react-three/fiber';
+import { useFrame, Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars, PerspectiveCamera, Environment, Sky, Html } from '@react-three/drei';
 import { StarField } from './StarField';
 import { ARController } from './ARController';
@@ -122,26 +122,23 @@ export function StarScene() {
   const isCoreReady = useAppStore(s => s.isCoreReady);
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
   const rotateSpeed = useMemo(() => -0.2 * (fov / 55), [fov]);
-
-  useEffect(() => {
-    console.log('StarScene debug: isCoreReady=', isCoreReady, 'catalogProgress=', catalogLoadingProgress);
-  }, [isCoreReady, catalogLoadingProgress]);
   useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
-  // Refined ambient logic to boost visibility during twilight
+  const skyColor = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
   const ambientIntensity = useMemo(() => {
     if (sunPos.altitude > 0) return 1.2;
     if (sunPos.altitude > -18) return THREE.MathUtils.mapLinear(sunPos.altitude, -18, 0, 0.1, 0.8);
     return 0.08;
   }, [sunPos.altitude]);
   return (
-    <div className="absolute inset-0 transition-colors duration-1000" style={{ backgroundColor: '#000000' }}>
+    <div className="absolute inset-0 transition-colors duration-1000" style={{ backgroundColor: skyColor }}>
       <Canvas
-        gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', stencil: false, depth: true }}
-        dpr={window.devicePixelRatio > 1 ? 1.5 : 1}
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', stencil: false, depth: true }}
+        dpr={window.devicePixelRatio > 1 ? 2 : 1}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 0]} fov={fov} near={0.01} far={6000} />
-        <color attach='background' args={['#000000']} />
+        <PerspectiveCamera makeDefault position={[0, 0, 0]} fov={fov} near={0.1} far={10000} />
+        <color attach='background' args={[skyColor]} />
+        <fog attach="fog" args={[skyColor, 1000, 5000]} />
         {!isCoreReady ? (
           <LoadingIndicator progress={catalogLoadingProgress} />
         ) : (
@@ -174,7 +171,6 @@ export function StarScene() {
             dampingFactor={0.05}
           />
         )}
-
         <ambientLight intensity={ambientIntensity} />
       </Canvas>
     </div>
