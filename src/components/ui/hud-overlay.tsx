@@ -18,8 +18,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { usePWA } from '@/hooks/use-pwa';
 export function HUDOverlay() {
   const mode = useAppStore(s => s.mode);
-  const heading = useAppStore(s => s.orientation.heading);
-  const beta = useAppStore(s => s.orientation.beta);
+  const orientation = useAppStore(s => s.orientation);
   const isSensorActive = useAppStore(s => s.isSensorActive);
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
@@ -35,46 +34,46 @@ export function HUDOverlay() {
   const { isInstallModalOpen, setIsInstallModalOpen, triggerInstallPrompt } = usePWA();
   if (mode === 'intro') return null;
   const activeTarget = selectedStar || selectedDSO;
-  const azimuthValue = Math.round(heading);
-  const altitudeValue = Math.round(beta);
+  const azimuthValue = Math.round(orientation.heading);
+  const altitudeValue = Math.round(orientation.beta);
   return (
     <TooltipProvider>
-      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 sm:p-6 pb-[env(safe-area-inset-bottom,24px)] pt-[env(safe-area-inset-top,16px)] z-20 overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 sm:p-6 pb-[env(safe-area-inset-bottom,24px)] pt-[env(safe-area-inset-top,16px)] z-20 overflow-hidden">
         {/* Top Telemetry Bar */}
-        <div className="flex justify-between items-start relative z-10 w-full max-w-[calc(100vw-32px)] mx-auto">
+        <div className="flex justify-between items-start relative z-10 w-full max-w-[calc(100vw-24px)] mx-auto">
           <motion.div layout className="flex flex-col gap-2 min-w-0">
             <AnimatePresence>
               {!isCatalogReady && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="glass px-3 py-2 rounded-lg w-36 sm:w-48 overflow-hidden shrink-0 backdrop-filter-none"
+                  className="glass px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg w-32 sm:w-48 overflow-hidden shrink-0 backdrop-filter-none"
                 >
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[7px] font-mono text-starlight/40 uppercase tracking-widest">CAT_SYNC</span>
-                    <span className="text-[7px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress)}%</span>
+                    <span className="text-[6px] sm:text-[7px] font-mono text-starlight/40 uppercase tracking-widest">CAT_SYNC</span>
+                    <span className="text-[6px] sm:text-[7px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress)}%</span>
                   </div>
                   <Progress value={catalogLoadingProgress} className="h-0.5 bg-starlight/10" />
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className="glass px-3 py-1.5 rounded-full flex items-center gap-2 border-white/5 backdrop-blur-3xl shrink-0 backdrop-filter-none">
-              <div className={cn("h-1.5 w-1.5 rounded-full", isSensorActive ? "bg-green-500" : "bg-yellow-500")} />
-              <div className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[9px] uppercase tracking-wider font-bold tabular-nums text-starlight">
-                <span>HDG {azimuthValue.toString().padStart(3, '0')}°</span>
-                <span>ALT {altitudeValue.toString().padStart(3, '0')}°</span>
+            <div className="glass px-2 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5 sm:gap-2 border-white/5 backdrop-blur-3xl shrink-0 backdrop-filter-none">
+              <div className={cn("h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full", isSensorActive ? "bg-green-500" : "bg-yellow-500")} />
+              <div className="flex gap-x-2 sm:gap-x-3 font-mono text-[8px] sm:text-[9px] uppercase tracking-wider font-bold tabular-nums text-starlight">
+                <span className="truncate">HDG {azimuthValue.toString().padStart(3, '0')}°</span>
+                <span className="truncate">ALT {altitudeValue.toString().padStart(3, '0')}°</span>
               </div>
             </div>
           </motion.div>
-          <div className="flex items-center gap-2 pointer-events-auto ml-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto ml-2 shrink-0">
              <AnimatePresence mode="wait">
               {isSyncing ? (
                 <motion.div key="syncing" className="glass px-2 py-1 rounded-full border-nebula/20 backdrop-filter-none">
                   <RefreshCw className="w-3 h-3 text-nebula animate-spin" />
                 </motion.div>
               ) : pendingCount > 0 ? (
-                <motion.div key="pending" className="glass px-2 py-1 rounded-full flex items-center gap-2 border-yellow-500/20 bg-yellow-500/10 backdrop-filter-none">
+                <motion.div key="pending" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 sm:gap-2 border-yellow-500/20 bg-yellow-500/10 backdrop-filter-none">
                   <CloudUpload className="w-3 h-3 text-yellow-500" />
                   <span className="hidden xs:inline text-[8px] font-mono text-yellow-500">{pendingCount} PND</span>
                 </motion.div>
@@ -105,14 +104,14 @@ export function HUDOverlay() {
         {/* Central Reticle */}
         <div className="flex-1 flex items-center justify-center relative">
            <StarPoint className="w-64 h-64 scale-150" opacity={0.015} />
-           <div 
-             className="relative pointer-events-auto p-16 rounded-full"
+           <div
+             className="relative pointer-events-auto p-12 sm:p-16 rounded-full"
              onClick={() => {
                if (activeTarget) setDetailOpen(true);
                else setRadialOpen(!isRadialOpen);
              }}
            >
-              <Crosshair className={cn("w-14 h-14 transition-all cursor-pointer", activeTarget ? "text-nebula opacity-60" : "text-starlight/10")} strokeWidth={0.2} />
+              <Crosshair className={cn("w-10 h-10 sm:w-14 sm:h-14 transition-all cursor-pointer", activeTarget ? "text-nebula opacity-60" : "text-starlight/10")} strokeWidth={0.2} />
            </div>
            <RadialSearchWheel />
         </div>
@@ -121,10 +120,10 @@ export function HUDOverlay() {
       <TargetDetailsDrawer />
       <SearchPanel />
       <TemporalControls />
-      <PWAInstallModal 
-        isOpen={isInstallModalOpen} 
-        onClose={() => setIsInstallModalOpen(false)} 
-        onInstall={triggerInstallPrompt} 
+      <PWAInstallModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        onInstall={triggerInstallPrompt}
       />
     </TooltipProvider>
   );

@@ -10,12 +10,13 @@ export function StarField() {
   const magnitudeLimit = useAppStore(s => s.magnitudeLimit);
   const isCoreReady = useAppStore(s => s.isCoreReady);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  // High-performance data refs to avoid React state reconciliation on 100k+ updates
+  // High-performance data refs
   const catalogData = useRef<any[]>([]);
   const baselineData = useRef<any[]>([]);
   const catalogScales = useRef<Float32Array>(new Float32Array(0));
   const frameCount = useRef(0);
   const loadedRef = useRef<boolean>(false);
+  const [baselineReady, setBaselineReady] = useState(false);
   // Implement Permanent 30,000 Star Procedural Baseline
   const generateBaseline = useCallback(() => {
     if (baselineData.current.length > 0) return;
@@ -34,6 +35,7 @@ export function StarField() {
       });
     }
     baselineData.current = stars;
+    setBaselineReady(true);
   }, []);
   const loadCatalogFromDB = useCallback(async () => {
     if (loadedRef.current) return;
@@ -75,7 +77,7 @@ export function StarField() {
       baselineMeshRef.current.instanceMatrix.needsUpdate = true;
       if (baselineMeshRef.current.instanceColor) baselineMeshRef.current.instanceColor.needsUpdate = true;
     }
-  }, [magnitudeLimit, dummy]);
+  }, [magnitudeLimit, baselineReady, dummy]);
   // Sync Catalog (High-value stars)
   useEffect(() => {
     if (catalogMeshRef.current && catalogData.current.length > 0) {
@@ -92,10 +94,10 @@ export function StarField() {
       catalogMeshRef.current.instanceMatrix.needsUpdate = true;
       if (catalogMeshRef.current.instanceColor) catalogMeshRef.current.instanceColor.needsUpdate = true;
     }
-  }, [magnitudeLimit, dummy]);
+  }, [magnitudeLimit, dummy, isCoreReady]);
   useFrame(() => {
     frameCount.current++;
-    if (frameCount.current % 3 !== 0) return; // Reduce frame pressure
+    if (frameCount.current % 3 !== 0) return; 
     if (!catalogMeshRef.current || !catalogData.current.length) return;
     const EPSILON = 0.01;
     const LERP_FACTOR = 0.1;
@@ -120,12 +122,12 @@ export function StarField() {
   return (
     <group>
       {/* Baseline stars: Lower detail, high performance fallback */}
-      <instancedMesh ref={baselineMeshRef} args={[undefined, undefined, 30000]}>
+      <instancedMesh ref={baselineMeshRef} args={[null as any, null as any, 30000]}>
         <sphereGeometry args={[1.0, 4, 4]} />
         <meshBasicMaterial transparent opacity={0.3} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
       </instancedMesh>
       {/* Catalog stars: High detail, animated entry */}
-      <instancedMesh ref={catalogMeshRef} args={[undefined, undefined, 5000]}>
+      <instancedMesh ref={catalogMeshRef} args={[null as any, null as any, 5000]}>
         <sphereGeometry args={[2.8, 8, 8]} />
         <meshBasicMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
       </instancedMesh>
