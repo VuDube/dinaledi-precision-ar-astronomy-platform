@@ -90,7 +90,8 @@ function runSetupCommands() {
     "bun add three @react-three/fiber @react-three/drei",
     "bun add react-use",
     "bun add framer-motion lucide-react clsx tailwind-merge",
-    "bun add -d @types/three"
+    "bun add -d @types/three",
+    "bun add date-fns@latest --force"
 ];
     
     if (commands.length === 0) {
