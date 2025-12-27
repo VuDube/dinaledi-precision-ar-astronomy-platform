@@ -82,7 +82,7 @@ function runSetupCommands() {
     "bun add @react-three/fiber@^8.17.6",
     "bun add @react-three/drei@^9.115.0",
     "bun add idb@^8.0.3",
-    "bun add lucide-react@latest",
+    "bun add lucide-react@latest --force",
     "bun add cmdk",
     "bun add uuid",
     "bun add sonner",
