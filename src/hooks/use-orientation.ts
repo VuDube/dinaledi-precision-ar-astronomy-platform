@@ -11,11 +11,13 @@ export function useOrientation() {
   const calibrationOffset = useAppStore((s) => s.calibrationOffset);
   const isSensorActive = useAppStore((s) => s.isSensorActive);
   const lastHeading = useRef<number>(0);
-  const filterAlpha = 0.15;
+  const filterAlpha = 0.1; // More cinematic smoothing
   const biasSamples = useRef<number[]>([]);
   const isCalibrating = useRef(false);
   const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
-    const { alpha, beta, gamma } = event;
+    // Priority: webkitCompassHeading (iOS) > absolute (Chrome/Android) > alpha (Fallback)
+    const alpha = (event as any).webkitCompassHeading ?? (event.absolute ? event.alpha : event.alpha);
+    const { beta, gamma } = event;
     const a = alpha ?? 0;
     const b = beta ?? 0;
     const g = gamma ?? 0;
@@ -35,9 +37,7 @@ export function useOrientation() {
   const requestPermission = useCallback(async () => {
     if (typeof DeviceOrientationEvent === 'undefined') {
       setPermissionStatus('unavailable');
-      toast.error('Sensors Unavailable', {
-        description: 'Your browser does not support the Device Orientation API.'
-      });
+      toast.error('Sensors Unavailable', { description: 'Device Orientation API not supported.' });
       return false;
     }
     const requestPermissionFn = (DeviceOrientationEvent as any).requestPermission;
@@ -62,26 +62,18 @@ export function useOrientation() {
           if (elapsed >= duration) {
             clearInterval(timer);
             isCalibrating.current = false;
-            const avg = biasSamples.current.length > 0 
-              ? biasSamples.current.reduce((a, b) => a + b, 0) / biasSamples.current.length 
+            const avg = biasSamples.current.length > 0
+              ? biasSamples.current.reduce((a, b) => a + b, 0) / biasSamples.current.length
               : 0;
+            // Only apply bias if we're not using absolute orientation already
             setCalibrationOffset(-avg);
             setCalibrated(true);
           }
         }, interval);
-        // Safety timeout to exit intro
-        setTimeout(() => {
-          if (isCalibrating.current) {
-            isCalibrating.current = false;
-            setCalibrated(true);
-          }
-        }, 8000);
         return true;
       } else {
         setPermissionStatus('denied');
-        toast.error('Access Denied', {
-          description: 'Motion sensors are required for AR. Please enable them in your browser settings.'
-        });
+        toast.error('Access Denied', { description: 'Enable motion sensors in browser settings.' });
         return false;
       }
     } catch (error) {
@@ -92,9 +84,11 @@ export function useOrientation() {
   }, [setPermissionStatus, setSensorActive, setCalibrationProgress, setCalibrated, setCalibrationOffset]);
   useEffect(() => {
     if (isSensorActive) {
-      window.addEventListener('deviceorientation', handleOrientation);
+      // Use absolute event if available for drift-free operation on Android
+      const eventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+      window.addEventListener(eventName as any, handleOrientation);
+      return () => window.removeEventListener(eventName as any, handleOrientation);
     }
-    return () => window.removeEventListener('deviceorientation', handleOrientation);
   }, [handleOrientation, isSensorActive]);
   return { requestPermission };
 }

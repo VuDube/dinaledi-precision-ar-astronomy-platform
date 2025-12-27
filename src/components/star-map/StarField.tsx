@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { radecToVector3, bvToColor } from '@/lib/astronomy-math';
 import { useAppStore } from '@/stores/app-store';
 import { getStarsByMagnitude } from '@/lib/db';
@@ -10,14 +10,18 @@ export function StarField() {
   const magnitudeLimit = useAppStore(s => s.magnitudeLimit);
   const isCoreReady = useAppStore(s => s.isCoreReady);
   const isCatalogReady = useAppStore(s => s.isCatalogReady);
-  const { camera } = useThree();
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const [starsData, setStarsData] = useState<{ primary: any[], faint: any[] }>({ primary: [], faint: [] });
   const primaryScales = useRef<Float32Array>(new Float32Array(0));
   const lastMagLimit = useRef<number>(magnitudeLimit);
+  const isMounted = useRef(true);
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
   const loadFromDB = useCallback(async () => {
-    // We load up to magnitude 11.0 for the full set
     const allStars = await getStarsByMagnitude(11.0);
+    if (!isMounted.current) return;
     const primary = [];
     const faint = [];
     for (const star of allStars) {
@@ -28,43 +32,40 @@ export function StarField() {
         mag: star.mag,
         id: star.id
       };
-      // Primary bright stars (mag < 3.5) are updated per frame for twinkling/smoothing
       if (star.mag < 3.5) primary.push(data);
       else faint.push(data);
     }
     primaryScales.current = new Float32Array(primary.length);
     setStarsData({ primary, faint });
   }, []);
-  // Initial load when core is ready (10k stars)
   useEffect(() => {
-    if (isCoreReady) {
-      loadFromDB();
-    }
+    if (isCoreReady) loadFromDB();
   }, [isCoreReady, loadFromDB]);
-  // Secondary refresh when background hydration finishes (125k stars)
   useEffect(() => {
-    if (isCatalogReady) {
-      loadFromDB();
-    }
+    if (isCatalogReady) loadFromDB();
   }, [isCatalogReady, loadFromDB]);
-  // Optimized static update for faint stars
+  // Batched update for faint stars to avoid UI jank
   useEffect(() => {
     if (faintMeshRef.current && starsData.faint.length > 0) {
-      starsData.faint.forEach((star, i) => {
+      // Small threshold to skip redundant heavy updates
+      if (Math.abs(magnitudeLimit - lastMagLimit.current) < 0.05 && lastMagLimit.current !== magnitudeLimit) {
+        return;
+      }
+      const count = starsData.faint.length;
+      for (let i = 0; i < count; i++) {
+        const star = starsData.faint[i];
         dummy.position.copy(star.pos);
         const visible = star.mag <= magnitudeLimit;
         dummy.scale.setScalar(visible ? star.baseScale : 0);
         dummy.updateMatrix();
         faintMeshRef.current!.setMatrixAt(i, dummy.matrix);
         faintMeshRef.current!.setColorAt(i, star.color);
-      });
+      }
       faintMeshRef.current.instanceMatrix.needsUpdate = true;
       if (faintMeshRef.current.instanceColor) faintMeshRef.current.instanceColor.needsUpdate = true;
-      faintMeshRef.current.geometry.computeBoundingSphere();
       lastMagLimit.current = magnitudeLimit;
     }
   }, [dummy, starsData.faint, magnitudeLimit]);
-  // Initial update for primary stars
   useEffect(() => {
     if (meshRef.current && starsData.primary.length > 0) {
       starsData.primary.forEach((star, i) => {
@@ -77,10 +78,8 @@ export function StarField() {
       });
       meshRef.current.instanceMatrix.needsUpdate = true;
       if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
-      meshRef.current.geometry.computeBoundingSphere();
     }
   }, [dummy, starsData.primary]);
-  // Per-frame smoothing for bright stars
   useFrame(() => {
     if (!isCoreReady || !meshRef.current || starsData.primary.length === 0) return;
     const EPSILON = 0.005;
@@ -119,8 +118,8 @@ export function StarField() {
           args={[undefined, undefined, starsData.faint.length]}
           frustumCulled={true}
         >
-          <sphereGeometry args={[1.5, 4, 4]} />
-          <meshBasicMaterial transparent opacity={0.6} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
+          <sphereGeometry args={[1.0, 4, 4]} />
+          <meshBasicMaterial transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
         </instancedMesh>
       )}
     </group>

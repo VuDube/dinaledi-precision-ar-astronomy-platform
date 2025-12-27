@@ -124,8 +124,14 @@ export function StarScene() {
   const rotateSpeed = useMemo(() => -0.2 * (fov / 55), [fov]);
   useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
-  const ambientIntensity = Math.max(0.05, THREE.MathUtils.mapLinear(sunPos.altitude, -18, 10, 0.1, 1.2));
+  // Refined ambient logic to boost visibility during twilight
+  const ambientIntensity = useMemo(() => {
+    if (sunPos.altitude > 0) return 1.2;
+    if (sunPos.altitude > -18) return THREE.MathUtils.mapLinear(sunPos.altitude, -18, 0, 0.1, 0.8);
+    return 0.08;
+  }, [sunPos.altitude]);
   const skyColor = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
+  const backgroundColor = useMemo(() => new THREE.Color(skyColor), [skyColor]);
   return (
     <div className="absolute inset-0 transition-colors duration-1000" style={{ backgroundColor: skyColor }}>
       <Canvas
@@ -133,7 +139,7 @@ export function StarScene() {
         dpr={window.devicePixelRatio > 1 ? 1.5 : 1}
       >
         <PerspectiveCamera makeDefault position={[0, 0, 0.1]} fov={fov} near={0.1} far={4000} />
-        <color attach='background' args={['#000000']} />
+        <color attach='background' args={[backgroundColor.r, backgroundColor.g, backgroundColor.b]} />
         {!isCoreReady ? (
           <LoadingIndicator progress={catalogLoadingProgress} />
         ) : (

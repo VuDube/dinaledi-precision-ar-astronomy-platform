@@ -4,7 +4,6 @@ import { useAppStore } from '@/stores/app-store';
 import { useObservationStore } from '@/stores/observation-store';
 import { BottomNav } from '@/components/ui/bottom-nav';
 import { SettingsPanel } from '@/components/ui/settings-panel';
-import { HighlightsPanel } from '@/components/ui/highlights-panel';
 import { HighlightsCarousel } from '@/components/ui/highlights-carousel';
 import { TemporalControls } from '@/components/ui/temporal-controls';
 import { SearchPanel } from '@/components/ui/search-panel';
@@ -41,56 +40,56 @@ export function HUDOverlay() {
   return (
     <TooltipProvider>
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 sm:p-6 z-20 overflow-hidden">
-        {/* Top Telemetry Bar */}
-        <div className="flex justify-between items-start relative z-10">
-          <motion.div layout className="flex flex-col gap-2">
+        {/* Top Telemetry Bar with max-w constraint for layout stability */}
+        <div className="flex justify-between items-start relative z-10 w-full max-w-7xl mx-auto">
+          <motion.div layout className="flex flex-col gap-2 min-w-0">
             <AnimatePresence>
               {!isCatalogReady && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                   animate={{ opacity: 1, height: 'auto', marginBottom: 8 }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  className="glass px-3 py-2 rounded-lg w-40 sm:w-48 relative overflow-hidden"
+                  className="glass px-3 py-2 rounded-lg w-36 sm:w-48 relative overflow-hidden shrink-0"
                 >
                   <DiamondGrid opacity={0.03} />
                   <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[8px] font-mono text-starlight/40 uppercase tracking-widest">Hydrating Catalog</span>
-                    <span className="text-[8px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress)}%</span>
+                    <span className="text-[7px] sm:text-[8px] font-mono text-starlight/40 uppercase tracking-widest truncate">Catalog_Sync</span>
+                    <span className="text-[7px] sm:text-[8px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress)}%</span>
                   </div>
                   <Progress value={catalogLoadingProgress} className="h-0.5 bg-starlight/10" />
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className="glass px-4 py-2 rounded-full flex items-center gap-4 border-white/5 backdrop-blur-2xl relative overflow-hidden">
+            <div className="glass px-3 sm:px-4 py-2 rounded-full flex items-center gap-3 sm:gap-4 border-white/5 backdrop-blur-3xl relative overflow-hidden shrink-0">
               <DiamondGrid opacity={0.05} />
               <div className={cn("h-1.5 w-1.5 rounded-full", isSensorActive ? "bg-green-500 shadow-glow" : "bg-yellow-500")} />
-              <div className="flex gap-4 font-mono text-[10px] uppercase tracking-widest font-bold tabular-nums text-starlight">
-                <span className="opacity-40">HDG <span className="opacity-100">{azimuth.toString().padStart(3, '0')}°</span></span>
-                <span className="opacity-40">ALT <span className="opacity-100">{altitude.toString().padStart(3, '0')}°</span></span>
+              <div className="flex gap-3 sm:gap-4 font-mono text-[9px] sm:text-[10px] uppercase tracking-widest font-bold tabular-nums text-starlight">
+                <span className="opacity-40 whitespace-nowrap">HDG <span className="opacity-100">{azimuth.toString().padStart(3, '0')}°</span></span>
+                <span className="opacity-40 whitespace-nowrap">ALT <span className="opacity-100">{altitude.toString().padStart(3, '0')}°</span></span>
               </div>
             </div>
           </motion.div>
-          <div className="flex items-center gap-2 pointer-events-auto">
+          <div className="flex items-center gap-2 pointer-events-auto ml-2">
              <AnimatePresence mode="wait">
               {isSyncing ? (
                 <motion.div key="syncing" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-nebula/20 bg-nebula/10">
                   <RefreshCw className="w-3 h-3 text-nebula animate-spin" />
-                  <span className="text-[9px] font-mono text-nebula uppercase tracking-widest">Sync_Edge</span>
+                  <span className="hidden xs:inline text-[9px] font-mono text-nebula uppercase tracking-widest">Edge_Sync</span>
                 </motion.div>
               ) : pendingCount > 0 ? (
                 <motion.div key="pending" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-yellow-500/20 bg-yellow-500/10">
                   <CloudUpload className="w-3 h-3 text-yellow-500" />
-                  <span className="text-[9px] font-mono text-yellow-500 uppercase tracking-widest">{pendingCount} PND</span>
+                  <span className="hidden xs:inline text-[9px] font-mono text-yellow-500 uppercase tracking-widest">{pendingCount} PND</span>
                 </motion.div>
               ) : isOnline ? (
                 <motion.div key="synced" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-green-500/20 bg-green-500/10">
                   <Wifi className="w-3 h-3 text-green-500" />
-                  <span className="text-[9px] font-mono text-green-500 uppercase tracking-widest text-starlight">Linked</span>
+                  <span className="hidden xs:inline text-[9px] font-mono text-green-500 uppercase tracking-widest text-starlight">Linked</span>
                 </motion.div>
               ) : (
                 <motion.div key="offline" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-red-500/20 bg-red-500/10">
                   <CloudOff className="w-3 h-3 text-red-500" />
-                  <span className="text-[9px] font-mono text-red-500 uppercase tracking-widest">Offline</span>
+                  <span className="hidden xs:inline text-[9px] font-mono text-red-500 uppercase tracking-widest">Offline</span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -113,11 +112,11 @@ export function HUDOverlay() {
         </AnimatePresence>
         <TargetNavigator />
         <HighlightsCarousel />
-        {/* Reticle Area */}
+        {/* Reticle Area with enhanced backdrop blur */}
         <div className="flex-1 flex items-center justify-center relative">
            <StarPoint className="w-72 h-72 scale-150" opacity={0.015} />
            <div
-             className="relative pointer-events-auto"
+             className="relative pointer-events-auto p-12 rounded-full backdrop-blur-[2px]"
              onClick={() => {
                if (activeTarget) setDetailOpen(true);
                else setRadialOpen(!isRadialOpen);
@@ -135,10 +134,8 @@ export function HUDOverlay() {
         <BottomNav />
       </div>
       <TargetDetailsDrawer />
-      <SettingsPanel />
-      <HighlightsPanel />
-      <TemporalControls />
       <SearchPanel />
+      <TemporalControls />
       <PWAInstallModal
         isOpen={isInstallModalOpen}
         onClose={() => setIsInstallModalOpen(false)}
