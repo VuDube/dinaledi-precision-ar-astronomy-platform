@@ -176,17 +176,18 @@ export function HomePage() {
                         <span>Calibration_Status</span>
                         <span>{Math.round(Math.max(calibrationProgress, (isCoreReady ? 100 : 0)))}%</span>
                       </div>
-                      {permissionStatus === 'denied' && isCoreReady && (
+                      {isInitializing && (
                         <Button
                           variant="secondary"
                           onClick={() => {
                             useAppStore.getState().setCalibrated(true);
+                            useAppStore.getState().setCoreReady(true);
                             useAppStore.getState().setMode('skyview');
                             setIsTransitioning(true);
                           }}
                           className="w-full h-12 text-xs font-bold uppercase tracking-widest border-starlight/30 bg-transparent hover:bg-starlight/10 text-starlight/70"
                         >
-                          Force Enter Skyview (No Sensors)
+                          Force Skyview Baseline (No IDB/Sensors)
                         </Button>
                       )}
                     </div>

@@ -50,7 +50,7 @@
         });
         observer.observe(root, { childList: true });
         // Fallback safety
-        setTimeout(() => { if(spinner) spinner.style.display = 'none'; }, 15000);
+        setTimeout(() => { if(spinner) spinner.style.display = 'none'; }, 2000);
       }
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initSpinnerHide);

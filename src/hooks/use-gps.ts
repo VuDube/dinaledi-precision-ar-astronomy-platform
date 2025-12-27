@@ -82,6 +82,6 @@ export function useGPS() {
         watchId.current = null;
       }
     };
-  }, [gpsEnabled]);
+  }, [gpsEnabled, handlePositionUpdate]); // eslint-disable-next-line react-hooks/exhaustive-deps
   return null;
 }

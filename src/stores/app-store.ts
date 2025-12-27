@@ -3,7 +3,7 @@ import { StarRecord } from '@/data/star-catalog';
 import { DSORecord } from '@/data/dso-catalog';
 export type AppMode = 'intro' | 'skyview' | 'log' | 'settings' | 'highlights' | 'search' | 'pwa-install';
 export type PermissionStatus = 'prompt' | 'granted' | 'denied' | 'unavailable';
-export type GPSStatus = 'idle' | 'tracking' | 'error' | 'denied' | 'unavailable';
+export type GPSStatus = 'idle' | 'tracking' | 'error' | 'denied' | 'unavailable' | 'mock';
 export type LorePreference = 'western' | 'african' | 'both';
 interface Orientation {
   alpha: number;
@@ -102,7 +102,7 @@ interface AppState {
 }
 export const useAppStore = create<AppState>((set) => ({
   mode: 'intro',
-  isCalibrated: false,
+  isCalibrated: typeof window !== 'undefined' ? localStorage.getItem('dinaledi-calib') === 'true' : false,
   isCoreReady: false,
   calibrationProgress: 0,
   isCatalogReady: false,
@@ -146,7 +146,12 @@ export const useAppStore = create<AppState>((set) => ({
   isDetailOpen: false,
   lastSyncTime: null,
   setMode: (mode) => set({ mode }),
-  setCalibrated: (status) => set({ isCalibrated: status, calibrationProgress: status ? 100 : 0 }),
+  setCalibrated: (status) => {
+    set({ isCalibrated: status, calibrationProgress: status ? 100 : 0 });
+    if (status === true && typeof window !== 'undefined') {
+      localStorage.setItem('dinaledi-calib', 'true');
+    }
+  },
   setCoreReady: (status) => set({ isCoreReady: status }),
   setCalibrationProgress: (progress) => set((state) => ({ calibrationProgress: typeof progress === 'function' ? progress(state.calibrationProgress) : progress })),
   setCatalogReady: (status) => set({ isCatalogReady: status }),
