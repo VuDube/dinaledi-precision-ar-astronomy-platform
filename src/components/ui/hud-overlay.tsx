@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wifi, CloudOff, CloudUpload, RefreshCw, Loader2, Crosshair } from 'lucide-react';
+import { Wifi, CloudOff, CloudUpload, RefreshCw, Loader2, Crosshair, Cloud } from 'lucide-react';
 import { useAppStore } from '@/stores/app-store';
 import { useObservationStore } from '@/stores/observation-store';
 import { BottomNav } from '@/components/ui/bottom-nav';
@@ -14,8 +14,9 @@ import { Progress } from '@/components/ui/progress';
 import { StarPoint } from '@/components/ui/sesotho-patterns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePWA } from '@/hooks/use-pwa';
+import { formatDistanceToNow } from 'date-fns';
 export function HUDOverlay() {
   const mode = useAppStore(s => s.mode);
   const orientation = useAppStore(s => s.orientation);
@@ -29,6 +30,7 @@ export function HUDOverlay() {
   const isRadialOpen = useAppStore(s => s.isRadialOpen);
   const setRadialOpen = useAppStore(s => s.setRadialOpen);
   const setDetailOpen = useAppStore(s => s.setDetailOpen);
+  const lastSyncTime = useAppStore(s => s.lastSyncTime);
   const isSyncing = useObservationStore(s => s.isSyncing);
   const pendingCount = useObservationStore(s => s.pendingCount);
   const { isInstallModalOpen, setIsInstallModalOpen, triggerInstallPrompt } = usePWA();
@@ -67,22 +69,34 @@ export function HUDOverlay() {
             </div>
           </motion.div>
           <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto ml-2 shrink-0">
-             <AnimatePresence mode="wait">
-              {isSyncing ? (
-                <motion.div key="syncing" className="glass px-2 py-1 rounded-full border-nebula/20 backdrop-filter-none">
-                  <RefreshCw className="w-3 h-3 text-nebula animate-spin" />
-                </motion.div>
-              ) : pendingCount > 0 ? (
-                <motion.div key="pending" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 sm:gap-2 border-yellow-500/20 bg-yellow-500/10 backdrop-filter-none">
-                  <CloudUpload className="w-3 h-3 text-yellow-500" />
-                  <span className="hidden xs:inline text-[8px] font-mono text-yellow-500">{pendingCount} PND</span>
-                </motion.div>
-              ) : (
-                <motion.div key="status" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 border-white/5 backdrop-filter-none">
-                  {isOnline ? <Wifi className="w-3 h-3 text-green-500" /> : <CloudOff className="w-3 h-3 text-red-500" />}
-                </motion.div>
-              )}
-            </AnimatePresence>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <div className="flex items-center gap-1.5">
+                    <AnimatePresence mode="wait">
+                      {isSyncing ? (
+                        <motion.div key="syncing" className="glass px-2 py-1 rounded-full border-nebula/20 backdrop-filter-none">
+                          <RefreshCw className="w-3 h-3 text-nebula animate-spin" />
+                        </motion.div>
+                      ) : pendingCount > 0 ? (
+                        <motion.div key="pending" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 sm:gap-2 border-yellow-500/20 bg-yellow-500/10 backdrop-filter-none">
+                          <CloudUpload className="w-3 h-3 text-yellow-500" />
+                          <span className="hidden xs:inline text-[8px] font-mono text-yellow-500">{pendingCount} PND</span>
+                        </motion.div>
+                      ) : (
+                        <motion.div key="status" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 border-white/5 backdrop-filter-none">
+                          {isOnline ? <Cloud className="w-3 h-3 text-green-500" /> : <CloudOff className="w-3 h-3 text-red-500" />}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <div className="glass px-2 py-1 rounded-full border-white/5 backdrop-filter-none">
+                       {isOnline ? <Wifi className="w-3 h-3 text-green-500" /> : <CloudOff className="w-3 h-3 text-starlight/20" />}
+                    </div>
+                 </div>
+               </TooltipTrigger>
+               <TooltipContent side="bottom" className="bg-space-black border-white/10 text-starlight text-[10px] uppercase font-mono tracking-widest">
+                  {lastSyncTime ? `Last Handshake: ${formatDistanceToNow(lastSyncTime)} ago` : 'Waiting for Edge Sync'}
+               </TooltipContent>
+             </Tooltip>
           </div>
         </div>
         {/* Slewing Indicator */}

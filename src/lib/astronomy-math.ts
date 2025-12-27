@@ -10,13 +10,15 @@ export const radecToVector3 = (raHours: number, decDegrees: number, radius: numb
   return new THREE.Vector3(x, y, z);
 };
 export const bvToColor = (bv: number): string => {
-  if (bv < -0.4) return "#9bb2ff";
-  if (bv < 0.0) return "#bbccff";
-  if (bv < 0.3) return "#f8f7ff";
-  if (bv < 0.6) return "#fff4ea";
-  if (bv < 0.8) return "#fff2a1";
-  if (bv < 1.1) return "#ffcc6f";
-  return "#ff6060";
+  // Enhanced Spectral Palette for High Fidelity O-M Class Stars
+  if (bv < -0.4) return "#9bb2ff"; // O - Blue
+  if (bv < 0.0) return "#aabfff";  // B - Blue-White
+  if (bv < 0.3) return "#f8f7ff";  // A - White
+  if (bv < 0.6) return "#fff4ea";  // F - Yellow-White
+  if (bv < 0.8) return "#fff2a1";  // G - Yellow (Sun-like)
+  if (bv < 1.1) return "#ffcc6f";  // K - Orange
+  if (bv < 1.4) return "#ff9966";  // M - Orange-Red
+  return "#ff6060"; // M+ - Red Giant
 };
 export const getJulianDate = (date: Date): number => {
   return (date.getTime() / 86400000) - (date.getTimezoneOffset() / 1440) + 2440587.5;
@@ -70,13 +72,12 @@ export const predictBortleFromLocation = (lat: number, lon: number): number => {
   return Math.max(1, Math.min(9, result || 4));
 };
 export const getSkyColor = (sunAltitude: number): string => {
-  // Production High Precision Hex values for No-Banding transition
-  if (sunAltitude > 5) return "#87ceeb"; // Day
-  if (sunAltitude > 0) return "#4a90e2"; // Golden Hour
-  if (sunAltitude > -6) return "#1e3a8a"; // Civil Twilight
-  if (sunAltitude > -12) return "#0f172a"; // Nautical Twilight
-  if (sunAltitude > -18) return "#020617"; // Astronomical Twilight
-  return "#000000"; // Deep Space
+  if (sunAltitude > 5) return "#87ceeb"; 
+  if (sunAltitude > 0) return "#4a90e2"; 
+  if (sunAltitude > -6) return "#1e3a8a"; 
+  if (sunAltitude > -12) return "#0f172a"; 
+  if (sunAltitude > -18) return "#020617"; 
+  return "#000000"; 
 };
 export const getLunarPhase = (date: Date): { phase: number; name: string } => {
   const jd = getJulianDate(date);

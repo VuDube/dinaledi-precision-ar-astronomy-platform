@@ -34,8 +34,9 @@ export async function markAsSynced(id: string): Promise<void> {
   const tx = db.transaction(OBSERVATIONS_STORE, 'readwrite');
   const obs = await tx.store.get(id);
   if (obs) {
-    obs.synced = true;
-    await tx.store.put(obs);
+    // CORRECTED: Ensure we use the 'syncStatus' property and 'synced' literal
+    const updatedObs: Observation = { ...obs, syncStatus: 'synced' };
+    await tx.store.put(updatedObs);
   }
   await tx.done;
 }

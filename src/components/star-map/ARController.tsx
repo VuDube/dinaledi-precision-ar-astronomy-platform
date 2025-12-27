@@ -33,7 +33,7 @@ export function ARController() {
     euler.current.set(betaRad, alphaRad, -gammaRad, 'YXZ');
     targetQuaternion.current.setFromEuler(euler.current);
     camera.quaternion.slerp(targetQuaternion.current, 0.15);
-    // Block targeting if user is interacting with UI or already performing an action
+    // Block targeting if user is interacting with UI
     if (isObserving || isSlewing || isDetailOpen || isRadialOpen) return;
     const now = state.clock.getElapsedTime();
     if (now - lastUpdate.current < 0.1) return;
@@ -73,7 +73,8 @@ export function ARController() {
         if (window.navigator.vibrate) window.navigator.vibrate(30);
         lastTargetId.current = closestObject.id;
       }
-      hysteresisTimer.current = now + 0.5;
+      // SNAPPIER: Decreased from 0.5 to 0.3 for faster response
+      hysteresisTimer.current = now + 0.3;
     } else {
       if (now > hysteresisTimer.current) {
         if (selectedStar || selectedDSO) {

@@ -37,9 +37,9 @@ export const useObservationStore = create<ObservationState>((set, get) => ({
       });
       if (response.ok) {
         await markAsSynced(obs.id);
-        const updatedObs: Observation = { ...obs, syncStatus: 'synced' as const };
+        const syncedObs: Observation = { ...obs, syncStatus: 'synced' };
         set(state => {
-          const mapped = state.observations.map(o => o.id === obs.id ? updatedObs : o);
+          const mapped = state.observations.map(o => o.id === obs.id ? syncedObs : o);
           return {
             observations: mapped,
             pendingCount: mapped.filter(o => o.syncStatus === 'local').length
@@ -69,8 +69,9 @@ export const useObservationStore = create<ObservationState>((set, get) => ({
         });
         if (response.ok) {
           await markAsSynced(obs.id);
+          const syncedObs: Observation = { ...obs, syncStatus: 'synced' };
           set(state => {
-            const mapped = state.observations.map(o => o.id === obs.id ? ({ ...o, syncStatus: 'synced' as const }) : o);
+            const mapped = state.observations.map(o => o.id === obs.id ? syncedObs : o);
             return {
               observations: mapped,
               pendingCount: mapped.filter(o => o.syncStatus === 'local').length
