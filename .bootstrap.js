@@ -91,7 +91,9 @@ function runSetupCommands() {
     "bun add react-use",
     "bun add framer-motion lucide-react clsx tailwind-merge",
     "bun add -d @types/three",
-    "bun add date-fns@latest --force"
+    "bun add date-fns@latest --force",
+    "bun remove date-fns",
+    "bun add date-fns@^3.6.0"
 ];
     
     if (commands.length === 0) {
