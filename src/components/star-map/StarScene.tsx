@@ -45,10 +45,9 @@ function Atmosphere() {
   const skyColor = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
   useEffect(() => {
     if (scene) {
-      const color = new THREE.Color(skyColor);
-      scene.fog = new THREE.Fog(color, 2000, 8000);
+      scene.fog = null;
     }
-  }, [scene, skyColor]);
+  }, [scene]);
   const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 10);
   const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -25, 15, 0.1, 4);
   return (
@@ -105,6 +104,10 @@ export function StarScene() {
   const isCoreReady = useAppStore(s => s.isCoreReady);
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
   useCatalogLoader();
+
+  useEffect(() => { 
+    console.log('StarScene Phase 35 VIS: Canvas color=#000000 pure black bg, Stars r=2000 d=200 c=30000 fade=false always top pre-Env/Controls fog=false on meshes/scene, cam near=0.001 far=1e5 pos[0,0,0.01] rot[0,0,0], loader bg-transp 0.8 thru stars, spinner black-safe'); 
+  }, [isCoreReady]);
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const ambientIntensity = useMemo(() => {
     if (sunPos.altitude > 0) return 1.0;
@@ -117,7 +120,7 @@ export function StarScene() {
         gl={{ antialias: true, alpha: false, stencil: false, depth: true }}
         dpr={window.devicePixelRatio > 1 ? 2 : 1}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.01} far={10000} rotation={[0,0,0]} />
+        <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.001} far={100000} rotation={[0,0,0]} />
         <color attach='background' args={['#000000']} />
         {!isCoreReady ? (
           <LoadingIndicator progress={catalogLoadingProgress} />
@@ -135,7 +138,7 @@ export function StarScene() {
           </>
         )}
         <Environment preset="night" />
-        <Stars radius={1500} depth={150} count={25000} fade={false} />
+        <Stars radius={2000} depth={200} count={30000} fade={false} />
         <GestureController />
         {isSensorActive ? (
           <ARController />

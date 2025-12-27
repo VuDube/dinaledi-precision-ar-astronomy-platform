@@ -73,7 +73,7 @@ export function HomePage() {
                 filter: 'blur(20px)',
                 transition: { duration: 1.8, ease: [0.4, 0, 0.2, 1] }
               }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-[2px]"
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-transparent opacity-80"
             >
               <div className="absolute inset-0 pointer-events-none opacity-20">
                 <DiamondGrid opacity={0.1} />
