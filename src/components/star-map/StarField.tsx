@@ -14,6 +14,7 @@ export function StarField() {
   const [starsData, setStarsData] = useState<{ primary: any[], faint: any[] }>({ primary: [], faint: [] });
   const primaryScales = useRef<Float32Array>(new Float32Array(0));
   const lastCameraQuaternion = useRef(new THREE.Quaternion());
+  const lastMagLimit = useRef<number>(magnitudeLimit);
   useEffect(() => {
     if (!isCatalogReady) return;
     async function loadFromDB() {
@@ -36,21 +37,24 @@ export function StarField() {
     }
     loadFromDB();
   }, [isCatalogReady]);
-  // Static Update for faint stars (Optimization: only on limit change or data load)
+  // Optimized static update for faint stars
   useEffect(() => {
     if (faintMeshRef.current && starsData.faint.length > 0) {
-      starsData.faint.forEach((star, i) => {
-        dummy.position.copy(star.pos);
-        const visible = star.mag <= magnitudeLimit;
-        dummy.scale.setScalar(visible ? star.baseScale : 0);
-        dummy.updateMatrix();
-        faintMeshRef.current!.setMatrixAt(i, dummy.matrix);
-        faintMeshRef.current!.setColorAt(i, star.color);
-      });
-      faintMeshRef.current.instanceMatrix.needsUpdate = true;
-      if (faintMeshRef.current.instanceColor) faintMeshRef.current.instanceColor.needsUpdate = true;
-      // Force bounding sphere for frustum culling
-      faintMeshRef.current.geometry.computeBoundingSphere();
+      // Only recalculate if limit actually changed or data refreshed
+      if (lastMagLimit.current !== magnitudeLimit || starsData.faint.length > 0) {
+        starsData.faint.forEach((star, i) => {
+          dummy.position.copy(star.pos);
+          const visible = star.mag <= magnitudeLimit;
+          dummy.scale.setScalar(visible ? star.baseScale : 0);
+          dummy.updateMatrix();
+          faintMeshRef.current!.setMatrixAt(i, dummy.matrix);
+          faintMeshRef.current!.setColorAt(i, star.color);
+        });
+        faintMeshRef.current.instanceMatrix.needsUpdate = true;
+        if (faintMeshRef.current.instanceColor) faintMeshRef.current.instanceColor.needsUpdate = true;
+        faintMeshRef.current.geometry.computeBoundingSphere();
+        lastMagLimit.current = magnitudeLimit;
+      }
     }
   }, [dummy, starsData.faint, magnitudeLimit]);
   // Initial update for primary stars
@@ -69,17 +73,12 @@ export function StarField() {
       meshRef.current.geometry.computeBoundingSphere();
     }
   }, [dummy, starsData.primary]);
-  // Per-frame smoothing for bright stars
+  // Refined per-frame smoothing for bright stars
   useFrame(() => {
     if (!isCatalogReady || !meshRef.current || starsData.primary.length === 0) return;
-    // Performance optimization: skip logic if camera is stationary and scales are likely stable
-    const cameraChanged = camera.quaternion.angleTo(lastCameraQuaternion.current) > 0.001;
-    if (!cameraChanged) {
-        // We still check for magnitude transitions, but we can be more lenient
-    }
-    lastCameraQuaternion.current.copy(camera.quaternion);
     const EPSILON = 0.005;
     let changed = false;
+    // We only iterate if primary scales are transitioning
     starsData.primary.forEach((star, i) => {
       const isVisible = star.mag <= magnitudeLimit;
       const targetScale = isVisible ? star.baseScale : 0;
@@ -95,12 +94,13 @@ export function StarField() {
       }
     });
     if (changed) meshRef.current.instanceMatrix.needsUpdate = true;
+    lastCameraQuaternion.current.copy(camera.quaternion);
   });
   return (
     <group>
       {starsData.primary.length > 0 && (
-        <instancedMesh 
-          ref={meshRef} 
+        <instancedMesh
+          ref={meshRef}
           args={[undefined, undefined, starsData.primary.length]}
           frustumCulled={true}
         >
@@ -109,8 +109,8 @@ export function StarField() {
         </instancedMesh>
       )}
       {starsData.faint.length > 0 && (
-        <instancedMesh 
-          ref={faintMeshRef} 
+        <instancedMesh
+          ref={faintMeshRef}
           args={[undefined, undefined, starsData.faint.length]}
           frustumCulled={true}
         >

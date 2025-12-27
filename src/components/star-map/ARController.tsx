@@ -18,6 +18,8 @@ export function ARController() {
   const targetQuaternion = useRef(new THREE.Quaternion());
   const euler = useRef(new THREE.Euler());
   const lastUpdate = useRef(0);
+  const hysteresisTimer = useRef<number>(0);
+  const lastTargetId = useRef<string | null>(null);
   useFrame((state) => {
     if (!isSensorActive) return;
     // Smooth camera rotation
@@ -29,7 +31,7 @@ export function ARController() {
     camera.quaternion.slerp(targetQuaternion.current, 0.1);
     // Skip targeting during automated UI states
     if (isObserving || isSlewing) return;
-    // Throttle targeting to 10fps to save battery/CPU
+    // Throttle targeting to 10fps
     const now = state.clock.getElapsedTime();
     if (now - lastUpdate.current < 0.1) return;
     lastUpdate.current = now;
@@ -59,22 +61,29 @@ export function ARController() {
         }
       }
     }
-    // Selection management
-    if (objectType === 'star') {
-      if (closestObject.id !== selectedStar?.id) {
-        if (window.navigator.vibrate) window.navigator.vibrate(20);
-        setSelectedStar(closestObject as any);
+    // Selection management with hysteresis
+    if (closestObject) {
+      const isNewTarget = closestObject.id !== lastTargetId.current;
+      if (isNewTarget) {
+        if (objectType === 'star') {
+          setSelectedStar(closestObject as any);
+          if (selectedDSO) setSelectedDSO(null);
+        } else if (objectType === 'dso') {
+          setSelectedDSO(closestObject as any);
+          if (selectedStar) setSelectedStar(null);
+        }
+        // Haptic feedback only on primary acquisition
+        if (window.navigator.vibrate) window.navigator.vibrate(30);
+        lastTargetId.current = closestObject.id;
       }
-      if (selectedDSO) setSelectedDSO(null);
-    } else if (objectType === 'dso') {
-      if (closestObject.id !== selectedDSO?.id) {
-        if (window.navigator.vibrate) window.navigator.vibrate(40);
-        setSelectedDSO(closestObject as any);
-      }
-      if (selectedStar) setSelectedStar(null);
+      hysteresisTimer.current = now + 0.5; // Lock target for 500ms
     } else {
-      if (selectedStar) setSelectedStar(null);
-      if (selectedDSO) setSelectedDSO(null);
+      // Only clear if hysteresis has expired
+      if (now > hysteresisTimer.current) {
+        if (selectedStar) setSelectedStar(null);
+        if (selectedDSO) setSelectedDSO(null);
+        lastTargetId.current = null;
+      }
     }
   });
   return null;

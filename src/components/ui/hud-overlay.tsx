@@ -43,13 +43,24 @@ export function HUDOverlay() {
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 sm:p-6 z-20 overflow-hidden">
         {/* Top Telemetry Bar */}
         <div className="flex justify-between items-start relative z-10">
-          <div className="flex flex-col gap-2">
-            {!isCatalogReady && (
-              <div className="glass px-3 py-2 rounded-lg w-40 sm:w-48 mb-2 relative overflow-hidden">
-                <DiamondGrid opacity={0.03} />
-                <Progress value={catalogLoadingProgress} className="h-0.5 bg-starlight/10" />
-              </div>
-            )}
+          <motion.div layout className="flex flex-col gap-2">
+            <AnimatePresence>
+              {!isCatalogReady && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginBottom: 8 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  className="glass px-3 py-2 rounded-lg w-40 sm:w-48 relative overflow-hidden"
+                >
+                  <DiamondGrid opacity={0.03} />
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-[8px] font-mono text-starlight/40 uppercase tracking-widest">Hydrating Catalog</span>
+                    <span className="text-[8px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress)}%</span>
+                  </div>
+                  <Progress value={catalogLoadingProgress} className="h-0.5 bg-starlight/10" />
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div className="glass px-4 py-2 rounded-full flex items-center gap-4 border-white/5 backdrop-blur-2xl relative overflow-hidden">
               <DiamondGrid opacity={0.05} />
               <div className={cn("h-1.5 w-1.5 rounded-full", isSensorActive ? "bg-green-500 shadow-glow" : "bg-yellow-500")} />
@@ -58,7 +69,7 @@ export function HUDOverlay() {
                 <span className="opacity-40">ALT <span className="opacity-100">{altitude.toString().padStart(3, '0')}°</span></span>
               </div>
             </div>
-          </div>
+          </motion.div>
           <div className="flex items-center gap-2 pointer-events-auto">
              <AnimatePresence mode="wait">
               {isSyncing ? (
@@ -92,7 +103,7 @@ export function HUDOverlay() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="absolute top-28 left-1/2 -translate-x-1/2 glass px-6 py-2 rounded-full border-nebula/30 flex items-center gap-2 overflow-hidden shadow-2xl"
+              className="absolute top-28 left-1/2 -translate-x-1/2 glass px-6 py-2 rounded-full border-nebula/30 flex items-center gap-2 overflow-hidden shadow-2xl z-20"
             >
               <DiamondGrid opacity={0.1} />
               <Loader2 className="w-4 h-4 text-nebula animate-spin" />

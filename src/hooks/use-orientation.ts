@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/stores/app-store';
+import { toast } from 'sonner';
 export function useOrientation() {
   const setOrientation = useAppStore((s) => s.setOrientation);
   const setPermissionStatus = useAppStore((s) => s.setPermissionStatus);
@@ -32,21 +33,11 @@ export function useOrientation() {
     setOrientation({ alpha: a, beta: b, gamma: g, heading: smoothedHeading });
   }, [setOrientation, calibrationOffset]);
   const requestPermission = useCallback(async () => {
-    // Check for High Precision Generic Sensor API (Supported on Chrome/Android)
-    if ('AbsoluteOrientationSensor' in window) {
-      try {
-        const sensor = new (window as any).AbsoluteOrientationSensor({ frequency: 60 });
-        sensor.addEventListener('reading', () => {
-          // Drive orientation via high-precision quaternion if supported
-          // For simplicity in Phase 24, we continue with DeviceOrientation for consistency
-        });
-        sensor.start();
-      } catch (e) {
-        console.warn('AbsoluteOrientationSensor failed, falling back to DeviceOrientation');
-      }
-    }
     if (typeof DeviceOrientationEvent === 'undefined') {
       setPermissionStatus('unavailable');
+      toast.error('Sensors Unavailable', {
+        description: 'Your browser does not support the Device Orientation API.'
+      });
       return false;
     }
     const requestPermissionFn = (DeviceOrientationEvent as any).requestPermission;
@@ -78,9 +69,19 @@ export function useOrientation() {
             setCalibrated(true);
           }
         }, interval);
+        // Safety timeout to exit intro
+        setTimeout(() => {
+          if (isCalibrating.current) {
+            isCalibrating.current = false;
+            setCalibrated(true);
+          }
+        }, 8000);
         return true;
       } else {
         setPermissionStatus('denied');
+        toast.error('Access Denied', {
+          description: 'Motion sensors are required for AR. Please enable them in your browser settings.'
+        });
         return false;
       }
     } catch (error) {
