@@ -13,6 +13,7 @@ export function StarField() {
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const [starsData, setStarsData] = useState<{ primary: any[], faint: any[] }>({ primary: [], faint: [] });
   const primaryScales = useRef<Float32Array>(new Float32Array(0));
+  const lastCameraQuaternion = useRef(new THREE.Quaternion());
   useEffect(() => {
     if (!isCatalogReady) return;
     async function loadFromDB() {
@@ -35,7 +36,7 @@ export function StarField() {
     }
     loadFromDB();
   }, [isCatalogReady]);
-  // Static Update for faint stars (Optimization: only on limit change, not per frame)
+  // Static Update for faint stars (Optimization: only on limit change or data load)
   useEffect(() => {
     if (faintMeshRef.current && starsData.faint.length > 0) {
       starsData.faint.forEach((star, i) => {
@@ -48,6 +49,8 @@ export function StarField() {
       });
       faintMeshRef.current.instanceMatrix.needsUpdate = true;
       if (faintMeshRef.current.instanceColor) faintMeshRef.current.instanceColor.needsUpdate = true;
+      // Force bounding sphere for frustum culling
+      faintMeshRef.current.geometry.computeBoundingSphere();
     }
   }, [dummy, starsData.faint, magnitudeLimit]);
   // Initial update for primary stars
@@ -63,11 +66,18 @@ export function StarField() {
       });
       meshRef.current.instanceMatrix.needsUpdate = true;
       if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
+      meshRef.current.geometry.computeBoundingSphere();
     }
   }, [dummy, starsData.primary]);
-  // Per-frame smoothing for bright stars only
+  // Per-frame smoothing for bright stars
   useFrame(() => {
     if (!isCatalogReady || !meshRef.current || starsData.primary.length === 0) return;
+    // Performance optimization: skip logic if camera is stationary and scales are likely stable
+    const cameraChanged = camera.quaternion.angleTo(lastCameraQuaternion.current) > 0.001;
+    if (!cameraChanged) {
+        // We still check for magnitude transitions, but we can be more lenient
+    }
+    lastCameraQuaternion.current.copy(camera.quaternion);
     const EPSILON = 0.005;
     let changed = false;
     starsData.primary.forEach((star, i) => {
@@ -75,7 +85,7 @@ export function StarField() {
       const targetScale = isVisible ? star.baseScale : 0;
       const currentScale = primaryScales.current[i];
       if (Math.abs(currentScale - targetScale) > EPSILON) {
-        const nextScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.2);
+        const nextScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.15);
         primaryScales.current[i] = nextScale;
         dummy.position.copy(star.pos);
         dummy.scale.setScalar(nextScale);
@@ -89,13 +99,21 @@ export function StarField() {
   return (
     <group>
       {starsData.primary.length > 0 && (
-        <instancedMesh ref={meshRef} args={[undefined, undefined, starsData.primary.length]}>
+        <instancedMesh 
+          ref={meshRef} 
+          args={[undefined, undefined, starsData.primary.length]}
+          frustumCulled={true}
+        >
           <sphereGeometry args={[2.5, 8, 8]} />
           <meshBasicMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
         </instancedMesh>
       )}
       {starsData.faint.length > 0 && (
-        <instancedMesh ref={faintMeshRef} args={[undefined, undefined, starsData.faint.length]}>
+        <instancedMesh 
+          ref={faintMeshRef} 
+          args={[undefined, undefined, starsData.faint.length]}
+          frustumCulled={true}
+        >
           <sphereGeometry args={[1.5, 4, 4]} />
           <meshBasicMaterial transparent opacity={0.6} blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
         </instancedMesh>

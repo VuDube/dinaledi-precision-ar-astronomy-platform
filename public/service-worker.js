@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dinaledi-pwa-v1.2.0';
+const CACHE_NAME = 'dinaledi-pwa-v1.3.0-prod';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -21,7 +21,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log('SW: Cleaning old cache:', cacheName);
+            console.log('SW: Purging legacy cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -33,7 +33,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  // API Persistence: Stale-While-Revalidate
+  // API Persistence: Stale-While-Revalidate (Ensure observations are available offline)
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
@@ -43,6 +43,10 @@ self.addEventListener('fetch', (event) => {
               cache.put(request, networkResponse.clone());
             }
             return networkResponse;
+          }).catch(() => {
+             return cachedResponse || new Response(JSON.stringify({ success: false, error: 'Offline' }), {
+               headers: { 'Content-Type': 'application/json' }
+             });
           });
           return cachedResponse || fetchPromise;
         });
@@ -50,7 +54,7 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-  // Data Chunks: Cache-First (Heavy Celestial Data)
+  // Heavy Celestial Data: Cache-First (Critical for high-density catalog)
   if (STAR_CATALOG_DATA.test(url.pathname)) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
@@ -64,7 +68,7 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-  // Assets: Cache-First with Network Update
+  // Static Assets: Cache-First
   if (STATIC_RESOURCES.test(url.pathname)) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {

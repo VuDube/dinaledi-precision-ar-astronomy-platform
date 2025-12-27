@@ -128,11 +128,11 @@ export function HUDOverlay() {
       <HighlightsPanel />
       <TemporalControls />
       <SearchPanel />
-      <PWAInstallModal 
-        isOpen={isInstallModalOpen} 
-        onClose={() => setIsInstallModalOpen(false)} 
-        onInstall={triggerInstallPrompt} 
+      <PWAInstallModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        onInstall={triggerInstallPrompt}
       />
-    </div>
+    </TooltipProvider>
   );
 }
