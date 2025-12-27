@@ -21,7 +21,7 @@ export function StarField() {
   const generateBaseline = useCallback(() => {
     if (baselineData.current.length > 0) return;
     const stars: any[] = [];
-    for (let i = 0; i < 30000; i++) {
+    for (let i = 0; i < 40000; i++) {
       const ra = Math.random() * 24;
       const dec = Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90;
       const mag = 6.0 + Math.pow(Math.random(), 0.5) * 6.0;
@@ -86,7 +86,9 @@ export function StarField() {
         const isVisible = star.mag <= magnitudeLimit;
         const scale = isVisible ? star.baseScale : 0;
         dummy.scale.setScalar(scale);
-        if (i < catalogScales.current.length) catalogScales.current[i] = scale;
+        if (i < catalogScales.current.length) {
+          catalogScales.current[i] = scale;
+        }
         dummy.updateMatrix();
         catalogMeshRef.current!.setMatrixAt(i, dummy.matrix);
         catalogMeshRef.current!.setColorAt(i, star.color);
@@ -122,7 +124,7 @@ export function StarField() {
   return (
     <group>
       {/* Baseline stars: Lower detail, high performance fallback */}
-      <instancedMesh ref={baselineMeshRef} args={[null as any, null as any, 30000]}>
+      <instancedMesh ref={baselineMeshRef} args={[null as any, null as any, 40000]}>
         <sphereGeometry args={[1.0, 4, 4]} />
         <meshBasicMaterial transparent opacity={0.3} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
       </instancedMesh>

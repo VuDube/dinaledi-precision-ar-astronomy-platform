@@ -42,14 +42,15 @@ function Atmosphere() {
   const bortleScale = useAppStore(s => s.bortleScale);
   const { scene } = useThree();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
-  const skyColorStr = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
+  const sunAltitude = sunPos.altitude;
+  const skyColorStr = useMemo(() => getSkyColor(sunAltitude), [sunAltitude]);
   const skyColor = useMemo(() => new THREE.Color(skyColorStr), [skyColorStr]);
   useEffect(() => {
     if (!scene) return;
     scene.background = skyColor;
     // Eliminate 'Blue Kill' artifact by synchronizing fog with sky background
     // Higher density at horizon/twilight to blend the celestial sphere edge
-    const isTwilight = sunPos.altitude > -18 && sunPos.altitude < 0;
+    const isTwilight = sunAltitude > -18 && sunAltitude < 0;
     const fogDensity = isTwilight ? 0.0015 : 0.0004;
     if (!scene.fog) {
       scene.fog = new THREE.FogExp2(skyColor, fogDensity);
@@ -57,15 +58,15 @@ function Atmosphere() {
       (scene.fog as THREE.FogExp2).color.copy(skyColor);
       (scene.fog as THREE.FogExp2).density = fogDensity;
     }
-  }, [scene, skyColor, sunPos.altitude]);
+  }, [scene, skyColor, sunAltitude]);
   const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 10);
-  const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -25, 15, 0.1, 4);
+  const rayleigh = THREE.MathUtils.mapLinear(sunAltitude, -25, 15, 0.1, 4);
   return (
     <Sky
       sunPosition={[
-        100 * Math.cos(THREE.MathUtils.degToRad(sunPos.altitude)) * Math.sin(THREE.MathUtils.degToRad(sunPos.azimuth)),
-        100 * Math.sin(THREE.MathUtils.degToRad(sunPos.altitude)),
-        100 * Math.cos(THREE.MathUtils.degToRad(sunPos.altitude)) * Math.cos(THREE.MathUtils.degToRad(sunPos.azimuth))
+        100 * Math.cos(THREE.MathUtils.degToRad(sunAltitude)) * Math.sin(THREE.MathUtils.degToRad(sunPos.azimuth)),
+        100 * Math.sin(THREE.MathUtils.degToRad(sunAltitude)),
+        100 * Math.cos(THREE.MathUtils.degToRad(sunAltitude)) * Math.cos(THREE.MathUtils.degToRad(sunPos.azimuth))
       ]}
       turbidity={turbidity}
       rayleigh={rayleigh}
@@ -121,11 +122,12 @@ export function StarScene() {
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
   const catalogLoader = useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
+  const sunAltitude = sunPos.altitude;
   const ambientIntensity = useMemo(() => {
-    if (sunPos.altitude > 0) return 1.0;
-    if (sunPos.altitude > -18) return THREE.MathUtils.mapLinear(sunPos.altitude, -18, 0, 0.05, 0.6);
+    if (sunAltitude > 0) return 1.0;
+    if (sunAltitude > -18) return THREE.MathUtils.mapLinear(sunAltitude, -18, 0, 0.05, 0.6);
     return 0.05;
-  }, [sunPos.altitude]);
+  }, [sunAltitude]);
   return (
     <div className="absolute inset-0" style={{ backgroundColor: '#000000' }}>
       <Canvas
@@ -150,7 +152,7 @@ export function StarScene() {
           </>
         )}
         <Environment preset="night" />
-        <Stars radius={2000} depth={200} count={30000} fade={false} />
+        <Stars radius={2000} depth={200} count={40000} fade={false} />
         <GestureController />
         {isSensorActive ? (
           <ARController />

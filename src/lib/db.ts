@@ -34,8 +34,7 @@ export async function markAsSynced(id: string): Promise<void> {
   const tx = db.transaction(OBSERVATIONS_STORE, 'readwrite');
   const obs = await tx.store.get(id);
   if (obs) {
-    // FIX: Use syncStatus property from Observation interface instead of 'synced'
-    obs.syncStatus = 'synced';
+    obs.synced = true;
     await tx.store.put(obs);
   }
   await tx.done;
@@ -53,12 +52,20 @@ export async function saveStarChunk(stars: StarRecord[]): Promise<void> {
   await tx.done;
 }
 export async function getStarsByMagnitude(maxMag: number, limit: number = 30000): Promise<StarRecord[]> {
+  const perf = (typeof performance !== 'undefined' ? performance : { now: () => Date.now() });
+  const start = perf.now();
   const db = await getDB();
   const index = db.transaction(STAR_CATALOG_STORE, 'readonly').objectStore(STAR_CATALOG_STORE).index('mag');
   const range = IDBKeyRange.upperBound(maxMag + 1e-6);
-  return index.getAll(range, limit);
+  const stars = await index.getAll(range, limit);
+  console.log(`DB getStarsByMagnitude(maxMag=${maxMag}, limit=${limit}): ${stars.length} stars in ${(perf.now() - start).toFixed(1)}ms`);
+  if (stars.length === 0) {
+    console.warn('DB cache empty, relying on procedural fallback');
+  }
+  return stars;
 }
 export async function getCatalogCount(): Promise<number> {
   const db = await getDB();
-  return db.transaction(STAR_CATALOG_STORE, 'readonly').store.count();
+  const tx = db.transaction(STAR_CATALOG_STORE, 'readonly');
+  return tx.store.count();
 }
