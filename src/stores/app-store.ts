@@ -100,12 +100,12 @@ interface AppState {
   toggleGrid: () => void;
   setFOV: (fov: number) => void;
 }
-const isPreview = typeof window !== "undefined" && (window.location.hostname.includes(".workers.dev") || window.location.hostname.includes("build-preview.cloudflare.dev"));
+
 
 export const useAppStore = create<AppState>((set) => ({
-  mode: isPreview ? "skyview" : "intro",
-  isCalibrated: isPreview || (typeof window !== "undefined" ? localStorage.getItem("dinaledi-calib") === "true" : false),
-  isCoreReady: isPreview,
+  mode: 'intro',
+  isCalibrated: false,
+  isCoreReady: false,
   calibrationProgress: 0,
   isCatalogReady: false,
   catalogLoadingProgress: 0,
@@ -132,7 +132,7 @@ export const useAppStore = create<AppState>((set) => ({
   gpsEnabled: true,
   isInstallable: false,
   deferredPrompt: null,
-  isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+  isOnline: true,
   calibrationOffset: 0,
   simulationTime: new Date(),
   timeSpeed: 1,
@@ -147,14 +147,24 @@ export const useAppStore = create<AppState>((set) => ({
   isGesturingTime: false,
   isDetailOpen: false,
   lastSyncTime: null,
-  setMode: (mode) => set({ mode }),
+  setMode: (mode) => {
+    set({ mode });
+    if (mode === 'skyview' && typeof window !== 'undefined') {
+      localStorage.setItem('dinaledi-mode', mode);
+    }
+  },
   setCalibrated: (status) => {
     set({ isCalibrated: status, calibrationProgress: status ? 100 : 0 });
     if (status === true && typeof window !== 'undefined') {
       localStorage.setItem('dinaledi-calib', 'true');
     }
   },
-  setCoreReady: (status) => set({ isCoreReady: status }),
+  setCoreReady: (status) => {
+    set({ isCoreReady: status });
+    if (status === true && typeof window !== 'undefined') {
+      localStorage.setItem('dinaledi-coreReady', 'true');
+    }
+  },
   setCalibrationProgress: (progress) => set((state) => ({ calibrationProgress: typeof progress === 'function' ? progress(state.calibrationProgress) : progress })),
   setCatalogReady: (status) => set({ isCatalogReady: status }),
   setCatalogLoadingProgress: (progress) => set({ catalogLoadingProgress: progress }),

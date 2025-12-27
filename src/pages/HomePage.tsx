@@ -13,6 +13,7 @@ import { usePWA } from '@/hooks/use-pwa';
 import { DiamondGrid, StarPoint, CalibrationMotion } from '@/components/ui/sesotho-patterns';
 import { toast } from 'sonner';
 import { useGPS } from '@/hooks/use-gps';
+import type { AppMode } from '@/stores/app-store';
 export function HomePage() {
   const mode = useAppStore(s => s.mode);
   const setMode = useAppStore(s => s.setMode);
@@ -61,6 +62,20 @@ export function HomePage() {
       hasShownCatalogToast.current = true;
     }
   }, [isCatalogReady]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const calibLS = localStorage.getItem('dinaledi-calib') === 'true';
+    const coreLS = localStorage.getItem('dinaledi-coreReady') === 'true';
+    const modeLS = (localStorage.getItem('dinaledi-mode') as AppMode || 'intro') as AppMode;
+    useAppStore.setState({ isCalibrated: calibLS, isCoreReady: coreLS, mode: modeLS });
+    const hostname = window.location.hostname;
+    if ((hostname.includes('.workers.dev') || hostname.includes('build-preview')) && modeLS === 'intro') {
+      useAppStore.getState().setCalibrated(true);
+      useAppStore.getState().setCoreReady(true);
+      useAppStore.getState().setMode('skyview');
+    }
+  }, []);
   const showCalibrationHint = calibrationProgress > 15 && calibrationProgress < 85;
   return (
     <NightModeProvider>
