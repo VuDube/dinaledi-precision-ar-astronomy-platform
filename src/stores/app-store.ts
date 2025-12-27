@@ -100,7 +100,7 @@ interface AppState {
   toggleGrid: () => void;
   setFOV: (fov: number) => void;
 }
-const isPreview = typeof window !== "undefined" && window.location.hostname.includes(".workers.dev");
+const isPreview = typeof window !== "undefined" && (window.location.hostname.includes(".workers.dev") || window.location.hostname.includes("build-preview.cloudflare.dev"));
 
 export const useAppStore = create<AppState>((set) => ({
   mode: isPreview ? "skyview" : "intro",

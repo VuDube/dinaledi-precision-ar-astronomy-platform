@@ -26,9 +26,11 @@ export function useCatalogLoader() {
       }, 10000);
 
       // Preview environment: Skip IDB for fast baseline loading
-      if (location.hostname.includes('.workers.dev')) {
+      if (location.hostname.includes('.workers.dev') || location.hostname.includes('build-preview.cloudflare.dev')) {
         controllerRef.current.cancelled = true;
-        clearTimeout(controllerRef.current.timeout);
+        if (controllerRef.current.timeout) {
+          clearTimeout(controllerRef.current.timeout);
+        }
         setCatalogLoadingProgress(100);
         setCoreReady(true);
         setCatalogReady(true);
@@ -44,7 +46,9 @@ export function useCatalogLoader() {
           setCoreReady(true);
           setCatalogReady(true);
           controllerRef.current.cancelled = true;
-          clearTimeout(controllerRef.current.timeout);
+          if (controllerRef.current.timeout) {
+            clearTimeout(controllerRef.current.timeout);
+          }
           return;
         }
 
@@ -105,7 +109,7 @@ export function useCatalogLoader() {
               // Progress already at 100% - Phase 3 is background only
               if (useAppStore.getState().catalogLoadingProgress < 100) {
                 const progress = 25 + ((index + 1) / totalChunks) * 75;
-                setCatalogLoadingProgress(Math.floor(progress));
+                useAppStore.getState().setCatalogLoadingProgress(Math.floor(progress));
               }
             }
             if (!controllerRef.current.cancelled) {
@@ -126,16 +130,17 @@ export function useCatalogLoader() {
         setCoreReady(true);
         setCatalogReady(true);
         controllerRef.current.cancelled = true;
-        clearTimeout(controllerRef.current.timeout);
+        if (controllerRef.current.timeout) {
+          clearTimeout(controllerRef.current.timeout);
+        }
       }
     }
 
     initializeCatalog();
 
     return () => {
-      const controller = controllerRef.current;
-      controller.cancelled = true;
-      const timeoutId = controller.timeout;
+      controllerRef.current.cancelled = true;
+      const timeoutId = controllerRef.current.timeout;
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
