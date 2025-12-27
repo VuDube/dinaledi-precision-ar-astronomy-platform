@@ -89,8 +89,14 @@ function TargetTelemetry() {
     const screenPos = targetPos.clone().multiplyScalar(100).project(state.camera);
     const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
     const newTelemetry = { angle, onScreen, azimuth };
-    setTargetTelemetry(newTelemetry);
-    lastTelemetryRef.current = newTelemetry;
+    const lastTel = lastTelemetryRef.current;
+    if (!lastTel || 
+        Math.abs(newTelemetry.angle - lastTel.angle) > 0.1 ||
+        newTelemetry.onScreen !== lastTel.onScreen ||
+        Math.abs(newTelemetry.azimuth - lastTel.azimuth) > 1) {
+      setTargetTelemetry(newTelemetry);
+      lastTelemetryRef.current = newTelemetry;
+    }
     lastTargetRef.current = target;
   });
   return null;
@@ -103,11 +109,11 @@ export function StarScene() {
   const fov = useAppStore(s => s.fov);
   const isCoreReady = useAppStore(s => s.isCoreReady);
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
-  useCatalogLoader();
+  const catalogLoader = useCatalogLoader();
 
-  useEffect(() => { 
-    console.log('StarScene Phase 35 VIS: Canvas color=#000000 pure black bg, Stars r=2000 d=200 c=30000 fade=false always top pre-Env/Controls fog=false on meshes/scene, cam near=0.001 far=1e5 pos[0,0,0.01] rot[0,0,0], loader bg-transp 0.8 thru stars, spinner black-safe'); 
-  }, [isCoreReady]);
+  useEffect(() => {
+    console.log('StarScene Phase 35 VIS: Canvas color=#000000 pure black bg, Stars r=2000 d=200 c=30000 fade=false always top pre-Env/Controls fog=false on meshes/scene, cam near=0.001 far=1e5 pos[0,0,0.01] rot[0,0,0], loader bg-transp 0.8 thru stars, spinner black-safe');
+  }, []);
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const ambientIntensity = useMemo(() => {
     if (sunPos.altitude > 0) return 1.0;
@@ -117,7 +123,7 @@ export function StarScene() {
   return (
     <div className="absolute inset-0" style={{ backgroundColor: '#000000' }}>
       <Canvas
-        gl={{ antialias: true, alpha: false, stencil: false, depth: true }}
+        gl={{ antialias: true, alpha: false, stencil: false, depth: true, powerPreference: 'high-performance' }}
         dpr={window.devicePixelRatio > 1 ? 2 : 1}
       >
         <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.001} far={100000} rotation={[0,0,0]} />

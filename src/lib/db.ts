@@ -20,19 +20,24 @@ export async function getDB(): Promise<IDBPDatabase> {
 }
 export async function saveObservation(obs: Observation): Promise<void> {
   const db = await getDB();
-  await db.put(OBSERVATIONS_STORE, obs);
+  const tx = db.transaction(OBSERVATIONS_STORE, 'readwrite');
+  await tx.store.put(obs);
+  await tx.done;
 }
 export async function getAllObservations(): Promise<Observation[]> {
   const db = await getDB();
-  return db.getAll(OBSERVATIONS_STORE);
+  const tx = db.transaction(OBSERVATIONS_STORE, 'readonly');
+  return tx.store.getAll();
 }
 export async function markAsSynced(id: string): Promise<void> {
   const db = await getDB();
-  const obs = await db.get(OBSERVATIONS_STORE, id);
+  const tx = db.transaction(OBSERVATIONS_STORE, 'readwrite');
+  const obs = await tx.store.get(id);
   if (obs) {
-    obs.syncStatus = 'synced';
-    await db.put(OBSERVATIONS_STORE, obs);
+    obs.synced = true;
+    await tx.store.put(obs);
   }
+  await tx.done;
 }
 /**
  * Star Catalog Bulk Operations
@@ -48,11 +53,11 @@ export async function saveStarChunk(stars: StarRecord[]): Promise<void> {
 }
 export async function getStarsByMagnitude(maxMag: number): Promise<StarRecord[]> {
   const db = await getDB();
-  const index = db.transaction(STAR_CATALOG_STORE).store.index('mag');
-  const range = IDBKeyRange.upperBound(maxMag);
+  const index = db.transaction(STAR_CATALOG_STORE, 'readonly').objectStore(STAR_CATALOG_STORE).index('mag');
+  const range = IDBKeyRange.upperBound(maxMag + 1e-6);
   return index.getAll(range);
 }
 export async function getCatalogCount(): Promise<number> {
   const db = await getDB();
-  return db.count(STAR_CATALOG_STORE);
+  return db.transaction(STAR_CATALOG_STORE, 'readonly').store.count();
 }

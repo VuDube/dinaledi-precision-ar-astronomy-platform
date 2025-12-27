@@ -19,9 +19,10 @@ export function StarField() {
     try {
       // 11.0 is the maximum visual baseline we support in Phase 1
       const allStars = await getStarsByMagnitude(11.0);
+      const limitedStars = allStars.slice(0, 10000);
       const primary = [];
       const faint = [];
-      for (const star of allStars) {
+      for (const star of limitedStars) {
         const data = {
           pos: radecToVector3(star.ra, star.dec, 1000),
           color: new THREE.Color(bvToColor(star.bv)),
@@ -34,7 +35,7 @@ export function StarField() {
       }
       primaryScales.current = new Float32Array(primary.length);
       setStarsData({ primary, faint });
-      console.log(`StarField: Hydrated ${primary.length + faint.length} entities for real-time scaling.`);
+      console.log(`StarField: Hydrated ${primary.length + faint.length} (limited to 10K) entities for real-time scaling.`);
     } catch (e) {
       console.error('StarField: Hydration failed', e);
     }
