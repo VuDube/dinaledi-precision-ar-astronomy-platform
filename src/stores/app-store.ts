@@ -100,10 +100,12 @@ interface AppState {
   toggleGrid: () => void;
   setFOV: (fov: number) => void;
 }
+const isPreview = typeof window !== "undefined" && window.location.hostname.includes(".workers.dev");
+
 export const useAppStore = create<AppState>((set) => ({
-  mode: 'intro',
-  isCalibrated: typeof window !== 'undefined' ? localStorage.getItem('dinaledi-calib') === 'true' : false,
-  isCoreReady: false,
+  mode: isPreview ? "skyview" : "intro",
+  isCalibrated: isPreview || (typeof window !== "undefined" ? localStorage.getItem("dinaledi-calib") === "true" : false),
+  isCoreReady: isPreview,
   calibrationProgress: 0,
   isCatalogReady: false,
   catalogLoadingProgress: 0,

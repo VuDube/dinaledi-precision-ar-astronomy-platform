@@ -26,19 +26,22 @@ export function HomePage() {
   useGPS();
   const [isInitializing, setIsInitializing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const handleStart = useCallback(async () => {
+  const handleStart = useCallback(() => {
     setIsInitializing(true);
     if (window.navigator.vibrate) window.navigator.vibrate(50);
-    await requestPermission();
-  }, [requestPermission]);
+    useAppStore.getState().setCalibrated(true);
+    useAppStore.getState().setCoreReady(true);
+    useAppStore.getState().setMode("skyview");
+    setIsTransitioning(true);
+  }, []);
   useEffect(() => {
     // Phase 38: Seamless Sync Transition
     if (isCalibrated && isCoreReady && mode === 'intro') {
       const timer = setTimeout(() => {
         setIsTransitioning(true);
         if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
-        setTimeout(() => setMode('skyview'), 1200);
-      }, 800);
+        setTimeout(() => setMode('skyview'), 400);
+      }, 200);
       return () => clearTimeout(timer);
     }
   }, [isCalibrated, isCoreReady, mode, setMode]);
@@ -62,17 +65,9 @@ export function HomePage() {
   return (
     <NightModeProvider>
       <div className="relative h-screen w-screen overflow-hidden bg-space-black">
-        <motion.div
-          className="absolute inset-0 z-0"
-          animate={{
-            opacity: mode === 'intro' ? 0.35 : 1,
-            scale: mode === 'intro' ? 1.02 : 1,
-            filter: mode === 'intro' ? 'blur(12px)' : 'blur(0px)'
-          }}
-          transition={{ duration: 1.8, ease: "easeInOut" }}
-        >
+        <div className="absolute inset-0 z-0">
           <StarScene />
-        </motion.div>
+        </div>
         <HUDOverlay />
         <ObservationLog />
         <ObservationForm />
@@ -84,9 +79,9 @@ export function HomePage() {
                 opacity: 0,
                 scale: 1.05,
                 filter: 'blur(40px)',
-                transition: { duration: 1.2, ease: [0.4, 0, 0.2, 1] }
+                transition: { duration: 0.6, ease: [0.4, 0, 0.2, 1] }
               }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6"
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6"
             >
               <div className="absolute inset-0 pointer-events-none opacity-20">
                 <DiamondGrid opacity={0.12} />

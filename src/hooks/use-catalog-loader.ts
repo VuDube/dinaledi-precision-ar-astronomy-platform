@@ -85,10 +85,6 @@ export function useCatalogLoader() {
 
         const scheduleChunk = async (index: number) => {
           if (index >= totalChunks || controllerRef.current.cancelled) {
-            setCatalogLoadingProgress(100);
-            setCatalogReady(true);
-            controllerRef.current.cancelled = true;
-            clearTimeout(controllerRef.current.timeout);
             return;
           }
 
@@ -129,14 +125,19 @@ export function useCatalogLoader() {
       } catch (error) {
         setCoreReady(true);
         setCatalogReady(true);
+        controllerRef.current.cancelled = true;
+        clearTimeout(controllerRef.current.timeout);
       }
     }
 
     initializeCatalog();
 
     return () => {
-      if (controllerRef.current.timeout) {
-        clearTimeout(controllerRef.current.timeout);
+      const controller = controllerRef.current;
+      controller.cancelled = true;
+      const timeoutId = controller.timeout;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
   }, [setCatalogReady, setCoreReady, setCatalogLoadingProgress]);
