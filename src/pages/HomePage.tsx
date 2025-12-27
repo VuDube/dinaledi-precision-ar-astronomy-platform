@@ -29,13 +29,12 @@ export function HomePage() {
     await requestPermission();
   }, [requestPermission]);
   useEffect(() => {
-    // Audit: Wait for core data + orientation + 800ms "settle" buffer for smooth fade
     if (isCalibrated && isCoreReady && mode === 'intro') {
       const timer = setTimeout(() => {
         setIsCanvasSettled(true);
         if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
-        setTimeout(() => setMode('skyview'), 1200);
-      }, 1500);
+        setTimeout(() => setMode('skyview'), 1000);
+      }, 1200);
       return () => clearTimeout(timer);
     }
   }, [isCalibrated, isCoreReady, mode, setMode]);
@@ -53,11 +52,11 @@ export function HomePage() {
         <motion.div
           className="absolute inset-0 z-0"
           animate={{
-            opacity: mode === 'intro' ? 0.3 : 1,
-            scale: mode === 'intro' ? 1.05 : 1,
-            filter: mode === 'intro' ? 'blur(10px)' : 'blur(0px)'
+            opacity: mode === 'intro' ? 0.5 : 1,
+            scale: mode === 'intro' ? 1.1 : 1,
+            filter: mode === 'intro' ? 'blur(4px)' : 'blur(0px)'
           }}
-          transition={{ duration: 2.5, ease: "easeInOut" }}
+          transition={{ duration: 3, ease: "easeInOut" }}
         >
           <StarScene />
         </motion.div>
@@ -70,11 +69,11 @@ export function HomePage() {
               initial={{ opacity: 1 }}
               exit={{
                 opacity: 0,
-                scale: 1.1,
-                filter: 'blur(40px)',
-                transition: { duration: 1.5, ease: [0.4, 0, 0.2, 1] }
+                scale: 1.05,
+                filter: 'blur(20px)',
+                transition: { duration: 1.8, ease: [0.4, 0, 0.2, 1] }
               }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/70 backdrop-blur-sm"
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-[2px]"
             >
               <div className="absolute inset-0 pointer-events-none opacity-20">
                 <DiamondGrid opacity={0.1} />
@@ -107,7 +106,6 @@ export function HomePage() {
                     </div>
                     <Button
                       onClick={handleStart}
-                      aria-label="Begin Observation and request sensor permissions"
                       className="h-20 px-12 sm:px-16 rounded-[2rem] bg-starlight text-space-black hover:bg-nebula hover:scale-105 transition-all duration-500 text-xl font-black group shadow-primary active:scale-95"
                     >
                       {isStandalone ? 'RESUME VOYAGE' : 'BEGIN OBSERVATION'}

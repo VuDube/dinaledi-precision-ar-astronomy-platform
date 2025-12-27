@@ -15,30 +15,31 @@ export function StarField() {
   const primaryScales = useRef<Float32Array>(new Float32Array(0));
   const frameCount = useRef(0);
   const loadFromDB = useCallback(async () => {
-    const allStars = await getStarsByMagnitude(10.5);
-    const primary = [];
-    const faint = [];
-    for (const star of allStars) {
-      const data = {
-        pos: radecToVector3(star.ra, star.dec, 1000),
-        color: new THREE.Color(bvToColor(star.bv)),
-        baseScale: Math.max(0.5, (6.5 - star.mag) * 0.9),
-        mag: star.mag,
-        id: star.id
-      };
-      if (star.mag < 5.0) primary.push(data);
-      else faint.push(data);
+    try {
+      const allStars = await getStarsByMagnitude(10.5);
+      const primary = [];
+      const faint = [];
+      for (const star of allStars) {
+        const data = {
+          pos: radecToVector3(star.ra, star.dec, 1000),
+          color: new THREE.Color(bvToColor(star.bv)),
+          baseScale: Math.max(0.5, (6.5 - star.mag) * 0.9),
+          mag: star.mag,
+          id: star.id
+        };
+        if (star.mag < 5.0) primary.push(data);
+        else faint.push(data);
+      }
+      primaryScales.current = new Float32Array(primary.length);
+      setStarsData({ primary, faint });
+      console.log(`StarField: Hydrated ${primary.length + faint.length} entities. Limit: ${magnitudeLimit}`);
+    } catch (e) {
+      console.error('StarField: Hydration failed', e);
     }
-    primaryScales.current = new Float32Array(primary.length);
-    setStarsData({ primary, faint });
-    console.log(`StarField: primary ${primary.length} (mag<5) faint ${faint.length} total ${primary.length + faint.length} magLimit=${magnitudeLimit}`);
-  }, []);
+  }, [magnitudeLimit]);
   useEffect(() => {
-    if (isCoreReady) loadFromDB();
-  }, [isCoreReady, loadFromDB]);
-  useEffect(() => {
-    if (isCatalogReady) loadFromDB();
-  }, [isCatalogReady, loadFromDB]);
+    if (isCoreReady || isCatalogReady) loadFromDB();
+  }, [isCoreReady, isCatalogReady, loadFromDB]);
   // Initial Sync for faint stars
   useEffect(() => {
     if (faintMeshRef.current && starsData.faint.length > 0) {
@@ -72,11 +73,11 @@ export function StarField() {
     }
   }, [starsData.primary, magnitudeLimit, dummy]);
   useFrame(() => {
-    // Throttle Primary instance updates for 30fps transition logic on 60fps loop
     frameCount.current++;
     if (frameCount.current % 2 !== 0) return;
     if (!meshRef.current || !starsData.primary.length) return;
     const EPSILON = 0.005;
+    const LERP_FACTOR = 0.12;
     let changed = false;
     for (let i = 0; i < starsData.primary.length && i < primaryScales.current.length; i++) {
       const star = starsData.primary[i];
@@ -84,7 +85,7 @@ export function StarField() {
       const targetScale = isVisible ? star.baseScale : 0;
       const currentScale = primaryScales.current[i];
       if (Math.abs(currentScale - targetScale) > EPSILON) {
-        const nextScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.1);
+        const nextScale = THREE.MathUtils.lerp(currentScale, targetScale, LERP_FACTOR);
         primaryScales.current[i] = nextScale;
         dummy.position.copy(star.pos);
         dummy.scale.setScalar(nextScale);

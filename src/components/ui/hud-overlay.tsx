@@ -12,7 +12,7 @@ import { RadialSearchWheel } from '@/components/ui/radial-search-wheel';
 import { TargetDetailsDrawer } from '@/components/ui/target-details-drawer';
 import { PWAInstallModal } from '@/components/ui/pwa-install-modal';
 import { Progress } from '@/components/ui/progress';
-import { DiamondGrid, StarPoint } from '@/components/ui/sesotho-patterns';
+import { StarPoint } from '@/components/ui/sesotho-patterns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -40,7 +40,7 @@ export function HUDOverlay() {
   const altitudeValue = Math.round(beta);
   return (
     <TooltipProvider>
-      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 sm:p-6 z-20 overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 sm:p-6 pb-[env(safe-area-inset-bottom,24px)] pt-[env(safe-area-inset-top,16px)] z-20 overflow-hidden">
         {/* Top Telemetry Bar */}
         <div className="flex justify-between items-start relative z-10 w-full max-w-[calc(100vw-32px)] mx-auto">
           <motion.div layout className="flex flex-col gap-2 min-w-0">
@@ -50,7 +50,7 @@ export function HUDOverlay() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="glass px-3 py-2 rounded-lg w-36 sm:w-48 overflow-hidden shrink-0"
+                  className="glass px-3 py-2 rounded-lg w-36 sm:w-48 overflow-hidden shrink-0 backdrop-filter-none"
                 >
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-[7px] font-mono text-starlight/40 uppercase tracking-widest">CAT_SYNC</span>
@@ -60,7 +60,7 @@ export function HUDOverlay() {
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className="glass px-3 py-1.5 rounded-full flex items-center gap-2 border-white/5 backdrop-blur-3xl shrink-0">
+            <div className="glass px-3 py-1.5 rounded-full flex items-center gap-2 border-white/5 backdrop-blur-3xl shrink-0 backdrop-filter-none">
               <div className={cn("h-1.5 w-1.5 rounded-full", isSensorActive ? "bg-green-500" : "bg-yellow-500")} />
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[9px] uppercase tracking-wider font-bold tabular-nums text-starlight">
                 <span>HDG {azimuthValue.toString().padStart(3, '0')}°</span>
@@ -71,16 +71,16 @@ export function HUDOverlay() {
           <div className="flex items-center gap-2 pointer-events-auto ml-2 shrink-0">
              <AnimatePresence mode="wait">
               {isSyncing ? (
-                <motion.div key="syncing" className="glass px-2 py-1 rounded-full flex items-center gap-2 border-nebula/20">
+                <motion.div key="syncing" className="glass px-2 py-1 rounded-full border-nebula/20 backdrop-filter-none">
                   <RefreshCw className="w-3 h-3 text-nebula animate-spin" />
                 </motion.div>
               ) : pendingCount > 0 ? (
-                <motion.div key="pending" className="glass px-2 py-1 rounded-full flex items-center gap-2 border-yellow-500/20 bg-yellow-500/10">
+                <motion.div key="pending" className="glass px-2 py-1 rounded-full flex items-center gap-2 border-yellow-500/20 bg-yellow-500/10 backdrop-filter-none">
                   <CloudUpload className="w-3 h-3 text-yellow-500" />
                   <span className="hidden xs:inline text-[8px] font-mono text-yellow-500">{pendingCount} PND</span>
                 </motion.div>
               ) : (
-                <motion.div key="status" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 border-white/5">
+                <motion.div key="status" className="glass px-2 py-1 rounded-full flex items-center gap-1.5 border-white/5 backdrop-filter-none">
                   {isOnline ? <Wifi className="w-3 h-3 text-green-500" /> : <CloudOff className="w-3 h-3 text-red-500" />}
                 </motion.div>
               )}
@@ -94,7 +94,7 @@ export function HUDOverlay() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="absolute top-24 left-1/2 -translate-x-1/2 glass px-4 py-1.5 rounded-full border-nebula/30 flex items-center gap-2 shadow-2xl z-20"
+              className="absolute top-24 left-1/2 -translate-x-1/2 glass px-4 py-1.5 rounded-full border-nebula/30 flex items-center gap-2 shadow-2xl z-20 backdrop-filter-none"
             >
               <Loader2 className="w-3 h-3 text-nebula animate-spin" />
               <span className="text-[10px] font-mono font-bold text-nebula uppercase tracking-widest">Slewing</span>

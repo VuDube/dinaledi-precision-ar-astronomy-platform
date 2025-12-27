@@ -61,9 +61,8 @@ function TargetTelemetry() {
   const selectedStar = useAppStore(s => s.selectedStar);
   const selectedDSO = useAppStore(s => s.selectedDSO);
   const setTargetTelemetry = useAppStore(s => s.setTargetTelemetry);
-  const lastTargetRef = React.useRef(null);
-  const lastTelemetryRef = React.useRef(null);
-
+  const lastTargetRef = useRef(null);
+  const lastTelemetryRef = useRef(null);
   useFrame((state) => {
     const target = selectedStar || selectedDSO;
     if (!target) {
@@ -73,12 +72,7 @@ function TargetTelemetry() {
       }
       return;
     }
-
-    // Skip if target and telemetry haven't changed
-    if (target === lastTargetRef.current && lastTelemetryRef.current) {
-      return;
-    }
-
+    if (target === lastTargetRef.current && lastTelemetryRef.current) return;
     const targetPos = radecToVector3(target.ra, target.dec, 100).normalize();
     const cameraForward = new THREE.Vector3(0, 0, -1).applyQuaternion(state.camera.quaternion).normalize();
     const angle = cameraForward.angleTo(targetPos) * (180 / Math.PI);
@@ -88,13 +82,8 @@ function TargetTelemetry() {
     const screenPos = targetPos.clone().multiplyScalar(100).project(state.camera);
     const azimuth = Math.atan2(screenPos.x, screenPos.y) * (180 / Math.PI);
     const newTelemetry = { angle, onScreen, azimuth };
-
-    // Only update if telemetry actually changed
-    if (JSON.stringify(newTelemetry) !== JSON.stringify(lastTelemetryRef.current)) {
-      setTargetTelemetry(newTelemetry);
-      lastTelemetryRef.current = newTelemetry;
-    }
-
+    setTargetTelemetry(newTelemetry);
+    lastTelemetryRef.current = newTelemetry;
     lastTargetRef.current = target;
   });
   return null;
@@ -107,26 +96,24 @@ export function StarScene() {
   const fov = useAppStore(s => s.fov);
   const isCoreReady = useAppStore(s => s.isCoreReady);
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
-
-  React.useEffect(() => { 
-    console.log('StarScene: Procedural Stars 20k r=1200 d=100 fade=false alwaysTop cam[0,0,0.01] near0.01 far7000 noFog blackBg'); 
-    return () => {}; 
-  }, []);
   useCatalogLoader();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const skyColor = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
   const ambientIntensity = useMemo(() => {
     if (sunPos.altitude > 0) return 1.0;
     if (sunPos.altitude > -18) return THREE.MathUtils.mapLinear(sunPos.altitude, -18, 0, 0.05, 0.6);
-    return 0.05; // Lowered for better MW contrast
+    return 0.05;
   }, [sunPos.altitude]);
   return (
     <div className="absolute inset-0" style={{ backgroundColor: '#000000' }}>
       <Canvas
         gl={{ antialias: true, alpha: false, stencil: false, depth: true }}
         dpr={window.devicePixelRatio > 1 ? 2 : 1}
+        onCreated={({ scene }) => {
+          scene.fog = new THREE.Fog(skyColor, 2000, 8000);
+        }}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.01} far={7000} rotation={[0,0,0]} />
+        <PerspectiveCamera makeDefault position={[0, 0, 0.01]} fov={fov} near={0.01} far={10000} rotation={[0,0,0]} />
         <color attach='background' args={['#000000']} />
         {!isCoreReady ? (
           <LoadingIndicator progress={catalogLoadingProgress} />
@@ -144,7 +131,7 @@ export function StarScene() {
           </>
         )}
         <Environment preset="night" />
-        <Stars radius={1200} depth={100} count={20000} fade={false} />
+        <Stars radius={1500} depth={150} count={25000} fade={false} />
         <GestureController />
         {isSensorActive ? (
           <ARController />
