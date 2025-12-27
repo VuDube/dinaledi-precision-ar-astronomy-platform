@@ -5,161 +5,130 @@ import { radecToVector3, bvToColor } from '@/lib/astronomy-math';
 import { useAppStore } from '@/stores/app-store';
 import { getStarsByMagnitude } from '@/lib/db';
 export function StarField() {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const faintMeshRef = useRef<THREE.InstancedMesh>(null);
+  const catalogMeshRef = useRef<THREE.InstancedMesh>(null);
+  const baselineMeshRef = useRef<THREE.InstancedMesh>(null);
   const magnitudeLimit = useAppStore(s => s.magnitudeLimit);
   const isCoreReady = useAppStore(s => s.isCoreReady);
-  const isCatalogReady = useAppStore(s => s.isCatalogReady);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const [starsData, setStarsData] = useState<{ primary: any[], faint: any[] }>({ primary: [], faint: [] });
-  const primaryScales = useRef<Float32Array>(new Float32Array(0));
+  // High-performance data refs to avoid React state reconciliation on 100k+ updates
+  const catalogData = useRef<any[]>([]);
+  const baselineData = useRef<any[]>([]);
+  const catalogScales = useRef<Float32Array>(new Float32Array(0));
   const frameCount = useRef(0);
   const loadedRef = useRef<boolean>(false);
-
-  const generateProceduralStars = useCallback(() => {
-    const primary: any[] = [];
-    const faint: any[] = [];
+  // Implement Permanent 30,000 Star Procedural Baseline
+  const generateBaseline = useCallback(() => {
+    if (baselineData.current.length > 0) return;
+    const stars: any[] = [];
     for (let i = 0; i < 30000; i++) {
-      const star = {
-        id: `proc_${i}`,
-        ra: Math.random() * 24,
-        dec: Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90,
-        mag: 0.5 + Math.pow(Math.random(), 0.35) * 11.5,
-        bv: (Math.random() - 0.5) * 1.4
-      };
-      const data = {
-        pos: radecToVector3(star.ra, star.dec, 1000),
-        color: new THREE.Color(bvToColor(star.bv)),
-        baseScale: Math.max(0.5, (6.5 - star.mag) * 0.9),
-        mag: star.mag,
-        id: star.id
-      };
-      if (star.mag < 5.0) primary.push(data);
-      else faint.push(data);
+      const ra = Math.random() * 24;
+      const dec = Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90;
+      const mag = 6.0 + Math.pow(Math.random(), 0.5) * 6.0;
+      const bv = (Math.random() - 0.5) * 1.8;
+      stars.push({
+        pos: radecToVector3(ra, dec, 1000),
+        color: new THREE.Color(bvToColor(bv)),
+        baseScale: Math.max(0.3, (6.5 - mag) * 0.7),
+        mag,
+        id: `baseline_${i}`
+      });
     }
-    primaryScales.current = new Float32Array(primary.length);
-    setStarsData({ primary, faint });
-    console.log(`StarField: Initialized ${primary.length + faint.length} procedural fallback stars.`);
+    baselineData.current = stars;
   }, []);
-  // Load a fixed high-density range once to avoid IDB calls during Bortle changes
-  const loadFromDB = useCallback(async () => {
+  const loadCatalogFromDB = useCallback(async () => {
     if (loadedRef.current) return;
     try {
-      const startTime = performance.now();
-      const allStars = await Promise.race([
-        getStarsByMagnitude(11.0, 30000),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_5s')), 5000))
-      ]);
-      const queryTime = (performance.now() - startTime).toFixed(1);
-      console.log(`StarField DB query: ${queryTime}ms, count ${allStars.length} stars <=11.0`);
-      if (allStars.length < 500) {
-        console.log('DB count too low <500, skip replacement with procedural fallback.');
-        loadedRef.current = true;
-        return;
-      }
-      const primary: any[] = [];
-      const faint: any[] = [];
-      for (const star of allStars) {
-        const data = {
-          pos: radecToVector3(star.ra, star.dec, 1000),
-          color: new THREE.Color(bvToColor(star.bv)),
-          baseScale: Math.max(0.5, (6.5 - star.mag) * 0.9),
-          mag: star.mag,
-          id: star.id
-        };
-        if (star.mag < 5.0) primary.push(data);
-        else faint.push(data);
-      }
-      primaryScales.current = new Float32Array(primary.length);
-      setStarsData({ primary, faint });
+      const allStars = await getStarsByMagnitude(7.0, 5000);
+      if (allStars.length < 100) return;
+      const stars = allStars.map(star => ({
+        pos: radecToVector3(star.ra, star.dec, 1000),
+        color: new THREE.Color(bvToColor(star.bv)),
+        baseScale: Math.max(0.6, (6.5 - star.mag) * 1.1),
+        mag: star.mag,
+        id: star.id
+      }));
+      catalogData.current = stars;
+      catalogScales.current = new Float32Array(stars.length);
       loadedRef.current = true;
-      console.log(`StarField: Loaded ${primary.length + faint.length} real stars, replacing procedural.`);
     } catch (e) {
+      console.warn('StarField: Catalog DB load failed, relying on baseline.', e);
       loadedRef.current = true;
-      if ((e as Error).message === 'TIMEOUT_5s') {
-        console.log('StarField: IDB timeout 5s exceeded, permanent procedural fallback, no hang.');
-      } else {
-        console.error('StarField DB load error:', e);
-      }
     }
   }, []);
   useEffect(() => {
-    generateProceduralStars();
-  }, [generateProceduralStars]);
-
+    generateBaseline();
+  }, [generateBaseline]);
   useEffect(() => {
-    if (isCoreReady || isCatalogReady) loadFromDB();
-  }, [isCoreReady, isCatalogReady, loadFromDB]);
-  // Initial Sync for faint stars on magnitudeLimit change
+    if (isCoreReady) loadCatalogFromDB();
+  }, [isCoreReady, loadCatalogFromDB]);
+  // Sync Baseline (Permanent background stars)
   useEffect(() => {
-    if (faintMeshRef.current && starsData.faint.length > 0) {
-      starsData.faint.forEach((star, i) => {
+    if (baselineMeshRef.current && baselineData.current.length > 0) {
+      baselineData.current.forEach((star, i) => {
         dummy.position.copy(star.pos);
-        const visible = star.mag <= magnitudeLimit;
+        const visible = star.mag <= magnitudeLimit + 1.0;
         dummy.scale.setScalar(visible ? star.baseScale : 0);
         dummy.updateMatrix();
-        faintMeshRef.current!.setMatrixAt(i, dummy.matrix);
-        faintMeshRef.current!.setColorAt(i, star.color);
+        baselineMeshRef.current!.setMatrixAt(i, dummy.matrix);
+        baselineMeshRef.current!.setColorAt(i, star.color);
       });
-      faintMeshRef.current.instanceMatrix.needsUpdate = true;
-      if (faintMeshRef.current.instanceColor) faintMeshRef.current.instanceColor.needsUpdate = true;
+      baselineMeshRef.current.instanceMatrix.needsUpdate = true;
+      if (baselineMeshRef.current.instanceColor) baselineMeshRef.current.instanceColor.needsUpdate = true;
     }
-  }, [starsData.faint, magnitudeLimit, dummy]);
-  // Initial Sync for primary stars on magnitudeLimit change
+  }, [magnitudeLimit, dummy]);
+  // Sync Catalog (High-value stars)
   useEffect(() => {
-    if (meshRef.current && starsData.primary.length > 0) {
-      starsData.primary.forEach((star, i) => {
+    if (catalogMeshRef.current && catalogData.current.length > 0) {
+      catalogData.current.forEach((star, i) => {
         dummy.position.copy(star.pos);
-        const visible = star.mag <= magnitudeLimit;
-        const scale = visible ? star.baseScale : 0;
+        const isVisible = star.mag <= magnitudeLimit;
+        const scale = isVisible ? star.baseScale : 0;
         dummy.scale.setScalar(scale);
-        if (i < primaryScales.current.length) primaryScales.current[i] = scale;
+        if (i < catalogScales.current.length) catalogScales.current[i] = scale;
         dummy.updateMatrix();
-        meshRef.current!.setMatrixAt(i, dummy.matrix);
-        meshRef.current!.setColorAt(i, star.color);
+        catalogMeshRef.current!.setMatrixAt(i, dummy.matrix);
+        catalogMeshRef.current!.setColorAt(i, star.color);
       });
-      meshRef.current.instanceMatrix.needsUpdate = true;
-      if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
+      catalogMeshRef.current.instanceMatrix.needsUpdate = true;
+      if (catalogMeshRef.current.instanceColor) catalogMeshRef.current.instanceColor.needsUpdate = true;
     }
-  }, [starsData.primary, magnitudeLimit, dummy]);
+  }, [magnitudeLimit, dummy]);
   useFrame(() => {
     frameCount.current++;
-    if (frameCount.current % 2 !== 0) return;
-    if (!meshRef.current || !starsData.primary.length) return;
-    const EPSILON = 0.005;
-    const LERP_FACTOR = 0.12;
+    if (frameCount.current % 3 !== 0) return; // Reduce frame pressure
+    if (!catalogMeshRef.current || !catalogData.current.length) return;
+    const EPSILON = 0.01;
+    const LERP_FACTOR = 0.1;
     let changed = false;
-    for (let i = 0; i < starsData.primary.length && i < primaryScales.current.length; i++) {
-      const star = starsData.primary[i];
+    for (let i = 0; i < catalogData.current.length; i++) {
+      const star = catalogData.current[i];
       const isVisible = star.mag <= magnitudeLimit;
       const targetScale = isVisible ? star.baseScale : 0;
-      const currentScale = primaryScales.current[i];
+      const currentScale = catalogScales.current[i];
       if (Math.abs(currentScale - targetScale) > EPSILON) {
         const nextScale = THREE.MathUtils.lerp(currentScale, targetScale, LERP_FACTOR);
-        primaryScales.current[i] = nextScale;
+        catalogScales.current[i] = nextScale;
         dummy.position.copy(star.pos);
         dummy.scale.setScalar(nextScale);
         dummy.updateMatrix();
-        meshRef.current!.setMatrixAt(i, dummy.matrix);
+        catalogMeshRef.current!.setMatrixAt(i, dummy.matrix);
         changed = true;
       }
     }
-    if (changed) meshRef.current.instanceMatrix.needsUpdate = true;
+    if (changed) catalogMeshRef.current.instanceMatrix.needsUpdate = true;
   });
   return (
     <group>
-      {starsData.primary.length > 0 && (
-        <instancedMesh ref={meshRef} args={[undefined, undefined, starsData.primary.length]}>
-          <sphereGeometry args={[2.5, 8, 8]} />
-          <meshBasicMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
-        </instancedMesh>
-      )}
-      {starsData.faint.length > 0 && (
-        <instancedMesh ref={faintMeshRef} args={[undefined, undefined, starsData.faint.length]}>
-          <sphereGeometry args={[1.2, 4, 4]} />
-          <meshBasicMaterial transparent opacity={0.4} blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
-        </instancedMesh>
-      )}
+      {/* Baseline stars: Lower detail, high performance fallback */}
+      <instancedMesh ref={baselineMeshRef} args={[undefined, undefined, 30000]}>
+        <sphereGeometry args={[1.0, 4, 4]} />
+        <meshBasicMaterial transparent opacity={0.3} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
+      </instancedMesh>
+      {/* Catalog stars: High detail, animated entry */}
+      <instancedMesh ref={catalogMeshRef} args={[undefined, undefined, 5000]}>
+        <sphereGeometry args={[2.8, 8, 8]} />
+        <meshBasicMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
+      </instancedMesh>
     </group>
   );
 }

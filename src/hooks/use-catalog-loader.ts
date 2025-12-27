@@ -11,62 +11,70 @@ export function useCatalogLoader() {
     if (isInitialized.current) return;
     isInitialized.current = true;
     async function initializeCatalog() {
+      // Production Safety: 10s hard-timeout for core readiness
+      const globalTimeout = setTimeout(() => {
+        if (!useAppStore.getState().isCoreReady) {
+          console.warn('CatalogLoader: Initialization timeout, forcing CoreReady for UI access.');
+          setCoreReady(true);
+        }
+      }, 10000);
       try {
         const count = await getCatalogCount();
         const TARGET_DENSITY = 125000;
-        const CORE_THRESHOLD = 20000;
+        const CORE_THRESHOLD = 5000;
         if (count >= TARGET_DENSITY) {
           setCatalogLoadingProgress(100);
           setCoreReady(true);
-          setTimeout(() => setCatalogReady(true), 800);
+          setCatalogReady(true);
+          clearTimeout(globalTimeout);
           return;
         }
-        // Phase 1: Core Catalog (Cultural and Major Stars)
+        // Phase 1: Native Data Hydration (Major Cultural Stars)
         setCatalogLoadingProgress(0);
-        await saveStarChunk(STAR_CATALOG);
-        // Phase 2: Rapid Visual Baseline (20k stars for immediate scene depth)
-        const currentCount = await getCatalogCount();
-        const neededForCore = Math.max(0, CORE_THRESHOLD - currentCount);
-        if (neededForCore > 0) {
-          const chunk: StarRecord[] = [];
-          for (let j = 0; j < neededForCore; j++) {
-            const id = `core_proc_${j}`;
-            const ra = Math.random() * 24;
-            const dec = Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90;
-            const mag = 1.0 + Math.random() * 5.5;
-            const bv = Math.random() * 2.0 - 0.4;
-            chunk.push({ id, ra, dec, mag, bv });
-          }
-          // Atomic block: ensure IDB write is flushed before core ready
-          await saveStarChunk(chunk);
-          const verifyCount = await getCatalogCount();
-          if (verifyCount < CORE_THRESHOLD) {
-             console.warn('CatalogLoader: Core baseline under-threshold, retrying...');
-          }
+        try {
+          await saveStarChunk(STAR_CATALOG);
+        } catch (e) {
+          console.warn('CatalogLoader: Initial chunk write failure', e);
         }
-        // Transition to Skyview
+        // Phase 2: Rapid Procedural Pre-hydration
+        const currentCount = await getCatalogCount();
+        const needed = Math.max(0, CORE_THRESHOLD - currentCount);
+        if (needed > 0) {
+          const chunk: StarRecord[] = [];
+          for (let j = 0; j < needed; j++) {
+            chunk.push({
+              id: `pre_proc_${j}`,
+              ra: Math.random() * 24,
+              dec: Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90,
+              mag: 1.0 + Math.random() * 5.5,
+              bv: Math.random() * 2.0 - 0.4
+            });
+          }
+          await saveStarChunk(chunk);
+        }
+        // Core visual baseline achieved
         setCoreReady(true);
         setCatalogLoadingProgress(25);
-        // Phase 3: Background Hydration (Idle-based for deep catalog density)
-        const finalCoreTotal = await getCatalogCount();
-        const remaining = Math.max(0, TARGET_DENSITY - finalCoreTotal);
-        const chunkSize = 5000;
+        // Phase 3: Background Deep-Hydration
+        const remaining = TARGET_DENSITY - (await getCatalogCount());
+        const chunkSize = 2500;
         const totalChunks = Math.ceil(remaining / chunkSize);
         const scheduleChunk = async (index: number) => {
           if (index >= totalChunks) {
             setCatalogLoadingProgress(100);
-            setTimeout(() => setCatalogReady(true), 1000);
+            setCatalogReady(true);
+            clearTimeout(globalTimeout);
             return;
           }
-          const starsInThisChunk = index < totalChunks - 1 ? chunkSize : remaining % chunkSize || chunkSize;
           const bgChunk: StarRecord[] = [];
-          for (let j = 0; j < starsInThisChunk; j++) {
-            const id = `bg_proc_${index}_${j}`;
-            const ra = Math.random() * 24;
-            const dec = Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90;
-            const mag = 6.5 + Math.random() * 5.5;
-            const bv = Math.random() * 2.0 - 0.4;
-            bgChunk.push({ id, ra, dec, mag, bv });
+          for (let j = 0; j < chunkSize; j++) {
+            bgChunk.push({
+              id: `bg_proc_${index}_${j}`,
+              ra: Math.random() * 24,
+              dec: Math.acos(Math.random() * 2 - 1) * (180 / Math.PI) - 90,
+              mag: 6.5 + Math.random() * 5.5,
+              bv: Math.random() * 2.0 - 0.4
+            });
           }
           try {
             await saveStarChunk(bgChunk);
@@ -75,16 +83,17 @@ export function useCatalogLoader() {
             if (window.requestIdleCallback) {
               window.requestIdleCallback(() => scheduleChunk(index + 1));
             } else {
-              setTimeout(() => scheduleChunk(index + 1), 50);
+              setTimeout(() => scheduleChunk(index + 1), 100);
             }
           } catch (e) {
-            console.warn('CatalogLoader: Chunk write deferred', e);
-            setTimeout(() => scheduleChunk(index), 1000); // Retry chunk
+            console.error('CatalogLoader: Hydration deferred', e);
+            setTimeout(() => scheduleChunk(index + 1), 1000);
           }
         };
         scheduleChunk(0);
       } catch (error) {
-        console.error('CatalogLoader: Critical failure', error);
+        console.error('CatalogLoader: Fatal failure', error);
+        setCoreReady(true);
       }
     }
     initializeCatalog();

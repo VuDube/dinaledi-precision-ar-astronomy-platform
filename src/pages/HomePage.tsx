@@ -22,41 +22,42 @@ export function HomePage() {
   const { requestPermission } = useOrientation();
   const { isStandalone } = usePWA();
   const [isInitializing, setIsInitializing] = useState(false);
-  const [isCanvasSettled, setIsCanvasSettled] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const handleStart = useCallback(async () => {
     setIsInitializing(true);
     if (window.navigator.vibrate) window.navigator.vibrate(50);
     await requestPermission();
   }, [requestPermission]);
   useEffect(() => {
+    // Phase 36: Synchronized transition once the visual core is confirmed ready
     if (isCalibrated && isCoreReady && mode === 'intro') {
       const timer = setTimeout(() => {
-        setIsCanvasSettled(true);
+        setIsTransitioning(true);
         if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
-        setTimeout(() => setMode('skyview'), 1000);
-      }, 1200);
+        setTimeout(() => setMode('skyview'), 1500);
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [isCalibrated, isCoreReady, mode, setMode]);
   const hasShownCatalogToast = useRef(false);
   useEffect(() => {
     if (isCatalogReady && !hasShownCatalogToast.current) {
-      toast.success('High-density catalog synced – 125k stars locked');
+      toast.success('High-density catalog synced �� 125k stars locked');
       hasShownCatalogToast.current = true;
     }
   }, [isCatalogReady]);
-  const showCalibrationHint = calibrationProgress > 20 && calibrationProgress < 85;
+  const showCalibrationHint = calibrationProgress > 15 && calibrationProgress < 85;
   return (
     <NightModeProvider>
       <div className="relative h-screen w-screen overflow-hidden bg-space-black">
-        <motion.div
+        <motion.div 
           className="absolute inset-0 z-0"
-          animate={{
-            opacity: mode === 'intro' ? 0.5 : 1,
-            scale: mode === 'intro' ? 1.1 : 1,
-            filter: mode === 'intro' ? 'blur(4px)' : 'blur(0px)'
+          animate={{ 
+            opacity: mode === 'intro' ? 0.3 : 1,
+            scale: mode === 'intro' ? 1.05 : 1,
+            filter: mode === 'intro' ? 'blur(10px)' : 'blur(0px)'
           }}
-          transition={{ duration: 3, ease: "easeInOut" }}
+          transition={{ duration: 2.5, ease: "easeInOut" }}
         >
           <StarScene />
         </motion.div>
@@ -67,13 +68,13 @@ export function HomePage() {
           {mode === 'intro' && (
             <motion.div
               initial={{ opacity: 1 }}
-              exit={{
-                opacity: 0,
-                scale: 1.05,
-                filter: 'blur(20px)',
-                transition: { duration: 1.8, ease: [0.4, 0, 0.2, 1] }
+              exit={{ 
+                opacity: 0, 
+                scale: 1.1,
+                filter: 'blur(30px)',
+                transition: { duration: 1.5, ease: [0.4, 0, 0.2, 1] }
               }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-transparent opacity-80"
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-transparent"
             >
               <div className="absolute inset-0 pointer-events-none opacity-20">
                 <DiamondGrid opacity={0.1} />
@@ -92,7 +93,7 @@ export function HomePage() {
                 {!isInitializing ? (
                   <div className="space-y-10">
                     <div className="space-y-6">
-                      <motion.h1
+                      <motion.h1 
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         className="text-6xl sm:text-7xl md:text-9xl font-display font-black text-starlight tracking-tighter"
@@ -100,11 +101,10 @@ export function HomePage() {
                         DIN<span className="text-nebula">A</span>LEDI
                       </motion.h1>
                       <p className="text-lg sm:text-xl text-starlight/60 font-light max-w-lg mx-auto leading-relaxed text-pretty px-4">
-                        Precision-calibrated viewport into ancestral and scientific skies.
-                        Production-grade AR planetarium at the edge.
+                        Precision AR planetarium at the edge. Visualizing ancestral and scientific skies.
                       </p>
                     </div>
-                    <Button
+                    <Button 
                       onClick={handleStart}
                       className="h-20 px-12 sm:px-16 rounded-[2rem] bg-starlight text-space-black hover:bg-nebula hover:scale-105 transition-all duration-500 text-xl font-black group shadow-primary active:scale-95"
                     >
@@ -117,7 +117,7 @@ export function HomePage() {
                     <div className="flex flex-col items-center gap-8 min-h-[250px] justify-center">
                       <AnimatePresence mode="wait">
                         {showCalibrationHint ? (
-                          <motion.div
+                          <motion.div 
                             key="hint"
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -130,7 +130,7 @@ export function HomePage() {
                             </div>
                           </motion.div>
                         ) : (
-                          <motion.div
+                          <motion.div 
                             key="loading"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -146,22 +146,22 @@ export function HomePage() {
                       </AnimatePresence>
                       <div className="space-y-3">
                         <h2 className="text-3xl sm:text-4xl font-black text-starlight tracking-tight">
-                          {(isCalibrated && isCoreReady && isCanvasSettled) ? "READY_FOR_FLIGHT" : "HYDRATING_CATALOG"}
+                          {isTransitioning ? "VIEWPORT_LOCKED" : "INITIALIZING_SKY"}
                         </h2>
                         <p className="text-starlight/40 font-mono text-[10px] uppercase tracking-[0.4em]">
-                          {(isCalibrated && isCoreReady) ? "Celestial matrices locked" : "Sampling Gravity • Aligning Stars"}
+                          {isTransitioning ? "Celestial matrices ready" : "Sampling Gravity • Aligning Stars"}
                         </p>
                       </div>
                     </div>
                     <div className="max-w-xs mx-auto w-full space-y-4">
                       <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                        <motion.div
+                        <motion.div 
                           className="absolute inset-y-0 left-0 bg-nebula shadow-[0_0_15px_rgba(234,179,8,1)]"
                           animate={{ width: `${Math.max(calibrationProgress, (isCoreReady ? 100 : 0))}%` }}
                         />
                       </div>
                       <div className="flex justify-between font-mono text-[9px] text-starlight/20 tabular-nums uppercase tracking-widest">
-                        <span>Initialization_Sync</span>
+                        <span>Calibration_Status</span>
                         <span>{Math.round(Math.max(calibrationProgress, (isCoreReady ? 100 : 0)))}%</span>
                       </div>
                     </div>

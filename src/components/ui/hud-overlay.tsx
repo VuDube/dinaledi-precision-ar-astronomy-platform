@@ -45,7 +45,7 @@ export function HUDOverlay() {
           <motion.div layout className="flex flex-col gap-2 min-w-0">
             <AnimatePresence>
               {!isCatalogReady && (
-                <motion.div
+                <motion.div 
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
@@ -105,7 +105,7 @@ export function HUDOverlay() {
         {/* Central Reticle */}
         <div className="flex-1 flex items-center justify-center relative">
            <StarPoint className="w-64 h-64 scale-150" opacity={0.015} />
-           <div
+           <div 
              className="relative pointer-events-auto p-16 rounded-full"
              onClick={() => {
                if (activeTarget) setDetailOpen(true);
@@ -121,10 +121,10 @@ export function HUDOverlay() {
       <TargetDetailsDrawer />
       <SearchPanel />
       <TemporalControls />
-      <PWAInstallModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
-        onInstall={triggerInstallPrompt}
+      <PWAInstallModal 
+        isOpen={isInstallModalOpen} 
+        onClose={() => setIsInstallModalOpen(false)} 
+        onInstall={triggerInstallPrompt} 
       />
     </TooltipProvider>
   );

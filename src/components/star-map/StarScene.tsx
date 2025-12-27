@@ -42,12 +42,22 @@ function Atmosphere() {
   const bortleScale = useAppStore(s => s.bortleScale);
   const { scene } = useThree();
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
-  const skyColor = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
+  const skyColorStr = useMemo(() => getSkyColor(sunPos.altitude), [sunPos.altitude]);
+  const skyColor = useMemo(() => new THREE.Color(skyColorStr), [skyColorStr]);
   useEffect(() => {
-    if (scene) {
-      scene.fog = null;
+    if (!scene) return;
+    scene.background = skyColor;
+    // Eliminate 'Blue Kill' artifact by synchronizing fog with sky background
+    // Higher density at horizon/twilight to blend the celestial sphere edge
+    const isTwilight = sunPos.altitude > -18 && sunPos.altitude < 0;
+    const fogDensity = isTwilight ? 0.0015 : 0.0004;
+    if (!scene.fog) {
+      scene.fog = new THREE.FogExp2(skyColor, fogDensity);
+    } else {
+      (scene.fog as THREE.FogExp2).color.copy(skyColor);
+      (scene.fog as THREE.FogExp2).density = fogDensity;
     }
-  }, [scene]);
+  }, [scene, skyColor, sunPos.altitude]);
   const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 10);
   const rayleigh = THREE.MathUtils.mapLinear(sunPos.altitude, -25, 15, 0.1, 4);
   return (
@@ -91,8 +101,8 @@ function TargetTelemetry() {
     const newTelemetry = { angle, onScreen, azimuth };
     const lastTel = lastTelemetryRef.current;
     if (!lastTel || 
-        Math.abs(newTelemetry.angle - lastTel.angle) > 0.1 ||
-        newTelemetry.onScreen !== lastTel.onScreen ||
+        Math.abs(newTelemetry.angle - lastTel.angle) > 0.1 || 
+        newTelemetry.onScreen !== lastTel.onScreen || 
         Math.abs(newTelemetry.azimuth - lastTel.azimuth) > 1) {
       setTargetTelemetry(newTelemetry);
       lastTelemetryRef.current = newTelemetry;
@@ -110,10 +120,6 @@ export function StarScene() {
   const isCoreReady = useAppStore(s => s.isCoreReady);
   const catalogLoadingProgress = useAppStore(s => s.catalogLoadingProgress);
   const catalogLoader = useCatalogLoader();
-
-  useEffect(() => {
-    console.log('StarScene Phase 35 VIS: Canvas color=#000000 pure black bg, Stars r=2000 d=200 c=30000 fade=false always top pre-Env/Controls fog=false on meshes/scene, cam near=0.001 far=1e5 pos[0,0,0.01] rot[0,0,0], loader bg-transp 0.8 thru stars, spinner black-safe');
-  }, []);
   const sunPos = useMemo(() => getSunPosition(simulationTime, lat, lon), [simulationTime, lat, lon]);
   const ambientIntensity = useMemo(() => {
     if (sunPos.altitude > 0) return 1.0;
@@ -149,9 +155,9 @@ export function StarScene() {
         {isSensorActive ? (
           <ARController />
         ) : (
-          <OrbitControls
-            enableZoom={false}
-            enablePan={false}
+          <OrbitControls 
+            enableZoom={false} 
+            enablePan={false} 
             autoRotate={!isSensorActive}
             autoRotateSpeed={0.05}
             enableDamping
