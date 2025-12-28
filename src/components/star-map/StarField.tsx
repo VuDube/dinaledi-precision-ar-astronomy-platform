@@ -1,19 +1,15 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import { radecToVector3, bvToColor, getSunPosition } from '@/lib/astronomy-math';
+import { radecToVector3, bvToColor } from '@/lib/astronomy-math';
 import { useAppStore } from '@/stores/app-store';
 import { getStarsByMagnitude } from '@/lib/db';
 export function StarField() {
-  const { camera } = useThree();
   const catalogMeshRef = useRef<THREE.InstancedMesh>(null);
   const baselineMeshRef = useRef<THREE.InstancedMesh>(null);
   const magnitudeLimit = useAppStore(s => s.magnitudeLimit);
   const isCoreReady = useAppStore(s => s.isCoreReady);
-  const nightMode = useAppStore(s => s.nightMode);
-  const simulationTime = useAppStore(s => s.simulationTime);
-  const lat = useAppStore(s => s.latitude);
-  const lon = useAppStore(s => s.longitude);
+
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const catalogData = useRef<any[]>([]);
   const baselineData = useRef<any[]>([]);
@@ -21,7 +17,7 @@ export function StarField() {
   const lerpPointer = useRef(0);
   const loadedRef = useRef<boolean>(false);
   const [baselineReady, setBaselineReady] = useState(false);
-  const sunAltitude = useMemo(() => getSunPosition(simulationTime, lat, lon).altitude, [simulationTime, lat, lon]);
+  // sunAltitude removed - baseline stars always full opacity
   const generateBaseline = useCallback(() => {
     if (baselineData.current.length > 0) return;
     const stars: any[] = [];
@@ -72,13 +68,10 @@ export function StarField() {
   }, [isCoreReady, loadCatalogFromDB]);
   const visibilityFrame = useCallback(() => {
     if (!baselineMeshRef.current || !catalogMeshRef.current) return;
-    const visibilityFactor = nightMode ? 1.0 : THREE.MathUtils.clamp(
-      THREE.MathUtils.mapLinear(sunAltitude, -12, 0, 1, 0),
-      0, 1
-    );
-    (baselineMeshRef.current.material as THREE.MeshBasicMaterial).opacity = 0.8 * visibilityFactor;
-    (catalogMeshRef.current.material as THREE.MeshBasicMaterial).opacity = 0.9 * visibilityFactor;
-  }, [nightMode, sunAltitude]);
+    const visibilityFactor = 1.0;
+    (baselineMeshRef.current.material as THREE.MeshBasicMaterial).opacity = 1.0 * visibilityFactor;
+    (catalogMeshRef.current.material as THREE.MeshBasicMaterial).opacity = 1.0 * visibilityFactor;
+  }, []);
 
   useFrame(visibilityFrame);
   useEffect(() => {
@@ -94,7 +87,7 @@ export function StarField() {
       baselineMeshRef.current.instanceMatrix.needsUpdate = true;
       if (baselineMeshRef.current.instanceColor) baselineMeshRef.current.instanceColor.needsUpdate = true;
     }
-  }, [magnitudeLimit, baselineReady, dummy, nightMode]);
+  }, [magnitudeLimit, baselineReady, dummy]);
   useEffect(() => {
     if (catalogMeshRef.current && catalogData.current.length > 0) {
       catalogData.current.forEach((star, i) => {
@@ -110,7 +103,7 @@ export function StarField() {
       catalogMeshRef.current.instanceMatrix.needsUpdate = true;
       if (catalogMeshRef.current.instanceColor) catalogMeshRef.current.instanceColor.needsUpdate = true;
     }
-  }, [magnitudeLimit, dummy, isCoreReady, nightMode]);
+  }, [magnitudeLimit, dummy, isCoreReady]);
   const lerpFrame = useCallback(() => {
     if (!catalogMeshRef.current || !catalogData.current.length) return;
     const EPSILON = 0.01;
@@ -142,11 +135,11 @@ export function StarField() {
     <group>
       <instancedMesh ref={baselineMeshRef} args={[undefined, undefined, 40000]}>
         <sphereGeometry args={[1.5, 4, 4]} />
-        <meshBasicMaterial transparent opacity={0.25} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
+        <meshBasicMaterial transparent opacity={1.0} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
       </instancedMesh>
       <instancedMesh ref={catalogMeshRef} args={[undefined, undefined, 10000]}>
         <sphereGeometry args={[3.2, 8, 8]} />
-        <meshBasicMaterial transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
+        <meshBasicMaterial transparent opacity={1.0} blending={THREE.AdditiveBlending} depthWrite={false} fog={true} />
       </instancedMesh>
     </group>
   );

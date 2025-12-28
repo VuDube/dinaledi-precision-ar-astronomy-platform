@@ -37,7 +37,7 @@ function Atmosphere() {
     scene.background = color;
     const isTwilight = sunAltitude > -18 && sunAltitude < 0;
     // Higher density during viewport entry (intro mode) or twilight
-    const fogDensity = nightMode ? 0.00025 : mode === 'intro' ? 0.003 : isTwilight ? 0.002 : 0.00045;
+    const fogDensity = nightMode ? 0.002 : mode === 'intro' ? 0.003 : isTwilight ? 0.002 : 0.00045;
     if (!scene.fog) {
       scene.fog = new THREE.FogExp2(color, fogDensity);
     } else {
@@ -47,7 +47,8 @@ function Atmosphere() {
   }, [scene, sunAltitude, mode, nightMode]);
   const turbidity = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 2, 10);
   const rayleigh = THREE.MathUtils.mapLinear(THREE.MathUtils.clamp(sunAltitude, -20, 20), -20, 20, 0, 4);
-  return (
+  const shouldRenderSky = !nightMode && sunAltitude >= -18;
+  return shouldRenderSky ? (
     <Sky
       sunPosition={[
         100 * Math.cos(THREE.MathUtils.degToRad(sunAltitude)) * Math.sin(THREE.MathUtils.degToRad(sunPos.azimuth)),
@@ -59,7 +60,7 @@ function Atmosphere() {
       mieCoefficient={0.005}
       mieDirectionalG={0.8}
     />
-  );
+  ) : null;
 }
 function TargetTelemetry() {
   const selectedStar = useAppStore(s => s.selectedStar);
@@ -119,7 +120,7 @@ export function StarScene() {
           </>
         )}
         <Environment preset="night" />
-        <Stars radius={2000} depth={50} count={10000} fade={true} />
+        <Stars radius={2000} depth={50} count={10000} fade={false} />
         <GestureController />
         {isSensorActive ? (
           <ARController />
