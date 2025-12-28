@@ -3,7 +3,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { useObservationStore } from '@/stores/observation-store';
 import { useAppStore } from '@/stores/app-store';
 import { Calendar, MapPin, Cloud, RefreshCcw, History, CloudUpload } from 'lucide-react';
-import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,7 @@ export function ObservationLog() {
     loadObservations();
     const interval = setInterval(syncPending, 30000);
     return () => clearInterval(interval);
-  }, [loadObservations, syncPending]);
+  }, []);
   const isOpen = mode === 'log';
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && setMode('skyview')}>
@@ -73,7 +72,7 @@ export function ObservationLog() {
                         <h4 className="text-nebula font-bold text-sm uppercase tracking-wider">{obs.starName}</h4>
                         <div className="flex items-center gap-2 text-starlight/40 text-[10px] mt-1 font-mono">
                           <Calendar className="w-3 h-3" />
-                          {format(new Date(obs.timestamp), 'MMM dd, HH:mm')}
+                          {new Date(obs.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
                         </div>
                       </div>
                       {obs.syncStatus === 'synced' ? (

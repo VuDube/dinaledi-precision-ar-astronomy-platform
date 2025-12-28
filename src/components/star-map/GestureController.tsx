@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from 'react';
 import { useAppStore } from '@/stores/app-store';
-import { addHours } from 'date-fns';
 export function GestureController() {
   const simulationTime = useAppStore(s => s.simulationTime);
   const setSimulationTime = useAppStore(s => s.setSimulationTime);
@@ -31,14 +30,14 @@ export function GestureController() {
       if (Math.abs(deltaX) > 10) {
         const intensity = Math.sign(deltaX) * Math.pow(Math.abs(deltaX) / 20, 1.5);
         // Use functional update or ref to calculate next time
-        setSimulationTime(addHours(timeRef.current, intensity));
+        setSimulationTime(new Date(timeRef.current.getTime() + intensity * 3600000)); // 1 hour in ms
         startX = currentX;
       }
     };
     const onEnd = () => { isDragging = false; };
     window.addEventListener('touchstart', onStart, { passive: true });
     window.addEventListener('touchmove', onMove, { passive: true });
-    window.addEventListener('touchend', onEnd);
+    window.addEventListener('touchend', onEnd, { passive: true });
     return () => {
       window.removeEventListener('touchstart', onStart);
       window.removeEventListener('touchmove', onMove);

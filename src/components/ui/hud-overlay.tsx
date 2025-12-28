@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePWA } from '@/hooks/use-pwa';
-import { formatDistanceToNow } from 'date-fns';
+
 export function HUDOverlay() {
   const mode = useAppStore(s => s.mode);
   const orientation = useAppStore(s => s.orientation);
@@ -35,8 +35,8 @@ export function HUDOverlay() {
   const { isInstallModalOpen, setIsInstallModalOpen, triggerInstallPrompt } = usePWA();
   if (mode === 'intro') return null;
   const activeTarget = selectedStar || selectedDSO;
-  const azimuthValue = Math.round(orientation.heading);
-  const altitudeValue = Math.round(orientation.beta);
+  const azimuthValue = orientation?.heading ? Math.round(orientation.heading) : 0;
+  const altitudeValue = orientation?.beta ? Math.round(orientation.beta) : 0;
   return (
     <TooltipProvider>
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 sm:p-6 pb-[env(safe-area-inset-bottom,24px)] pt-[env(safe-area-inset-top,16px)] z-30 overflow-hidden">
@@ -52,7 +52,7 @@ export function HUDOverlay() {
                 >
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-[6px] font-mono text-starlight/40 uppercase tracking-widest">CAT_SYNC</span>
-                    <span className="text-[6px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress)}%</span>
+                    <span className="text-[6px] font-mono text-nebula uppercase">{Math.round(catalogLoadingProgress || 0)}%</span>
                   </div>
                   <Progress value={catalogLoadingProgress} className="h-0.5 bg-starlight/10" />
                 </motion.div>
@@ -61,8 +61,8 @@ export function HUDOverlay() {
             <div className="glass px-2.5 py-1.5 rounded-full flex items-center gap-2 border-white/5 backdrop-blur-3xl shrink-0 backdrop-filter-none">
               <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", isSensorActive ? "bg-green-500" : "bg-yellow-500")} />
               <div className="flex gap-x-2.5 font-mono text-[9px] uppercase tracking-widest font-bold tabular-nums text-starlight overflow-hidden">
-                <span className="whitespace-nowrap">HDG {azimuthValue.toString().padStart(3, '0')}°</span>
-                <span className="whitespace-nowrap">ALT {altitudeValue.toString().padStart(3, '0')}°</span>
+                <span className="whitespace-nowrap">HDG {(azimuthValue || 0).toString().padStart(3, '0')}°</span>
+                <span className="whitespace-nowrap">ALT {(altitudeValue || 0).toString().padStart(3, '0')}°</span>
               </div>
             </div>
           </motion.div>
@@ -92,7 +92,7 @@ export function HUDOverlay() {
                  </div>
                </TooltipTrigger>
                <TooltipContent side="bottom" className="bg-space-black border-white/10 text-starlight text-[10px] uppercase font-mono tracking-widest">
-                  {lastSyncTime ? `Last Handshake: ${formatDistanceToNow(lastSyncTime)} ago` : 'Waiting for Edge Sync'}
+                  {lastSyncTime ? `Last Handshake: ${Math.floor((Date.now() - (typeof lastSyncTime === 'number' ? lastSyncTime : lastSyncTime.getTime())) / 60000)}m ago` : 'Waiting for Edge Sync'}
                </TooltipContent>
              </Tooltip>
           </div>

@@ -4,22 +4,23 @@ import { useAppStore } from '@/stores/app-store';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Clock, RotateCcw, Sparkles } from 'lucide-react';
-import { format, addYears, startOfToday } from 'date-fns';
+
 export function TemporalControls() {
   const simulationTime = useAppStore(s => s.simulationTime);
   const setSimulationTime = useAppStore(s => s.setSimulationTime);
   const setTimeSpeed = useAppStore(s => s.setTimeSpeed);
   const mode = useAppStore(s => s.mode);
-  const yearsOffset = simulationTime.getFullYear() - new Date().getFullYear();
+  const currentYear = new Date().getFullYear();
+  const yearsOffset = simulationTime ? simulationTime.getFullYear() - currentYear : 0;
   const handleYearChange = (val: number[]) => {
-    const newDate = addYears(new Date(), val[0]);
+    const newDate = new Date(new Date().getTime() + val[0] * 31557600000);
     setSimulationTime(newDate);
   };
   const resetTime = () => {
     setSimulationTime(new Date());
     setTimeSpeed(1);
   };
-  if (mode !== 'skyview') return null;
+  if (mode !== 'skyview' || !simulationTime) return null;
   const isAlignmentPossible = Math.abs(yearsOffset) < 5;
   return (
     <motion.div
@@ -37,10 +38,10 @@ export function TemporalControls() {
         </div>
         <div className="space-y-1">
           <div className="text-starlight text-2xl font-mono font-bold tabular-nums">
-            {format(simulationTime, 'yyyy')}
+            {simulationTime.getFullYear()}
           </div>
           <div className="text-starlight/40 text-[9px] uppercase font-mono tracking-tighter">
-            {format(simulationTime, 'MMM dd, HH:mm')}
+            {simulationTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
           </div>
         </div>
         <div className="pt-1">
@@ -53,9 +54,9 @@ export function TemporalControls() {
             className="cursor-pointer"
           />
           <div className="flex justify-between text-[8px] text-starlight/20 mt-2 font-mono">
-            <span>20th</span>
+            <span>{currentYear - 100}</span>
             <span>PRE_J2000</span>
-            <span>22nd</span>
+            <span>{currentYear}</span>
           </div>
         </div>
         <Button
