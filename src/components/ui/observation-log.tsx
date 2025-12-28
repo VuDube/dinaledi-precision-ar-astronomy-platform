@@ -19,7 +19,7 @@ export function ObservationLog() {
     loadObservations();
     const interval = setInterval(syncPending, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadObservations, syncPending]);
   const isOpen = mode === 'log';
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && setMode('skyview')}>
