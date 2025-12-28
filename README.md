@@ -1,6 +1,6 @@
 # Dinaledi PWA
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/VuDube/dinaledi-precision-ar-astronomy-platform)
 
 A full-stack Progressive Web App (PWA) built with React and Tailwind CSS, powered by Cloudflare Workers. Features a modern UI with shadcn/ui components, API backend with Hono, Durable Objects for stateful logic, and KV storage for persistence.
 
@@ -80,7 +80,7 @@ Deploy to Cloudflare Workers with Pages integration (SPA + API):
    Deploys Worker + static assets automatically.
 
 3. **One-Click Deploy**
-   [cloudflarebutton]
+   [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/VuDube/dinaledi-precision-ar-astronomy-platform)
 
 **Post-Deploy**:
 - Bind KV namespace in Workers dashboard.
